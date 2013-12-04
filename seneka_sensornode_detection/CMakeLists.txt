@@ -103,7 +103,7 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(seneka_sensornode_detection_node src/seneka_sensornode_detection_node.cpp)
+add_executable(sensornode_detection src/sensornode_detection.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
