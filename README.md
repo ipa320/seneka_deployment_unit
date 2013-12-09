@@ -5,6 +5,7 @@ This repository contains source code for the deployment units developed at Fraun
 The package is made to work with ros groovy and gazebo version 1.5
 
 ----------------------------------------------------------------------
+
 PACKAGES:
 =========
 
@@ -19,10 +20,14 @@ Description packages:
 * seneka_moveit_config -> moveit config for Quanjo
 * universal_robot -> configured universal robot stack for seneka project
 
+----------------------------------------------------------------------
+
 Install:
 --------
 * git clone https://github.com/Equanox/cob_object_perception/tree/seneka_fiducials (rosbuild package)
 * git clone https://github.com/Equanox/seneka_deployment_unit (catkin package)
+
+----------------------------------------------------------------------
 
 Getting started with Quanjo in gazebo:
 ----------------------------------------
@@ -30,5 +35,6 @@ Getting started with Quanjo in gazebo:
 * roslaunch seneka_moveit_config move_group.launch
 * roslaunch seneka_moveit_config moveit_rviz.launch
 
+----------------------------------------------------------------------
 
 
