@@ -37,6 +37,6 @@ Getting started with Quanjo in gazebo:
 * roslaunch seneka_moveit_config moveit_rviz.launch
 
 ----------------------------------------------------------------------
-Author: Matthias Nösner 
-Readme updated: 09.12.2013
+* Author: Matthias Nösner 
+* Readme updated: 09.12.2013
 
