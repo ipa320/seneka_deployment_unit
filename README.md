@@ -24,6 +24,7 @@ Description packages:
 
 Install:
 --------
+* git clone https://github.com/ipa320/cob_perception_common (rosbuild package)
 * git clone https://github.com/Equanox/cob_object_perception/tree/seneka_fiducials (rosbuild package)
 * git clone https://github.com/Equanox/seneka_deployment_unit (catkin package)
 
@@ -36,5 +37,6 @@ Getting started with Quanjo in gazebo:
 * roslaunch seneka_moveit_config moveit_rviz.launch
 
 ----------------------------------------------------------------------
-
+Author: Matthias Nösner 
+Readme updated: 09.12.2013
 
