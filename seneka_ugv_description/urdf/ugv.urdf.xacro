@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<robot xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       xmlns:xacro="http://ros.org/wiki/xacro">
+  
+   <material name="white">
+  	<color rgba="1 1 1 1"/>
+   </material>
+
+   <material name="black">
+  	<color rgba="0 0 0 1"/>
+   </material>
+
+  <link name="ugv_companio_body">
+    <visual>
+      <geometry>
+        <!-- <box size="0.75 0.75 0.75"/> -->
+ 	<mesh filename="package://seneka_ugv_description/meshes/quanjo_grob.dae" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <origin rpy="0 0 1.57" xyz="0 0 0"/>
+      <material name="black"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <!-- <box size="0.75 0.75 0.75"/> -->
+	<mesh filename="package://seneka_ugv_description/meshes/quanjo_grob.dae" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <origin rpy="0 0 1.57" xyz="0 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="60" />
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+
+<!--  <joint name="neck_joint" type="fixed">
+    <parent link="ugv_companio_body" />
+    <child link ="ugv_companio_head" />
+    <origin xyz="0.0 0.0 1" rpy="0.0 0.0 0.0" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit lower="0" upper="1" effort="1" velocity="1"/>
+    <dynamics damping="1000" friction="0.1"/>
+  </joint>
+
+  <link name="ugv_companio_head">
+    <visual>
+      <geometry>
+        <box size=".5 .5 .5"/>
+      </geometry>
+      <origin xyz="0 0 -0.125" rpy="0 0 0"/>
+      <material name="white"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size=".5 .5 .5"/>
+      </geometry>
+      <origin xyz="0 0 -0.125" rpy="0 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="40" />
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>    
+  </link> -->
+
+
+</robot>

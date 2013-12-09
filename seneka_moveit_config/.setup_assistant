@@ -1,0 +1,8 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: seneka_ugv_description
+    relative_path: urdf/ugv_robot.urdf.xacro
+  SRDF:
+    relative_path: config/seneka_ugv.srdf
+  CONFIG:
+    generated_timestamp: 1385991126
