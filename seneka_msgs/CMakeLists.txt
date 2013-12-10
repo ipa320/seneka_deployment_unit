@@ -1,15 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(seneka_sensornode_detection)
+project(seneka_msgs)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-  tf
-)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -44,12 +39,12 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+##  Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  FiducialArray.msg
+  Fiducial.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -65,10 +60,10 @@ find_package(catkin REQUIRED COMPONENTS
 #   Action2.action
 # )
 
-# Generate added messages and services with any dependencies listed here
+## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  std_msgs
+  std_msgs  # Or other packages containing msgs
   seneka_msgs
 )
 
@@ -82,9 +77,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES seneka_sensornode_detection
-  CATKIN_DEPENDS roscpp rospy std_msgs tf
+  INCLUDE_DIRS msg
+  CATKIN_DEPENDS message_runtime
   DEPENDS system_lib
 )
 
@@ -94,26 +88,23 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
+include_directories(include)
 
 ## Declare a cpp library
-add_library(seneka_sensornode_detection
-  src/sensornode_detection.cpp
-)
+# add_library(seneka_msgs
+#   src/${PROJECT_NAME}/seneka_msgs.cpp
+# )
 
 ## Declare a cpp executable
-add_executable(sensornode_detection src/sensornode_detection.cpp)
+add_executable(seneka_msg_publisher test/msg_publisher.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(sensornode_detection seneka_sensornode_detection_generate_messages_cpp)
+ add_dependencies(seneka_msg_publisher seneka_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(sensornode_detection
-  ${catkin_LIBRARIES}
+ target_link_libraries(seneka_msg_publisher
+   ${catkin_LIBRARIES}
 )
 
 #############
@@ -131,7 +122,7 @@ target_link_libraries(sensornode_detection
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS seneka_sensornode_detection seneka_sensornode_detection_node
+# install(TARGETS seneka_msgs seneka_msgs_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -156,7 +147,7 @@ target_link_libraries(sensornode_detection
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_seneka_sensornode_detection.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_seneka_msgs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
