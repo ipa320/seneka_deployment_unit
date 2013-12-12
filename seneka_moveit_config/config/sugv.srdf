@@ -88,7 +88,7 @@
         <joint name="wrist_3_joint" value="0" />
     </group_state> -->
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
-	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="ugv_companio_body" />
+	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
 
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
      <disable_collisions link1="left_arm_base_link" link2="left_arm_forearm_link" reason="Never" />
@@ -102,7 +102,7 @@
     <disable_collisions link1="left_arm_base_link" link2="right_arm_upper_arm_link" reason="Never" />
     <disable_collisions link1="left_arm_base_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="left_arm_base_link" link2="right_arm_upper_shoulder_link" reason="Never" />
-    <disable_collisions link1="left_arm_base_link" link2="ugv_companio_body" reason="Adjacent" />
+    <disable_collisions link1="left_arm_base_link" link2="quanjo_body" reason="Adjacent" />
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_forearm_middle_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_hook_link" reason="Never" />
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_shoulder_link" reason="Never" />
@@ -132,7 +132,7 @@
     <disable_collisions link1="left_arm_shoulder_link" link2="right_arm_upper_arm_link" reason="Never" />
     <disable_collisions link1="left_arm_shoulder_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="left_arm_shoulder_link" link2="right_arm_upper_shoulder_link" reason="Never" />
-    <disable_collisions link1="left_arm_shoulder_link" link2="ugv_companio_body" reason="Never" />
+    <disable_collisions link1="left_arm_shoulder_link" link2="quanjo_body" reason="Never" />
     <disable_collisions link1="left_arm_upper_arm_link" link2="left_arm_upper_arm_middle_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_upper_arm_link" link2="left_arm_upper_shoulder_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_upper_arm_link" link2="right_arm_base_link" reason="Never" />
@@ -142,12 +142,12 @@
     <disable_collisions link1="left_arm_upper_arm_middle_link" link2="right_arm_base_link" reason="Never" />
     <disable_collisions link1="left_arm_upper_arm_middle_link" link2="right_arm_shoulder_link" reason="Never" />
     <disable_collisions link1="left_arm_upper_arm_middle_link" link2="right_arm_upper_shoulder_link" reason="Never" />
-    <disable_collisions link1="left_arm_upper_arm_middle_link" link2="ugv_companio_body" reason="Never" />
+    <disable_collisions link1="left_arm_upper_arm_middle_link" link2="quanjo_body" reason="Never" />
     <disable_collisions link1="left_arm_upper_shoulder_link" link2="right_arm_base_link" reason="Never" />
     <disable_collisions link1="left_arm_upper_shoulder_link" link2="right_arm_shoulder_link" reason="Never" />
     <disable_collisions link1="left_arm_upper_shoulder_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="left_arm_upper_shoulder_link" link2="right_arm_upper_shoulder_link" reason="Never" />
-    <disable_collisions link1="left_arm_upper_shoulder_link" link2="ugv_companio_body" reason="Never" />
+    <disable_collisions link1="left_arm_upper_shoulder_link" link2="quanjo_body" reason="Never" />
     <disable_collisions link1="left_arm_wrist_1_link" link2="left_arm_wrist_2_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_wrist_1_link" link2="left_arm_wrist_3_link" reason="Never" />
     <disable_collisions link1="left_arm_wrist_2_link" link2="left_arm_wrist_3_link" reason="Adjacent" />
@@ -157,7 +157,7 @@
     <disable_collisions link1="right_arm_base_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="right_arm_base_link" link2="right_arm_upper_shoulder_link" reason="Never" />
     <disable_collisions link1="right_arm_base_link" link2="right_arm_wrist_2_link" reason="Never" />
-    <disable_collisions link1="right_arm_base_link" link2="ugv_companio_body" reason="Adjacent" />
+    <disable_collisions link1="right_arm_base_link" link2="quanjo_body" reason="Adjacent" />
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_forearm_middle_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_hook_link" reason="Never" />
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_shoulder_link" reason="Never" />
@@ -179,13 +179,13 @@
     <disable_collisions link1="right_arm_shoulder_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="right_arm_shoulder_link" link2="right_arm_upper_shoulder_link" reason="Never" />
     <disable_collisions link1="right_arm_shoulder_link" link2="right_arm_wrist_2_link" reason="Never" />
-    <disable_collisions link1="right_arm_shoulder_link" link2="ugv_companio_body" reason="Never" />
+    <disable_collisions link1="right_arm_shoulder_link" link2="quanjo_body" reason="Never" />
     <disable_collisions link1="right_arm_upper_arm_link" link2="right_arm_upper_arm_middle_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_upper_arm_link" link2="right_arm_upper_shoulder_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_upper_arm_middle_link" link2="right_arm_upper_shoulder_link" reason="Never" />
     <disable_collisions link1="right_arm_upper_arm_middle_link" link2="right_arm_wrist_1_link" reason="Never" />
-    <disable_collisions link1="right_arm_upper_arm_middle_link" link2="ugv_companio_body" reason="Never" />
-    <disable_collisions link1="right_arm_upper_shoulder_link" link2="ugv_companio_body" reason="Never" />
+    <disable_collisions link1="right_arm_upper_arm_middle_link" link2="quanjo_body" reason="Never" />
+    <disable_collisions link1="right_arm_upper_shoulder_link" link2="quanjo_body" reason="Never" />
     <disable_collisions link1="right_arm_wrist_1_link" link2="right_arm_wrist_2_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_wrist_1_link" link2="right_arm_wrist_3_link" reason="Never" />
     <disable_collisions link1="right_arm_wrist_2_link" link2="right_arm_wrist_3_link" reason="Adjacent" />
