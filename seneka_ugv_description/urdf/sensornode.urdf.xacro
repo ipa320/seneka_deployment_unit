@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       xmlns:xacro="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       name="sensornode">
+
+  <!-- common stuff -->
+  <!--  <include filename="$(find seneka_ugv_description)/urdf/sensornode.gazebo.xacro" /> -->
+
+  <link name="sensornode_body">
+    <visual>
+      <geometry>
+        <box size="0.75 0.25 0.75"/>
+      </geometry>
+      <origin rpy="2 2 2" xyz="0 0 0"/>
+      <material name="black"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size="0.75 0.75 0.75"/>
+      </geometry>
+      <origin rpy="2 2 2" xyz="0 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="60" />
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+
+</robot>
+

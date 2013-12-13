@@ -1,0 +1,104 @@
+left_arm_controller:
+  type: robot_mechanism_controllers/JointTrajectoryActionController
+  joints:
+    - left_arm_shoulder_pan_joint
+    - left_arm_shoulder_lift_joint
+    - left_arm_elbow_joint
+    - left_arm_wrist_1_joint
+    - left_arm_wrist_2_joint
+    - left_arm_wrist_3_joint
+  gains:
+    left_arm_shoulder_pan_joint:
+      p: 2000.0
+      d: 0.0
+    left_arm_shoulder_lift_joint:
+      p: 2000.0
+      d: 0.0
+    left_arm_elbow_joint:
+      p: 2000.0
+      d: 0.0
+    left_arm_wrist_1_joint:
+      p: 2020.0
+      d: 0.0
+    left_arm_wrist_2_joint:
+      p: 2000.0
+      d: 0.0
+    left_arm_wrist_3_joint:
+      p: 2050.0
+      d: 0.0
+
+  left_arm_joint_trajectory_action_node:
+    joints:
+        - left_arm_shoulder_pan_joint
+        - left_arm_shoulder_lift_joint
+        - left_arm_elbow_joint
+        - left_arm_wrist_1_joint
+        - left_arm_wrist_2_joint
+        - left_arm_wrist_3_joint
+    constraints:
+      goal_time: 0.6
+      left_arm_shoulder_pan_joint:
+        goal: 0.05
+      left_arm_shoulder_lift_joint:
+        goal: 0.05
+      left_arm_elbow_joint:
+        goal: 0.05
+      left_arm_wrist_1_joint:
+        goal: 0.05
+      left_arm_wrist_2_joint:
+        goal: 0.05
+      left_arm_wrist_3_joint:
+        goal: 0.05
+
+right_arm_controller:
+  type: robot_mechanism_controllers/JointTrajectoryActionController
+  joints:
+    - right_arm_shoulder_pan_joint
+    - right_arm_shoulder_lift_joint
+    - right_arm_elbow_joint
+    - right_arm_wrist_1_joint
+    - right_arm_wrist_2_joint
+    - right_arm_wrist_3_joint
+  gains:
+    right_arm_shoulder_pan_joint:
+      p: 2000.0
+      d: 0.0
+    right_arm_shoulder_lift_joint:
+      p: 2000.0
+      d: 0.0
+    right_arm_elbow_joint:
+      p: 2000.0
+      d: 0.0
+    right_arm_wrist_1_joint:
+      p: 2020.0
+      d: 0.0
+    right_arm_wrist_2_joint:
+      p: 2000.0
+      d: 0.0
+    right_arm_wrist_3_joint:
+      p: 2050.0
+      d: 0.0
+
+  right_arm_joint_trajectory_action_node:
+    joints:
+        - right_arm_shoulder_pan_joint
+        - right_arm_shoulder_lift_joint
+        - right_arm_elbow_joint
+        - right_arm_wrist_1_joint
+        - right_arm_wrist_2_joint
+        - right_arm_wrist_3_joint
+    constraints:
+      goal_time: 0.6
+      right_arm_shoulder_pan_joint:
+        goal: 0.05
+      right_arm_shoulder_lift_joint:
+        goal: 0.05
+      right_arm_elbow_joint:
+        goal: 0.05
+      right_arm_wrist_1_joint:
+        goal: 0.05
+      right_arm_wrist_2_joint:
+        goal: 0.05
+      right_arm_wrist_3_joint:
+        goal: 0.05
+

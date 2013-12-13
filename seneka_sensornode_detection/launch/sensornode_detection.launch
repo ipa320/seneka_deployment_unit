@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find cob_fiducials)/ros/launch/fiducials.launch"/>
+
+  <include file="$(find freenect_launch)/launch/freenect.launch"/>
+  
+  <node pkg="seneka_sensornode_detection" ns="sensornode_detection" type="sensornode_detection" name="sensornode_detection" output="screen">	
+  
+  </node>
+
+
+</launch>
