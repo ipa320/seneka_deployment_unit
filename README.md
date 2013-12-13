@@ -16,8 +16,7 @@ Functionality packages:
 
 Description packages:
 -----------------------
-* seneka_ugv_description -> Quanjo description files and gazebo launch
-*                        -> Sensornode blueprint
+* seneka_ugv_description -> Quanjo description files and gazebo launch + sensornode blueprinbt
 * seneka_moveit_config -> moveit config for Quanjo
 * seneka_msgs -> msgs to send fiducial Array from cob_fiducials to seneka_sensornode_detection
 * universal_robot -> configured universal robot stack for seneka project
@@ -40,6 +39,7 @@ Getting started with Quanjo in gazebo:
 * roslaunch seneka_moveit_config move_group.launch
 * roslaunch seneka_moveit_config moveit_rviz.launch
 * rosrun seneka_sensornode_detection sensornode_detection (places the sensornode to a defined position)
+
 ----------------------------------------------------------------------
 
 Getting started with detection of sensornode:
