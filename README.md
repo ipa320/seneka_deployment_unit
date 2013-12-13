@@ -16,7 +16,7 @@ Functionality packages:
 
 Description packages:
 -----------------------
-* seneka_ugv_description -> Quanjo description files and gazebo launch + sensornode blueprinbt
+* seneka_ugv_description -> Quanjo description files and gazebo launch + sensornode xacro blueprint
 * seneka_moveit_config -> moveit config for Quanjo
 * seneka_msgs -> msgs to send fiducial Array from cob_fiducials to seneka_sensornode_detection
 * universal_robot -> configured universal robot stack for seneka project
@@ -29,7 +29,7 @@ Install:
 * git clone https://github.com/Equanox/cob_object_perception/tree/seneka_fiducials (rosbuild package)
 * git clone https://github.com/Equanox/seneka_deployment_unit (catkin package)
 
-* HINT: The docu of the cob_fiducial node can be found here http://wiki.ros.org/cob_fiducials
+* HINT: The documentation of the cob_fiducial node can be found here http://wiki.ros.org/cob_fiducials
 
 ----------------------------------------------------------------------
 
