@@ -4,6 +4,8 @@ SENEKA_DEPLOYMENT_UNIT
 This repository contains source code for the deployment units developed at Fraunhofer IPA in the SENEKA project.
 The package is made to work with ros groovy and gazebo version 1.5
 
+The seneka project uses the cob_fiducial node for marker detection. A documentation of cob_fiducials can be found here http://wiki.ros.org/cob_fiducials
+
 ----------------------------------------------------------------------
 
 PACKAGES:
@@ -28,8 +30,6 @@ Install:
 * git clone https://github.com/ipa320/cob_perception_common (rosbuild package)
 * git clone https://github.com/Equanox/cob_object_perception/tree/seneka_fiducials (rosbuild package)
 * git clone https://github.com/Equanox/seneka_deployment_unit (catkin package)
-
-* HINT: The documentation of the cob_fiducial node can be found here http://wiki.ros.org/cob_fiducials
 
 ----------------------------------------------------------------------
 
