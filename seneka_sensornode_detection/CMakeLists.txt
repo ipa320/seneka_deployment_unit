@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
 )
+find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -97,11 +98,13 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  include
 )
 
 ## Declare a cpp library
 add_library(seneka_sensornode_detection
   src/sensornode_detection.cpp
+  src/SerializeIO.cpp
 )
 
 ## Declare a cpp executable
@@ -115,6 +118,8 @@ add_dependencies(sensornode_detection seneka_sensornode_detection_generate_messa
 target_link_libraries(sensornode_detection
   ${catkin_LIBRARIES}
 )
+target_link_libraries(sensornode_detection ${OpenCV_LIBS})
+target_link_libraries(sensornode_detection seneka_sensornode_detection)
 
 #############
 ## Install ##

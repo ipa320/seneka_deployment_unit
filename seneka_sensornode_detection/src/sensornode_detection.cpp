@@ -17,23 +17,66 @@
 #include <ros/ros.h>
 #include "gazebo_msgs/SetModelState.h"
 
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 //#include <cob_object_detection_msgs/DetectObjects.h>
 
 #include <seneka_msgs/FiducialArray.h>
 #include <seneka_msgs/Fiducial.h>
 
-void setGazeboPose(ros::NodeHandle node);
+#include <tf/transform_broadcaster.h>
 
-void setGazeboPose(ros::NodeHandle node)
+#include <SerializeIO.h>
+
+struct pose{
+  float x;
+  float y;
+  float z;
+};
+
+struct quaternion{
+  float w;
+  float x;
+  float y;
+  float z;
+};
+
+struct point4d{
+	double x;
+	double y;
+	double z;
+	double e;
+	bool detected;
+};
+
+struct fiducialmarker{
+	unsigned int id;
+	cv::Point3d trans;
+	cv::Point3d rot;
+};
+
+
+void setGazeboPose(ros::NodeHandle node);
+bool loadParameters(std::vector<fiducialmarker>*);
+
+//---------------------------<coordinate transformations>---------------------------------------
+cv::Mat eulerToMatrix(double rot1, double rot2, double rot3);
+void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2,std::vector<double>* q);
+std::vector<double> FrameToVec7(const cv::Mat frame);
+//---------------------------</coordinate transformations>---------------------------------------
+
+std::vector<fiducialmarker> fiducialmarkers;
+
+void setGazeboPose(pose origin, quaternion rotation)
 {
         geometry_msgs::Pose start_pose;
-        start_pose.position.x = 2.0;
-        start_pose.position.y = 2.0;
-        start_pose.position.z = 0.6;
-        start_pose.orientation.x = 0.0;
-        start_pose.orientation.y = 0.0;
-        start_pose.orientation.z = 0.0;
-        start_pose.orientation.w = 0.0;
+        start_pose.position.x = origin.x + 10;
+        start_pose.position.y = origin.y + 10;
+        start_pose.position.z = origin.z ;
+        start_pose.orientation.w = rotation.w;
+        start_pose.orientation.x = rotation.x;
+        start_pose.orientation.y = rotation.y;
+        start_pose.orientation.z = rotation.z;
 
         geometry_msgs::Twist start_twist;
         start_twist.linear.x = 0.0;
@@ -49,6 +92,8 @@ void setGazeboPose(ros::NodeHandle node)
         modelstate.pose = start_pose;
         modelstate.twist = start_twist;
 
+	
+	ros::NodeHandle node;
 	ros::ServiceClient client = node.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
         gazebo_msgs::SetModelState setmodelstate;
         setmodelstate.request.model_state = modelstate;
@@ -63,6 +108,14 @@ void setGazeboPose(ros::NodeHandle node)
         }
 }
 
+void poseCallback(const seneka_msgs::FiducialArray::ConstPtr& msg){
+  static tf::TransformBroadcaster br;
+  tf::Transform transform;
+  transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+  transform.setRotation( tf::Quaternion(0.0, 0.0, 0.0) );
+  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "child"));
+}
+
 void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
 {
   //TODO: Give the callback another name
@@ -72,13 +125,294 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
   //      then tf can be used to derive the sensornode pose in reference to quanjo.
   //      But the first approach is to  implement it  here!
   ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", msg->container.size());
+
+
+  pose origin;
+  quaternion rotation;
+
+2  //Right now only the first detected marker is used
+  //TODO: Make use of all detected markers
+  if(msg->container.size() > 0){
+    
+    origin.x = msg->container[0].origin[0];
+    origin.y = msg->container[0].origin[1];
+    origin.z = msg->container[0].origin[2];
+    
+    rotation.w = msg->container[0].rotation[0];
+    rotation.x = msg->container[0].rotation[1];
+    rotation.y = msg->container[0].rotation[2];
+    rotation.z = msg->container[0].rotation[3];
+    
+    setGazeboPose(origin,rotation);
+  
+
+    //-> Transform each marker pose to object pose
+    for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
+      //for loop j to iterate through container
+      if(msg->container[0].fiducial_id == fiducialmarkers[i].id){
+      
+	//all transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
+	//m = marker, sn = sensornode
+	cv::Mat tm_m_sn = eulerToMatrix(fiducialmarkers[i].rot.x,fiducialmarkers[i].rot.y,fiducialmarkers[i].rot.z);
+	std::vector<double> q_sn_m = FrameToVec7(tm_m_sn.t());
+      
+      
+      
+      }
+    }
+  }
+  
+  //-> determine mean of object pose
+  //-> postponed ;)
+
+  
+  
+  //-> Transform Object pose from camera system to quanjo system
+  
+  //-> update object(sensornode) pose
+
+
 }
 
+bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers ){
+
+	SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/fiducial_poses.def",'i');
+
+	fiducialmarker fiducial1,fiducial2,fiducial3,fiducial4,fiducial5, fiducial6;
+
+	if(!ser->readVariable("fiducial1_ID",&(fiducial1.id))) return false;
+	if(!ser->readVariable("fiducial1_POSX",&(fiducial1.trans.x))) return false;
+	if(!ser->readVariable("fiducial1_POSY",&(fiducial1.trans.y))) return false;
+	if(!ser->readVariable("fiducial1_POSZ",&(fiducial1.trans.z))) return false;
+	if(!ser->readVariable("fiducial1_ROT1",&(fiducial1.rot.x))) return false;
+	if(!ser->readVariable("fiducial1_ROT2",&(fiducial1.rot.y))) return false;
+	if(!ser->readVariable("fiducial1_ROT3",&(fiducial1.rot.z))) return false;
+
+	if(!ser->readVariable("fiducial2_ID",&(fiducial2.id))) return false;
+	if(!ser->readVariable("fiducial2_POSX",&(fiducial2.trans.x))) return false;
+	if(!ser->readVariable("fiducial2_POSY",&(fiducial2.trans.y))) return false;
+	if(!ser->readVariable("fiducial2_POSZ",&(fiducial2.trans.z))) return false;
+	if(!ser->readVariable("fiducial2_ROT1",&(fiducial2.rot.x))) return false;
+	if(!ser->readVariable("fiducial2_ROT2",&(fiducial2.rot.y))) return false;
+	if(!ser->readVariable("fiducial2_ROT3",&(fiducial2.rot.z))) return false;
+
+	if(!ser->readVariable("fiducial3_ID",&(fiducial3.id))) return false;
+	if(!ser->readVariable("fiducial3_POSX",&(fiducial3.trans.x))) return false;
+	if(!ser->readVariable("fiducial3_POSY",&(fiducial3.trans.y))) return false;
+	if(!ser->readVariable("fiducial3_POSZ",&(fiducial3.trans.z))) return false;
+	if(!ser->readVariable("fiducial3_ROT1",&(fiducial3.rot.x))) return false;
+	if(!ser->readVariable("fiducial3_ROT2",&(fiducial3.rot.y))) return false;
+	if(!ser->readVariable("fiducial3_ROT3",&(fiducial3.rot.z))) return false;
+
+	if(!ser->readVariable("fiducial4_ID",&(fiducial4.id))) return false;
+	if(!ser->readVariable("fiducial4_POSX",&(fiducial4.trans.x))) return false;
+	if(!ser->readVariable("fiducial4_POSY",&(fiducial4.trans.y))) return false;
+	if(!ser->readVariable("fiducial4_POSZ",&(fiducial4.trans.z))) return false;
+	if(!ser->readVariable("fiducial4_ROT1",&(fiducial4.rot.x))) return false;
+	if(!ser->readVariable("fiducial4_ROT2",&(fiducial4.rot.y))) return false;
+	if(!ser->readVariable("fiducial4_ROT3",&(fiducial4.rot.z))) return false;
+
+	if(!ser->readVariable("fiducial5_ID",&(fiducial5.id))) return false;
+	if(!ser->readVariable("fiducial5_POSX",&(fiducial5.trans.x))) return false;
+	if(!ser->readVariable("fiducial5_POSY",&(fiducial5.trans.y))) return false;
+	if(!ser->readVariable("fiducial5_POSZ",&(fiducial5.trans.z))) return false;
+	if(!ser->readVariable("fiducial5_ROT1",&(fiducial5.rot.x))) return false;
+	if(!ser->readVariable("fiducial5_ROT2",&(fiducial5.rot.y))) return false;
+	if(!ser->readVariable("fiducial5_ROT3",&(fiducial5.rot.z))) return false;
+
+	if(!ser->readVariable("fiducial6_ID",&(fiducial6.id))) return false;
+	if(!ser->readVariable("fiducial6_POSX",&(fiducial6.trans.x))) return false;
+	if(!ser->readVariable("fiducial6_POSY",&(fiducial6.trans.y))) return false;
+	if(!ser->readVariable("fiducial6_POSZ",&(fiducial6.trans.z))) return false;
+	if(!ser->readVariable("fiducial6_ROT1",&(fiducial6.rot.x))) return false;
+	if(!ser->readVariable("fiducial6_ROT2",&(fiducial6.rot.y))) return false;
+	if(!ser->readVariable("fiducial6_ROT3",&(fiducial6.rot.z))) return false;
+
+	afiducialmarkers->push_back(fiducial1);
+	afiducialmarkers->push_back(fiducial2);
+	afiducialmarkers->push_back(fiducial3);
+	afiducialmarkers->push_back(fiducial4);
+	afiducialmarkers->push_back(fiducial5);
+	afiducialmarkers->push_back(fiducial6);
+
+	ser->close();
+	delete ser;
+	return true;
+}
+
+
+//------------------------Coordinate Transformations----------------------------------------------------------------------------------
+
+
+//XYZ Euler System to Matrix representation
+cv::Mat eulerToMatrix(double rot1, double rot2, double rot3) {
+  
+	cv::Mat m(3,3,CV_64FC1);
+	
+	cv::Mat X_rot(3,3,CV_64F);
+	cv::Mat Y_rot(3,3,CV_64F);
+	cv::Mat Z_rot(3,3,CV_64F);
+	
+	double alpha =  rot1;
+	double beta  =  rot2;
+	double gamma =  rot3;
+	
+	X_rot.at<double>(0,0) =  1.0;
+	X_rot.at<double>(0,1) =  0.0;
+	X_rot.at<double>(0,2) =  0.0;
+	X_rot.at<double>(1,0) =  0.0;
+	X_rot.at<double>(1,1) =  cos(alpha);
+	X_rot.at<double>(1,2) =  -sin(alpha);
+	X_rot.at<double>(2,0) =  0.0;
+	X_rot.at<double>(2,1) =  sin(alpha);
+	X_rot.at<double>(2,2) =  cos(alpha);
+	
+	Y_rot.at<double>(0,0) =  cos(beta);
+	Y_rot.at<double>(0,1) =  0.0;
+	Y_rot.at<double>(0,2) =  sin(beta);
+	Y_rot.at<double>(1,0) =  0.0;
+	Y_rot.at<double>(1,1) =  1.0;
+	Y_rot.at<double>(1,2) =  0.0;
+	Y_rot.at<double>(2,0) =  -sin(beta);
+	Y_rot.at<double>(2,1) =  0.0;
+	Y_rot.at<double>(2,2) =  cos(beta);
+	
+	Z_rot.at<double>(0,0) =  cos(gamma);
+	Z_rot.at<double>(0,1) =  -sin(gamma);
+	Z_rot.at<double>(0,2) =  0.0;
+	Z_rot.at<double>(1,0) =  sin(gamma);
+	Z_rot.at<double>(1,1) =  cos(gamma);
+	Z_rot.at<double>(1,2) =  0.0;
+	Z_rot.at<double>(2,0) =  0.0;
+	Z_rot.at<double>(2,1) =  0.0;
+	Z_rot.at<double>(2,2) =  1.0;
+	
+	m = Z_rot*Y_rot*X_rot;
+	
+	return m;
+}
+
+// Function copied from cob_vision_ipa_utils/MathUtils.h to avoid dependency
+inline float SIGN(float x)
+{
+  return (x >= 0.0f) ? +1.0f : -1.0f;
+}
+
+// Function copied from cob_vision_ipa_utils/MathUtils.h to avoid dependency
+std::vector<double> FrameToVec7(const cv::Mat frame)
+{
+        // [0]-[2]: translation xyz
+        // [3]-[6]: quaternion wxyz
+        std::vector<double> pose(7, 0.0);
+
+        double r11 = frame.at<double>(0,0);
+        double r12 = frame.at<double>(0,1);
+        double r13 = frame.at<double>(0,2);
+        double r21 = frame.at<double>(1,0);
+        double r22 = frame.at<double>(1,1);
+        double r23 = frame.at<double>(1,2);
+        double r31 = frame.at<double>(2,0);
+        double r32 = frame.at<double>(2,1);
+        double r33 = frame.at<double>(2,2);
+
+        double qw = ( r11 + r22 + r33 + 1.0) / 4.0;
+        double qx = ( r11 - r22 - r33 + 1.0) / 4.0;
+        double qy = (-r11 + r22 - r33 + 1.0) / 4.0;
+        double qz = (-r11 - r22 + r33 + 1.0) / 4.0;
+        if(qw < 0.0f) qw = 0.0;
+        if(qx < 0.0f) qx = 0.0;
+        if(qy < 0.0f) qy = 0.0;
+        if(qz < 0.0f) qz = 0.0;
+        qw = std::sqrt(qw);
+        qx = std::sqrt(qx);
+        qy = std::sqrt(qy);
+        qz = std::sqrt(qz);
+        if(qw >= qx && qw >= qy && qw >= qz)
+        {
+            qw *= +1.0;
+            qx *= SIGN(r32 - r23);
+            qy *= SIGN(r13 - r31);
+            qz *= SIGN(r21 - r12);
+        }
+        else if(qx >= qw && qx >= qy && qx >= qz)
+        {
+            qw *= SIGN(r32 - r23);
+            qx *= +1.0;
+            qy *= SIGN(r21 + r12);
+            qz *= SIGN(r13 + r31);
+        }
+        else if(qy >= qw && qy >= qx && qy >= qz)
+        {
+            qw *= SIGN(r13 - r31);
+            qx *= SIGN(r21 + r12);
+            qy *= +1.0;
+            qz *= SIGN(r32 + r23);
+        }
+        else if(qz >= qw && qz >= qx && qz >= qy)
+        {
+            qw *= SIGN(r21 - r12);
+            qx *= SIGN(r31 + r13);
+            qy *= SIGN(r32 + r23);
+            qz *= +1.0;
+        }
+        else
+        {
+            printf("coding error\n");
+        }
+        double r = std::sqrt(qw*qw + qx*qx + qy*qy + qz*qz);
+        qw /= r;
+        qx /= r;
+        qy /= r;
+        qz /= r;
+
+        pose[3] = qw;
+        pose[4] = qx;
+        pose[5] = qy;
+        pose[6] = qz;
+
+        // Translation
+        pose[0] = frame.at<double>(0,3);
+        pose[1] = frame.at<double>(1,3);
+        pose[2] = frame.at<double>(2,3);
+        return pose;
+}
+
+
+/** Quaternion multiplication
+ *
+ */
+void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2, std::vector<double>* q)
+{
+    // First quaternion q1 (x1 y1 z1 r1)
+    double x1=q1[0];
+    double y1=q1[1];
+    double z1=q1[2];
+    double r1=q1[3];
+
+    // Second quaternion q2 (x2 y2 z2 r2)
+    double x2=q2[0];
+    double y2=q2[1];
+    double z2=q2[2];
+    double r2=q2[3];
+
+
+    q->push_back(x1*r2 + r1*x2 + y1*z2 - z1*y2);   // x component
+    q->push_back(r1*y2 - x1*z2 + y1*r2 + z1*x2);   // y component
+    q->push_back(r1*z2 + x1*y2 - y1*x2 + z1*r2);   // z component
+    q->push_back(r1*r2 - x1*x2 - y1*y2 - z1*z2);   // r component
+}
+
+//-----------------------------------main----------------------------------------------------------------------------
 int main( int argc, char** argv )
 {
   ros::init(argc, argv, "sensornode_detection");
   ros::NodeHandle node;
   ros::Subscriber sub = node.subscribe("/fiducials/fiducial_custom_array", 1000, chatterCallback);
+  ros::Subscriber sub2 = node.subscribe("/child/pose", 10, poseCallback);
+  // if(!loadParameters(&fiducialmarkers)){
+  //  ROS_ERROR("Failed to load Fiducial parameters");
+  //  return 0;
+  //}
   
   //It is not possible to use this subscriber/callback right now cause cob_object_detection_msgs is still a rosbuild package
   //Maybe ask Richard/Jan if it is possible to make it a catkin package in the offical repo.
@@ -87,7 +421,9 @@ int main( int argc, char** argv )
   //CMD: rostopic hz /fiducials/detect_fiducials
   //ros::Subscriber detect_fid = node.subscribe("/fiducials/detect_fiducials", 1, dummyCallback);
   
-  setGazeboPose(node);
+  //setGazeboPose(node);
+
+  ROS_INFO("Alive");
 
   ros::spin();
   return 0;
