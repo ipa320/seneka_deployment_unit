@@ -25,8 +25,15 @@
 #include <seneka_msgs/Fiducial.h>
 
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 #include <SerializeIO.h>
+
+#include <boost/thread/mutex.hpp>
+#include <boost/timer.hpp>
+
+const double PI = 3.14159265359;
+
 
 struct pose{
   float x;
@@ -55,6 +62,7 @@ struct fiducialmarker{
 	cv::Point3d rot;
 };
 
+bool publish_to_gazebo = true;
 
 void setGazeboPose(ros::NodeHandle node);
 bool loadParameters(std::vector<fiducialmarker>*);
@@ -67,12 +75,16 @@ std::vector<double> FrameToVec7(const cv::Mat frame);
 
 std::vector<fiducialmarker> fiducialmarkers;
 
+boost::mutex tf_lock_;
+ros::Timer tf_pub_timer_;
+tf::StampedTransform marker_tf_;
+
 void setGazeboPose(pose origin, quaternion rotation)
 {
         geometry_msgs::Pose start_pose;
-        start_pose.position.x = origin.x + 10;
-        start_pose.position.y = origin.y + 10;
-        start_pose.position.z = origin.z ;
+        start_pose.position.x = origin.x;
+        start_pose.position.y = origin.y;
+        start_pose.position.z = origin.z;
         start_pose.orientation.w = rotation.w;
         start_pose.orientation.x = rotation.x;
         start_pose.orientation.y = rotation.y;
@@ -88,7 +100,7 @@ void setGazeboPose(pose origin, quaternion rotation)
 
         gazebo_msgs::ModelState modelstate;
         modelstate.model_name = (std::string) "sensornode";
-        modelstate.reference_frame = (std::string) "world";
+        modelstate.reference_frame = (std::string) "quanjo_body";
         modelstate.pose = start_pose;
         modelstate.twist = start_twist;
 
@@ -108,12 +120,16 @@ void setGazeboPose(pose origin, quaternion rotation)
         }
 }
 
-void poseCallback(const seneka_msgs::FiducialArray::ConstPtr& msg){
+//------------------------------<Callbacks>----------------------------------------------------------
+void timerCallback(const ros::TimerEvent& event)
+{
+  tf_lock_.lock();
   static tf::TransformBroadcaster br;
   tf::Transform transform;
-  transform.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-  transform.setRotation( tf::Quaternion(0.0, 0.0, 0.0) );
-  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "child"));
+  transform.setOrigin( tf::Vector3(1.1, 0.0, 0.6) );
+  transform.setRotation( tf::createQuaternionFromRPY(-PI/2,0,-PI/2) );
+  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "quanjo_body", "camera"));
+  tf_lock_.unlock();
 }
 
 void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
@@ -126,11 +142,10 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
   //      But the first approach is to  implement it  here!
   ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", msg->container.size());
 
-
   pose origin;
   quaternion rotation;
 
-2  //Right now only the first detected marker is used
+  //Right now only the first detected marker is used
   //TODO: Make use of all detected markers
   if(msg->container.size() > 0){
     
@@ -142,43 +157,88 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
     rotation.x = msg->container[0].rotation[1];
     rotation.y = msg->container[0].rotation[2];
     rotation.z = msg->container[0].rotation[3];
+
+    static tf::TransformBroadcaster br2;
+    tf::Transform transform2;
+    transform2.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
+    transform2.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
+    br2.sendTransform(tf::StampedTransform(transform2,  ros::Time::now(), "camera", "marker"));
     
-    setGazeboPose(origin,rotation);
-  
+    std::cout << fiducialmarkers.size() << std::endl;
 
     //-> Transform each marker pose to object pose
     for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
       //for loop j to iterate through container
       if(msg->container[0].fiducial_id == fiducialmarkers[i].id){
-      
+
 	//all transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
+        //tm = transformation matrix, q = quaternion7
 	//m = marker, sn = sensornode
 	cv::Mat tm_m_sn = eulerToMatrix(fiducialmarkers[i].rot.x,fiducialmarkers[i].rot.y,fiducialmarkers[i].rot.z);
-	std::vector<double> q_sn_m = FrameToVec7(tm_m_sn.t());
-      
-      
-      
+        cv::Mat tmp = cv::Mat(tm_m_sn.t());//transposed
+	tm_m_sn = cv::Mat(3,4, CV_64FC1);
+	for (int k=0; k<3; k++)
+                    for (int l=0; l<3; l++)
+                        tm_m_sn.at<double>(k,l) = tmp.at<double>(k,l);
+	tm_m_sn.at<double>(0,3) = fiducialmarkers[i].trans.x;
+	tm_m_sn.at<double>(1,3) = fiducialmarkers[i].trans.y;
+	tm_m_sn.at<double>(2,3) = fiducialmarkers[i].trans.z;
+
+	std::vector<double> q_sn_m = FrameToVec7(tm_m_sn);	
+	  
+	static tf::TransformBroadcaster br3;
+	tf::Transform transform3;
+	transform3.setOrigin( tf::Vector3(q_sn_m[0], q_sn_m[1], q_sn_m[2]));
+	transform3.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
+	br3.sendTransform(tf::StampedTransform(transform3,  ros::Time::now(), "marker", "sensornode"));
+
+	if(publish_to_gazebo){
+
+	  tf::TransformListener listener;
+	  tf::StampedTransform transform;
+	  
+	  try{
+	    listener.lookupTransform("quanjo_body", "sensornode",
+                               ros::Time(0), transform);
+	  }
+	  catch (tf::TransformException ex){
+	    ROS_ERROR("%s",ex.what());
+	  }
+
+	   pose origin2;
+	   quaternion rotation2;
+	  
+	   origin2.x = transform.getOrigin().x();
+	   origin2.y = transform.getOrigin().y();
+	   origin2.z = transform.getOrigin().z();
+	   
+	   rotation2.w = q_sn_m[3];
+	   rotation2.x = q_sn_m[4];
+	   rotation2.y = q_sn_m[5];
+	   rotation2.z = q_sn_m[6];
+
+	   //TODO send the correct trafo... from quanjo body (or gazebo_world?)!!!
+	   setGazeboPose(origin,rotation);
+	}      
       }
     }
   }
   
   //-> determine mean of object pose
-  //-> postponed ;)
-
-  
-  
-  //-> Transform Object pose from camera system to quanjo system
+  //-> postponed ;)   
   
   //-> update object(sensornode) pose
-
-
 }
+//------------------------------</Callbacks>----------------------------------------------------------
 
+//Load Parameters positions of markers in reference to the sensorsonde using my SerializeIO class + scaling the values.
 bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers ){
 
 	SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/fiducial_poses.def",'i');
 
 	fiducialmarker fiducial1,fiducial2,fiducial3,fiducial4,fiducial5, fiducial6;
+
+	double scale = 0.001;//from mm to m
 
 	if(!ser->readVariable("fiducial1_ID",&(fiducial1.id))) return false;
 	if(!ser->readVariable("fiducial1_POSX",&(fiducial1.trans.x))) return false;
@@ -234,6 +294,14 @@ bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers ){
 	afiducialmarkers->push_back(fiducial4);
 	afiducialmarkers->push_back(fiducial5);
 	afiducialmarkers->push_back(fiducial6);
+
+	//Scale to m
+	for(unsigned int i = 0; i < afiducialmarkers->size(); i++){
+	  
+	  (*afiducialmarkers)[i].trans.x =  (*afiducialmarkers)[i].trans.x * scale;
+	  (*afiducialmarkers)[i].trans.y =  (*afiducialmarkers)[i].trans.y * scale;
+	  (*afiducialmarkers)[i].trans.z =  (*afiducialmarkers)[i].trans.z * scale;
+	}
 
 	ser->close();
 	delete ser;
@@ -407,23 +475,22 @@ int main( int argc, char** argv )
 {
   ros::init(argc, argv, "sensornode_detection");
   ros::NodeHandle node;
+
+  ros::Timer timer = node.createTimer(ros::Duration(1), timerCallback);
+ 
   ros::Subscriber sub = node.subscribe("/fiducials/fiducial_custom_array", 1000, chatterCallback);
-  ros::Subscriber sub2 = node.subscribe("/child/pose", 10, poseCallback);
-  // if(!loadParameters(&fiducialmarkers)){
-  //  ROS_ERROR("Failed to load Fiducial parameters");
-  //  return 0;
-  //}
+ 
+  if(!loadParameters(&fiducialmarkers)){
+    ROS_ERROR("Failed to load Fiducial parameters");
+    return 0;
+  }
   
   //It is not possible to use this subscriber/callback right now cause cob_object_detection_msgs is still a rosbuild package
   //Maybe ask Richard/Jan if it is possible to make it a catkin package in the offical repo.
   //I'm too lazy right now to write a workaround or a self created cob_object_detection_msg catkin branch.
   //The marker detection can be started in a shell when using the  command in the next line.
   //CMD: rostopic hz /fiducials/detect_fiducials
-  //ros::Subscriber detect_fid = node.subscribe("/fiducials/detect_fiducials", 1, dummyCallback);
   
-  //setGazeboPose(node);
-
-  ROS_INFO("Alive");
 
   ros::spin();
   return 0;
