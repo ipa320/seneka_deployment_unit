@@ -123,13 +123,13 @@ void setGazeboPose(pose origin, quaternion rotation)
 //------------------------------<Callbacks>----------------------------------------------------------
 void timerCallback(const ros::TimerEvent& event)
 {
-  tf_lock_.lock();
+  /*tf_lock_.lock();
   static tf::TransformBroadcaster br;
   tf::Transform transform;
   transform.setOrigin( tf::Vector3(1.1, 0.0, 0.6) );
   transform.setRotation( tf::createQuaternionFromRPY(-PI/2,0,-PI/2) );
   br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "quanjo_body", "camera"));
-  tf_lock_.unlock();
+  tf_lock_.unlock();*/
 }
 
 void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
@@ -141,6 +141,15 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
   //      then tf can be used to derive the sensornode pose in reference to quanjo.
   //      But the first approach is to  implement it  here!
   ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", msg->container.size());
+
+
+  static tf::TransformBroadcaster br;
+  tf::Transform transform;
+  transform.setOrigin( tf::Vector3(1.1, 0.0, 0.6) );
+  transform.setRotation( tf::createQuaternionFromRPY(-PI/2,0,-PI/2) );
+  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/quanjo_body", "/camera"));
+
+
 
   pose origin;
   quaternion rotation;
@@ -162,9 +171,7 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
     tf::Transform transform2;
     transform2.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
     transform2.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
-    br2.sendTransform(tf::StampedTransform(transform2,  ros::Time::now(), "camera", "marker"));
-    
-    std::cout << fiducialmarkers.size() << std::endl;
+    br2.sendTransform(tf::StampedTransform(transform2,  ros::Time::now(), "camera", "seneka_marker"));
 
     //-> Transform each marker pose to object pose
     for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
@@ -190,35 +197,42 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
 	tf::Transform transform3;
 	transform3.setOrigin( tf::Vector3(q_sn_m[0], q_sn_m[1], q_sn_m[2]));
 	transform3.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
-	br3.sendTransform(tf::StampedTransform(transform3,  ros::Time::now(), "marker", "sensornode"));
+	br3.sendTransform(tf::StampedTransform(transform3,  ros::Time::now(), "seneka_marker", "sensornode"));
+
 
 	if(publish_to_gazebo){
 
 	  tf::TransformListener listener;
 	  tf::StampedTransform transform;
-	  
-	  try{
-	    listener.lookupTransform("quanjo_body", "sensornode",
-                               ros::Time(0), transform);
-	  }
-	  catch (tf::TransformException ex){
-	    ROS_ERROR("%s",ex.what());
-	  }
 
-	   pose origin2;
-	   quaternion rotation2;
+	  //if(listener.waitForTransform("sensorsonde","seneka_marker", ros::Time(0.1), ros::Duration(1))){
+	  if(true){
+	    std::cout << "!!!!!!!!!!!!!!!!!!!!!!!! HERE !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+	    
+	    try{
+	      listener.lookupTransform("/seneka_marker","/sensornode",
+				       ros::Time(0), transform);
+	    }
+	    catch (tf::TransformException ex){
+	      ROS_ERROR("%s",ex.what());
+	    }
+	    
+
+	    pose origin2;
+	    quaternion rotation2;
 	  
-	   origin2.x = transform.getOrigin().x();
-	   origin2.y = transform.getOrigin().y();
-	   origin2.z = transform.getOrigin().z();
+	    origin2.x = transform.getOrigin().x()-1;
+	    origin2.y = transform.getOrigin().y()-1;
+	    origin2.z = transform.getOrigin().z()+2;
 	   
-	   rotation2.w = q_sn_m[3];
-	   rotation2.x = q_sn_m[4];
-	   rotation2.y = q_sn_m[5];
-	   rotation2.z = q_sn_m[6];
+	    rotation2.w = q_sn_m[3];
+	    rotation2.x = q_sn_m[4];
+	    rotation2.y = q_sn_m[5];
+	    rotation2.z = q_sn_m[6];
 
-	   //TODO send the correct trafo... from quanjo body (or gazebo_world?)!!!
-	   setGazeboPose(origin,rotation);
+	    //TODO send the correct trafo... from quanjo body (or gazebo_world?)!!!
+	    setGazeboPose(origin,rotation);
+	  }
 	}      
       }
     }
@@ -472,11 +486,11 @@ void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2, std::vect
 
 //-----------------------------------main----------------------------------------------------------------------------
 int main( int argc, char** argv )
-{
+{  
   ros::init(argc, argv, "sensornode_detection");
   ros::NodeHandle node;
 
-  ros::Timer timer = node.createTimer(ros::Duration(1), timerCallback);
+  //ros::Timer timer = node.createTimer(ros::Duration(0.1), timerCallback);
  
   ros::Subscriber sub = node.subscribe("/fiducials/fiducial_custom_array", 1000, chatterCallback);
  
