@@ -110,10 +110,12 @@ add_library(seneka_sensornode_detection
 
 ## Declare a cpp executable
 add_executable(sensornode_detection src/sensornode_detection.cpp)
+add_executable(sensornode_operator src/sensornode_operator.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(sensornode_detection seneka_sensornode_detection_generate_messages_cpp)
+add_dependencies(sensornode_operator seneka_sensornode_detection_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sensornode_detection
@@ -121,6 +123,11 @@ target_link_libraries(sensornode_detection
 )
 target_link_libraries(sensornode_detection ${OpenCV_LIBS})
 target_link_libraries(sensornode_detection seneka_sensornode_detection)
+
+target_link_libraries(sensornode_operator
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(sensornode_operator seneka_sensornode_detection ${OpenCV_LIBS})
 
 #############
 ## Install ##

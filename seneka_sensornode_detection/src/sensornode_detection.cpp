@@ -62,9 +62,9 @@ struct fiducialmarker{
 	cv::Point3d rot;
 };
 
-bool publish_to_gazebo = true;
+bool publish_to_gazebo = false;
 
-void setGazeboPose(ros::NodeHandle node);
+void setGazeboPose(pose origin, quaternion rotation);
 bool loadParameters(std::vector<fiducialmarker>*);
 
 //---------------------------<coordinate transformations>---------------------------------------
@@ -167,6 +167,10 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
     rotation.y = msg->container[0].rotation[2];
     rotation.z = msg->container[0].rotation[3];
 
+    std::cout << "X " << origin.x << std::endl;
+    std::cout << "Y " << origin.y << std::endl;
+    std::cout << "Z " << origin.z << std::endl;
+
     static tf::TransformBroadcaster br2;
     tf::Transform transform2;
     transform2.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
@@ -203,15 +207,15 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
 	if(publish_to_gazebo){
 
 	  tf::TransformListener listener;
-	  tf::StampedTransform transform;
+	  tf::StampedTransform transform2;
 
-	  //if(listener.waitForTransform("sensorsonde","seneka_marker", ros::Time(0.1), ros::Duration(1))){
+	  listener.waitForTransform("/sensornode", "/quanjo_body", ros::Time::now(), ros::Duration(2.0));
 	  if(true){
 	    std::cout << "!!!!!!!!!!!!!!!!!!!!!!!! HERE !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 	    
 	    try{
-	      listener.lookupTransform("/seneka_marker","/sensornode",
-				       ros::Time(0), transform);
+	      listener.lookupTransform("/sensornode","/quanjo_body",
+				       ros::Time(0), transform2);
 	    }
 	    catch (tf::TransformException ex){
 	      ROS_ERROR("%s",ex.what());
@@ -221,9 +225,9 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
 	    pose origin2;
 	    quaternion rotation2;
 	  
-	    origin2.x = transform.getOrigin().x()-1;
-	    origin2.y = transform.getOrigin().y()-1;
-	    origin2.z = transform.getOrigin().z()+2;
+	    origin2.x = transform2.getOrigin().x();
+	    origin2.y = transform2.getOrigin().y();
+	    origin2.z = transform2.getOrigin().z()+2;
 	   
 	    rotation2.w = q_sn_m[3];
 	    rotation2.x = q_sn_m[4];
@@ -231,7 +235,7 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
 	    rotation2.z = q_sn_m[6];
 
 	    //TODO send the correct trafo... from quanjo body (or gazebo_world?)!!!
-	    setGazeboPose(origin,rotation);
+	    setGazeboPose(origin2,rotation2);
 	  }
 	}      
       }
