@@ -48,6 +48,11 @@ struct quaternion{
   float z;
 };
 
+struct pose3d{
+  pose translation;
+  quaternion rotation;
+};
+
 struct point4d{
 	double x;
 	double y;
@@ -62,9 +67,6 @@ struct fiducialmarker{
 	cv::Point3d rot;
 };
 
-bool publish_to_gazebo = false;
-
-void setGazeboPose(pose origin, quaternion rotation);
 bool loadParameters(std::vector<fiducialmarker>*);
 
 //---------------------------<coordinate transformations>---------------------------------------
@@ -78,47 +80,6 @@ std::vector<fiducialmarker> fiducialmarkers;
 boost::mutex tf_lock_;
 ros::Timer tf_pub_timer_;
 tf::StampedTransform marker_tf_;
-
-void setGazeboPose(pose origin, quaternion rotation)
-{
-        geometry_msgs::Pose start_pose;
-        start_pose.position.x = origin.x;
-        start_pose.position.y = origin.y;
-        start_pose.position.z = origin.z;
-        start_pose.orientation.w = rotation.w;
-        start_pose.orientation.x = rotation.x;
-        start_pose.orientation.y = rotation.y;
-        start_pose.orientation.z = rotation.z;
-
-        geometry_msgs::Twist start_twist;
-        start_twist.linear.x = 0.0;
-        start_twist.linear.y = 0.0;
-        start_twist.linear.z = 0.0;
-        start_twist.angular.x = 0.0;
-        start_twist.angular.y = 0.0;
-        start_twist.angular.z = 0.0;
-
-        gazebo_msgs::ModelState modelstate;
-        modelstate.model_name = (std::string) "sensornode";
-        modelstate.reference_frame = (std::string) "quanjo_body";
-        modelstate.pose = start_pose;
-        modelstate.twist = start_twist;
-
-	
-	ros::NodeHandle node;
-	ros::ServiceClient client = node.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
-        gazebo_msgs::SetModelState setmodelstate;
-        setmodelstate.request.model_state = modelstate;
-
-        if (client.call(setmodelstate))
-        {
-            ROS_INFO("BRILLIANT!!!");
-        }
-        else
-        {
-            ROS_ERROR("Failed to call service ");
-        }
-}
 
 //------------------------------<Callbacks>----------------------------------------------------------
 void timerCallback(const ros::TimerEvent& event)
@@ -167,15 +128,13 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
     rotation.y = msg->container[0].rotation[2];
     rotation.z = msg->container[0].rotation[3];
 
-    std::cout << "X " << origin.x << std::endl;
-    std::cout << "Y " << origin.y << std::endl;
-    std::cout << "Z " << origin.z << std::endl;
-
     static tf::TransformBroadcaster br2;
     tf::Transform transform2;
     transform2.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
     transform2.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
     br2.sendTransform(tf::StampedTransform(transform2,  ros::Time::now(), "camera", "seneka_marker"));
+
+    pose3d sensornode_pose;
 
     //-> Transform each marker pose to object pose
     for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
@@ -189,11 +148,11 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
         cv::Mat tmp = cv::Mat(tm_m_sn.t());//transposed
 	tm_m_sn = cv::Mat(3,4, CV_64FC1);
 	for (int k=0; k<3; k++)
-                    for (int l=0; l<3; l++)
-                        tm_m_sn.at<double>(k,l) = tmp.at<double>(k,l);
-	tm_m_sn.at<double>(0,3) = fiducialmarkers[i].trans.x;
-	tm_m_sn.at<double>(1,3) = fiducialmarkers[i].trans.y;
-	tm_m_sn.at<double>(2,3) = fiducialmarkers[i].trans.z;
+	  for (int l=0; l<3; l++)
+	    tm_m_sn.at<double>(k,l) = tmp.at<double>(k,l);
+	tm_m_sn.at<double>(0,3) = -fiducialmarkers[i].trans.x;
+	tm_m_sn.at<double>(1,3) = -fiducialmarkers[i].trans.y;
+	tm_m_sn.at<double>(2,3) = -fiducialmarkers[i].trans.z;
 
 	std::vector<double> q_sn_m = FrameToVec7(tm_m_sn);	
 	  
@@ -203,49 +162,27 @@ void chatterCallback(const seneka_msgs::FiducialArray::ConstPtr& msg)
 	transform3.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
 	br3.sendTransform(tf::StampedTransform(transform3,  ros::Time::now(), "seneka_marker", "sensornode"));
 
+	sensornode_pose.translation.x = q_sn_m[0];
+	sensornode_pose.translation.y = q_sn_m[1];
+	sensornode_pose.translation.z = q_sn_m[2];
 
-	if(publish_to_gazebo){
-
-	  tf::TransformListener listener;
-	  tf::StampedTransform transform2;
-
-	  listener.waitForTransform("/sensornode", "/quanjo_body", ros::Time::now(), ros::Duration(2.0));
-	  if(true){
-	    std::cout << "!!!!!!!!!!!!!!!!!!!!!!!! HERE !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-	    
-	    try{
-	      listener.lookupTransform("/sensornode","/quanjo_body",
-				       ros::Time(0), transform2);
-	    }
-	    catch (tf::TransformException ex){
-	      ROS_ERROR("%s",ex.what());
-	    }
-	    
-
-	    pose origin2;
-	    quaternion rotation2;
-	  
-	    origin2.x = transform2.getOrigin().x();
-	    origin2.y = transform2.getOrigin().y();
-	    origin2.z = transform2.getOrigin().z()+2;
-	   
-	    rotation2.w = q_sn_m[3];
-	    rotation2.x = q_sn_m[4];
-	    rotation2.y = q_sn_m[5];
-	    rotation2.z = q_sn_m[6];
-
-	    //TODO send the correct trafo... from quanjo body (or gazebo_world?)!!!
-	    setGazeboPose(origin2,rotation2);
-	  }
-	}      
-      }
+	sensornode_pose.rotation.w = q_sn_m[3];
+	sensornode_pose.rotation.x = q_sn_m[4];
+	sensornode_pose.rotation.y = q_sn_m[5];
+	sensornode_pose.rotation.z = q_sn_m[6];
+      }      
     }
-  }
-  
+
+    //TODO publish handle position based on sensornode_pose
+
+    //TODO maybe publish fixed helper position for grabbing process
+
+  } 
+
+
   //-> determine mean of object pose
   //-> postponed ;)   
   
-  //-> update object(sensornode) pose
 }
 //------------------------------</Callbacks>----------------------------------------------------------
 
@@ -480,7 +417,6 @@ void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2, std::vect
     double y2=q2[1];
     double z2=q2[2];
     double r2=q2[3];
-
 
     q->push_back(x1*r2 + r1*x2 + y1*z2 - z1*y2);   // x component
     q->push_back(r1*y2 - x1*z2 + y1*r2 + z1*x2);   // y component

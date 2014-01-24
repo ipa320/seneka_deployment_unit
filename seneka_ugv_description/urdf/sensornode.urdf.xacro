@@ -3,29 +3,29 @@
        xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
        xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
        xmlns:xacro="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
-       name="sensornode">
+       name="">
 
   <!-- common stuff -->
   <!--  <include filename="$(find seneka_ugv_description)/urdf/sensornode.gazebo.xacro" /> -->
 
-  <link name="sensornode_body">
+  <link name="sensornode">
     <visual>
       <geometry>
-        <box size="0.1 0.1 0.1"/>
+        <mesh filename="package://seneka_ugv_description/meshes/sensornode_reduced.dae" scale="0.001 0.001 0.001"/>
       </geometry>
-      <origin rpy="2 2 2" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <material name="black"/>
     </visual>
 
     <collision>
       <geometry>
-        <box size="0.1 0.1 0.1"/>
+        <mesh filename="package://seneka_ugv_description/meshes/sensornode_reduced.dae" scale="0.001 0.001 0.001"/>
       </geometry>
-      <origin rpy="2 2 2" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
 
     <inertial>
-      <mass value="0.1" />
+      <mass value="3.0" />
       <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
     </inertial>
   </link>

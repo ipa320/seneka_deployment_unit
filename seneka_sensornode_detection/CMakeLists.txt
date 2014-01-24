@@ -9,8 +9,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf
+  moveit_core 
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  pluginlib	
 )
 find_package(OpenCV REQUIRED)
+find_package(Eigen REQUIRED)
 
 
 ## System dependencies are found with CMake's conventions
@@ -86,7 +91,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES seneka_sensornode_detection
-  CATKIN_DEPENDS roscpp rospy std_msgs tf
+  CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface
   DEPENDS system_lib
 )
 
@@ -99,6 +104,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIRS}
   include
 )
 
@@ -121,13 +127,13 @@ add_dependencies(sensornode_operator seneka_sensornode_detection_generate_messag
 target_link_libraries(sensornode_detection
   ${catkin_LIBRARIES}
 )
-target_link_libraries(sensornode_detection ${OpenCV_LIBS})
+target_link_libraries(sensornode_detection ${OpenCV_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(sensornode_detection seneka_sensornode_detection)
 
 target_link_libraries(sensornode_operator
   ${catkin_LIBRARIES}
 )
-target_link_libraries(sensornode_operator seneka_sensornode_detection ${OpenCV_LIBS})
+target_link_libraries(sensornode_operator seneka_sensornode_detection ${OpenCV_LIBS} ${Boost_LIBRARIES})
 
 #############
 ## Install ##

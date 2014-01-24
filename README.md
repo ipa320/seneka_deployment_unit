@@ -27,7 +27,7 @@ Description packages:
 
 Install:
 --------
-* git clone https://github.com/Equanox/universal_robot/tree/seneka_quanjo (rosbuild package)
+* git clone https://github.com/ipa320/universal_robot/tree/groovy_dev
 * git clone https://github.com/ipa320/cob_perception_common (rosbuild package)
 * git clone https://github.com/Equanox/cob_object_perception/tree/seneka_fiducials (rosbuild package)
 * git clone https://github.com/Equanox/seneka_deployment_unit (catkin package)
@@ -50,8 +50,7 @@ Getting started with detection of sensornode:
 
 TODO: (for milestone february)
 ----------------------------------------------------------------------
-* determine sensornode position and give advises(console output) for optimal grabbing position (directly in front of quanjo).
-* define coordinate system of the sensorsonde with grabbing points
+* Publish handle tf
 * choose a grabbing strategy
 * choose a pickup strategy (start with very simple task)
 * synchronize movement of both arms (ideas?)
