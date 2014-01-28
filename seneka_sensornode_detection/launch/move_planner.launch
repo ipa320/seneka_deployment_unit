@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />
+  
+  <node pkg="seneka_sensornode_detection" ns="move_group" type="sensornode_move_planner" name="sensornode_move_planner" output="screen">	  
+  </node>
+
+
+</launch>
