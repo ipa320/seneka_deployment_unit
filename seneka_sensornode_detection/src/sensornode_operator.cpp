@@ -24,21 +24,6 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/PlanningScene.h>
 
-/* // MoveIt!
-#include <moveit_msgs/PlanningScene.h>
-#include <moveit_msgs/AttachedCollisionObject.h>
-#include <moveit_msgs/GetStateValidity.h>
-#include <moveit_msgs/DisplayRobotState.h>
-
-#include <moveit/robot_model/robot_model.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/robot_state/robot_state.h>
-#include <moveit/robot_state/conversions.h>
-
-#include <moveit/move_group_interface/move_group.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>*/
-
 const double PI = 3.14159265359;
 
 struct pose{
@@ -115,9 +100,9 @@ void getSensornodePose(pose3d *isensornode){
   pose3d sensornode_tmp;
 
   //standard value to avoid collision in gazebo with quanjo on startup
-  sensornode_tmp.translation.x = 10;
-  sensornode_tmp.translation.y = 10;
-  sensornode_tmp.translation.z = 10;  
+  sensornode_tmp.translation.x = 2;
+  sensornode_tmp.translation.y = 2;
+  sensornode_tmp.translation.z = 2;  
   sensornode_tmp.rotation.w = 1;
   sensornode_tmp.rotation.x = 0;
   sensornode_tmp.rotation.y = 0;
@@ -175,7 +160,7 @@ int main( int argc, char** argv )
   
   ros::Rate loop_rate(10);
   
-  getSensornodePose(&sensornode);
+  //getSensornodePose(&sensornode);
   
   robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
   robot_model::RobotModelPtr robot_model = robot_model_loader.getModel();
@@ -227,17 +212,17 @@ int main( int argc, char** argv )
   /* A desired pose */
   geometry_msgs::PoseStamped pose;
   pose.header.frame_id = "right_arm_base_link";
-  pose.pose.position.x = 1;
-  pose.pose.position.y = 1;
+  pose.pose.position.x = 1.5;
+  pose.pose.position.y = 0;
   pose.pose.position.z = 1;
   pose.pose.orientation.w = 0.5;
 
   /* A desired tolerance */
-  std::vector<double> tolerance_pose(3, 100 );
-  std::vector<double> tolerance_angle(3, 100 );
+  std::vector<double> tolerance_pose(3, 0.1 );
+  std::vector<double> tolerance_angle(3, 0.1 );
   /*Create the request */
   req.group_name = "right_arm_group";
-  moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints("right_arm_ee_link",  pose, tolerance_pose, tolerance_angle);
+  moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints("right_arm_rviz_link",  pose, tolerance_pose, tolerance_angle);
   req.goal_constraints.push_back(pose_goal);
 
   /* Construct the planning context */
@@ -245,62 +230,7 @@ int main( int argc, char** argv )
 
   /* CALL THE PLANNER */
   context->solve(res);
-
-
-  /* robot_model_loader::RobotModelLoader robot_model_loader("robot_description"); 
-  //robot_model_loader.loadKinematicsSolvers();
-  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
-  ROS_INFO("Model frame: %s", kinematic_model->getModelFrame().c_str());
- 
-  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-  kinematic_state->setToDefaultValues();  
-  robot_state::JointStateGroup* joint_state_group = kinematic_state->getJointStateGroup("right_arm_group");
-
-  // Compute FK for a set of random joint values
-  joint_state_group->setToRandomValues();
-  const Eigen::Affine3d &end_effector_state = joint_state_group->getRobotState()->getLinkState("right_arm_ee_link")->getGlobalLinkTransform();  
-
-  // Get the joint values
-  std::vector<double> joint_values;
-  joint_state_group->getVariableValues(joint_values);
   
-  bool found_ik = joint_state_group->setFromIK(end_effector_state, 5, 0.1);
-  
-  /*  if(found_ik){
-
-    joint_state_group->getVariableValues(joint_values);
-    for(std::size_t i=0; i < joint_names.size(); ++i)
-      {
-	ROS_INFO("Joint %s: %f", joint_names[i].c_str(), joint_values[i]);
-      }
-  }
-  else{
-    
-    ROS_INFO("Did not find IK solution");
-    }
-
-  Eigen::Vector3d reference_point_position(0.0,0.0,0.0);
-  Eigen::MatrixXd jacobian;  
-  joint_state_group->getJacobian(joint_state_group->getJointModelGroup()->getLinkModelNames().back(),
-				 reference_point_position,
-				 jacobian);
-				 ROS_INFO_STREAM("Jacobian: " << jacobian); */
-
-
-
-  /* ROS_INFO("1");
-  move_group_interface::MoveGroup group("right_arm_group");
-  ROS_INFO("2");
-  group.setRandomTarget();
-  // plan the motion and then move the group to the sampled target 
-  ROS_INFO("3");
-  group.move();
-  ROS_INFO("4");*/
-
-
-  
-
-
 
   /* while(ros::ok()){
     

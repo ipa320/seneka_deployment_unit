@@ -41,21 +41,22 @@
 int main( int argc, char** argv )
 {  
   ros::init (argc, argv, "state_display_tutorial");
-  /* Needed for ROS_INFO commands to work */
+  // Needed for ROS_INFO commands to work 
   ros::AsyncSpinner spinner(1);
   spinner.start();
-  /* Load the robot model */
-  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-  /* Get a shared pointer to the model */
-  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
-  /* Create a kinematic state - this represents the configuration for the robot represented by kinematic_model */
-  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-  /* Get the configuration for the joints in the right arm of the PR2*/
-  const robot_model::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("right_arm_group");
 
   ros::NodeHandle nh;
   ros::Publisher robot_state_publisher = nh.advertise<moveit_msgs::DisplayRobotState>( "tutorial_robot_state", 10 );                                                                                        
   ros::Rate loop_rate(1);
+
+ 
+  /* robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+
+  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+
+  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+
+  const robot_model::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("right_arm_group");
 
   //Planning
   planning_scene::PlanningScenePtr planning_scene(new planning_scene::PlanningScene(kinematic_model));
@@ -64,10 +65,10 @@ int main( int argc, char** argv )
   planning_interface::PlannerManagerPtr planner_instance;
   std::string planner_plugin_name;
 
-    if (!nh.getParam("planning_plugin", planner_plugin_name))
+  if (!nh.getParam("/move_group/planning_plugin", planner_plugin_name))
       ROS_FATAL_STREAM("Could not find planner plugin name");
 
-    /* Make sure to catch all exceptions */
+
   try
   {
     planner_plugin_loader.reset(new pluginlib::ClassLoader<planning_interface::PlannerManager>("moveit_core", "planning_interface::PlannerManager"));
@@ -93,7 +94,6 @@ int main( int argc, char** argv )
                      << "Available plugins: " << ss.str());
   }
 
-
   for(int cnt=0; ros::ok(); cnt++){ 
     
     kinematic_state->setToRandomValues();
@@ -105,12 +105,11 @@ int main( int argc, char** argv )
       std::cout << joint_state_val[i] << std::endl;
     }
 
-    /* CREATE A MOTION PLAN REQUEST FOR THE RIGHT ARM OF THE PR2 */
-    /* We will ask the end-effector of the PR2 to go to a desired location */
+
     planning_interface::MotionPlanRequest req;
     planning_interface::MotionPlanResponse res;
 
-    /* Create the request */
+ 
     req.group_name = "right_arm_group";
     req.allowed_planning_time = 5.0;
   
@@ -119,27 +118,49 @@ int main( int argc, char** argv )
     moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(joint_state_group,0.1,0.1);
     req.goal_constraints.push_back(pose_goal);
 
-    /* Construct the planning context */
-    planning_interface::PlanningContextPtr context = planner_instance->getPlanningContext(planning_scene, req, res.error_code_);
+
+    planning_interface::PlanningContextPtr context = planner_instance->getPlanningContext(planning_scene, req, res.error_code_);   
+ 
+    context->solve(res);*/
   
-    
-    /* CALL THE PLANNER */
-    context->solve(res);
 
+    move_group_interface::MoveGroup group("right_arm_group",boost::shared_ptr<tf::Transformer>(),ros::Duration(5,5 ));
+    geometry_msgs::PoseStamped rnd_pose = group.getRandomPose();
+    group.setPoseTarget(rnd_pose);
 
-    move_group_interface::MoveGroup group("right_arm_group");
-    group.setRandomTarget();
-    group.plan();
+ 
+
     group.move();
-    
-    moveit_msgs::DisplayRobotState msg; 
+ 
+    /*moveit_msgs::DisplayRobotState msg; 
     robot_state::robotStateToRobotStateMsg(*kinematic_state, msg.state);
     
-    robot_state_publisher.publish( msg );
+    robot_state_publisher.publish( msg );*/
      
     ros::spinOnce();
     loop_rate.sleep();
-  }
+    //}
 
   return 0;
 }
+
+
+
+ /*int main( int argc, char** argv )
+{  
+  ros::init (argc, argv, "state_display_tutorial");
+
+  ros::NodeHandle nh;                                                                                      
+  ros::Rate loop_rate(1);
+
+  moveit::planning_interface::MoveGroup group("right_arm_group",boost::shared_ptr<tf::Transformer>(),ros::Duration(5,5 ));  
+  //moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+  
+  ros::Publisher display_publisher = nh.advertise<moveit_msgs::DisplayTrajectory>("display_planned_path", 1, true);
+  moveit_msgs::DisplayTrajectory display_trajectory;
+
+  ROS_INFO("Reference frame: %s", group.getPlanningFrame().c_str());
+  ROS_INFO("Reference frame: %s", group.getEndEffectorLink().c_str());
+
+  return 0;
+}*/
