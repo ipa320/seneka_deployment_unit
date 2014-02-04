@@ -1,5 +1,9 @@
 <?xml version="1.0"?>
 <launch>
+
+  <!-- send quanjo urdf to param server -->	
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />
+
   <include file="$(find cob_fiducials)/ros/launch/fiducials.launch"/>
 
   <include file="$(find freenect_launch)/launch/freenect.launch"/>

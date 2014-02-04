@@ -4,7 +4,18 @@ project(seneka_pnp)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
+  std_msgs
+  tf
+  moveit_core 
+  moveit_ros_planning
+  moveit_ros_planning_interface
+  pluginlib	
+)
+find_package(OpenCV REQUIRED)
+find_package(Eigen REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -65,6 +76,11 @@ find_package(catkin REQUIRED)
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 # )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  seneka_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -75,38 +91,51 @@ find_package(catkin REQUIRED)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES seneka_pnp
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
-)
+
 
 ###########
 ## Build ##
 ###########
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  ${EIGEN_INCLUDE_DIRS}
+  include
+)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES seneka_pnp
+  CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface
+  DEPENDS system_lib
+)
 
 ## Declare a cpp library
 # add_library(seneka_pnp
 #   src/${PROJECT_NAME}/seneka_pnp.cpp
 # )
+add_library(seneka_pnp
+  src/seneka_pnp.cpp
+)
+
 
 ## Declare a cpp executable
 # add_executable(seneka_pnp_node src/seneka_pnp_node.cpp)
+add_executable(seneka_pick_and_place src/seneka_pnp.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(seneka_pnp_node seneka_pnp_generate_messages_cpp)
+add_dependencies(seneka_pick_and_place seneka_pnp_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(seneka_pnp_node
 #   ${catkin_LIBRARIES}
 # )
 
+target_link_libraries(seneka_pick_and_place seneka_pnp ${OpenCV_LIBS} ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
