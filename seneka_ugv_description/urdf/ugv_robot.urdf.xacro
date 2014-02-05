@@ -16,18 +16,18 @@
  <include filename="$(find ur_description)/urdf/ur10.urdf.xacro" />  
 
 
-  <!-- Added connector joint for connecting it with a robot -->
-  <joint name="right_arm_ur10_connector" type="fixed">
-    <parent link="quanjo_body" />
-    <child link = "right_arm_base_link" />
-    <origin xyz="0.615 -0.46 0.87" rpy="0 0.2 0" />
-  </joint>
+ <!-- Added connector joint for connecting it with a robot -->
+ <joint name="right_arm_ur10_connector" type="fixed">
+  <parent link="quanjo_body" />
+  <child link = "right_arm_base_link" />
+  <origin xyz="0.615 -0.46 0.87" rpy="0 0.2 0" />
+ </joint>
 
-  <joint name="left_arm_ur10_connector" type="fixed">
-    <parent link="quanjo_body" />
-    <child link = "left_arm_base_link" />
-    <origin xyz="0.615 0.46 0.87" rpy="0 0.2 0" />
-  </joint>
+ <joint name="left_arm_ur10_connector" type="fixed">
+  <parent link="quanjo_body" />
+  <child link = "left_arm_base_link" />
+  <origin xyz="0.615 0.46 0.87" rpy="0 0.2 0" />
+ </joint>
 
   <!-- arm -->
   <xacro:ur10_robot prefix="right_arm_">

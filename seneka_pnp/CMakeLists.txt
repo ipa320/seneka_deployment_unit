@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
   tf
   moveit_core 
   moveit_ros_planning
@@ -19,6 +20,7 @@ find_package(Eigen REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -79,6 +81,7 @@ find_package(Eigen REQUIRED)
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
   seneka_msgs
 )
 
@@ -108,7 +111,7 @@ include_directories(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES seneka_pnp
-  CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface
+  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs tf moveit_core moveit_ros_planning_interface
   DEPENDS system_lib
 )
 

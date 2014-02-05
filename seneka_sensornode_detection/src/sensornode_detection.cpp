@@ -92,7 +92,8 @@ void sensorsondeCoordinateManager(const seneka_msgs::FiducialArray::ConstPtr& ms
 
   static tf::TransformBroadcaster br;
   tf::Transform transform;
-  transform.setOrigin( tf::Vector3(1.1, 0.0, 0.6) );
+  //Camera Position
+  transform.setOrigin( tf::Vector3(0.935, 0.0, 0.452) );
   transform.setRotation( tf::createQuaternionFromRPY(-PI/2,0,-PI/2) );
   br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/quanjo_body", "/camera"));
 
