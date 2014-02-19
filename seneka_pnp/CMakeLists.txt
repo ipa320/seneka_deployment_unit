@@ -186,3 +186,4 @@ target_link_libraries(seneka_pick_and_place seneka_pnp ${OpenCV_LIBS} ${catkin_L
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+

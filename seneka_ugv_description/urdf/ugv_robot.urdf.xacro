@@ -20,13 +20,13 @@
  <joint name="right_arm_ur10_connector" type="fixed">
   <parent link="quanjo_body" />
   <child link = "right_arm_base_link" />
-  <origin xyz="0.615 -0.46 0.87" rpy="0 0.2 0" />
+  <origin xyz="0.615 -0.46 0.87" rpy="-0.2 0 -1.57" />
  </joint>
 
  <joint name="left_arm_ur10_connector" type="fixed">
   <parent link="quanjo_body" />
   <child link = "left_arm_base_link" />
-  <origin xyz="0.615 0.46 0.87" rpy="0 0.2 0" />
+  <origin xyz="0.615 0.46 0.87" rpy="-0.2 0 -1.57" />
  </joint>
 
   <!-- arm -->
@@ -47,15 +47,15 @@
       <geometry>
         <mesh filename="package://seneka_ugv_description/meshes/gripper.dae" scale="0.001 0.001 0.001"/>
       </geometry>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -1.57 0.0" />  
+      <origin xyz="0.0 0.0 0.0" rpy="1.57 0 -1.57" />  
     </visual>
 
     <collision>
       <geometry>
-          <mesh filename="package://seneka_ugv_description/meshes/gripper.dae" scale="0.001 0.001 0.001"/>
+          <box size="0.09 0.32 0.05" />
       </geometry>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -1.57 0.0" /> 
-    </collision>
+      <origin xyz="0.0 0.0 -0.115" rpy="1.57 0 -1.57" /> 
+    </collision> 
 
     <inertial>
       <mass value="1" />
@@ -78,8 +78,7 @@
     <parent link="left_arm_ee_link" />
     <child link = "left_arm_gripper_link" />
     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />    
-  </joint>
-
+  </joint> 
   
 
  <link name="left_arm_gripper_link">
@@ -87,14 +86,14 @@
       <geometry>
         <mesh filename="package://seneka_ugv_description/meshes/gripper.dae" scale="0.001 0.001 0.001"/>
       </geometry>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -1.57 0.0" />  
+        <origin xyz="0.0 0.0 0.0" rpy="1.57 0 -1.57" />
     </visual>
 
     <collision>
       <geometry>
-          <mesh filename="package://seneka_ugv_description/meshes/gripper.dae" scale="0.001 0.001 0.001"/>
+          <box size="0.09 0.32 0.05" />
       </geometry>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -1.57 0.0" /> 
+      <origin xyz="0.0 0.0 -0.115" rpy="1.57 0 -1.57" /> 
     </collision> 
 
     <inertial>
@@ -110,7 +109,6 @@
     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 ${pi/2.0}" />
   </joint>
   <link name="left_arm_rviz_link" />
-
 
 </robot>
 

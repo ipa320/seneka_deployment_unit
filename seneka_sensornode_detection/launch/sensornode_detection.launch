@@ -3,6 +3,10 @@
 
   <!-- send quanjo urdf to param server -->	
   <param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />
+  <param name="sensornode_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/sensornode.urdf.xacro'" />
+  
+  <!-- sets kinect rgb stream to full hd mode -->
+  <param name="/camera/driver/image_mode" value="1"/>
 
   <include file="$(find cob_fiducials)/ros/launch/fiducials.launch"/>
 

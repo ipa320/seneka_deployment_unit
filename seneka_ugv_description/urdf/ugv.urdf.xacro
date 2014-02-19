@@ -15,6 +15,15 @@
     <color rgba="0 0 0 1"/>
   </material>
 
+  <link name="world_dummy_link"></link>
+ 
+  <joint name="world_dummy_joint" type="fixed">
+    <parent link="world_dummy_link" />
+    <child link = "quanjo_body" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />    
+  </joint>
+
+
   <link name="quanjo_body">
     <visual>
       <geometry>

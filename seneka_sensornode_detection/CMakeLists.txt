@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning
   moveit_ros_planning_interface
   pluginlib	
+  cob_object_detection_msgs
 )
 find_package(OpenCV REQUIRED)
 find_package(Eigen REQUIRED)
@@ -77,6 +78,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   seneka_msgs
+  cob_object_detection_msgs
 )
 
 ###################################
@@ -91,7 +93,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES seneka_sensornode_detection
-  CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface
+  CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface cob_object_detection_msgs
   DEPENDS system_lib
 )
 
