@@ -35,7 +35,7 @@
   <xacro:ur10_robot prefix="left_arm_">
   </xacro:ur10_robot>
 
-  <joint name=" right_arm_gripper_joint" type="fixed">
+  <joint name="right_arm_gripper_joint" type="fixed">
     <parent link="right_arm_ee_link" />
     <child link = "right_arm_gripper_link" />
     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />    

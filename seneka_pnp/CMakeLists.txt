@@ -121,17 +121,20 @@ catkin_package(
 # )
 add_library(seneka_pnp
   src/seneka_pnp.cpp
+  src/SerializeIO.cpp
 )
 
 
 ## Declare a cpp executable
 # add_executable(seneka_pnp_node src/seneka_pnp_node.cpp)
 add_executable(seneka_pick_and_place src/seneka_pnp.cpp)
+add_executable(seneka_teach src/seneka_teach.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(seneka_pnp_node seneka_pnp_generate_messages_cpp)
 add_dependencies(seneka_pick_and_place seneka_pnp_generate_messages_cpp)
+add_dependencies(seneka_teach seneka_pnp_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(seneka_pnp_node
@@ -139,6 +142,7 @@ add_dependencies(seneka_pick_and_place seneka_pnp_generate_messages_cpp)
 # )
 
 target_link_libraries(seneka_pick_and_place seneka_pnp ${OpenCV_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(seneka_teach seneka_pnp ${OpenCV_LIBS} ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############

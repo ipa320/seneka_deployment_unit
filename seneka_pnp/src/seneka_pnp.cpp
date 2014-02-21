@@ -13,6 +13,9 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
+#include <SerializeIO.h>
+#include <termios.h>
+
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
@@ -62,6 +65,8 @@ private:
   pose trigger_down;
   pose inital_grab_pose;
 
+  std::vector<double> teached_wayp_r, teached_wayp_l;
+
   tf::TransformListener listener;
   tf::StampedTransform transform;
 
@@ -100,9 +105,25 @@ public:
     inital_grab_pose.y = trigger_down.y;
     inital_grab_pose.z = trigger_down.z;
     
-    
+    loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     mainLoop();
   }  
+
+  //std stuff to handle keycommands
+  int getch()
+  {
+    static struct termios oldt, newt;
+    tcgetattr( STDIN_FILENO, &oldt);           // save old settings
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON);                 // disable buffering      
+    tcsetattr( STDIN_FILENO, TCSANOW, &newt);  // apply new settings
+
+    int c = getchar();  // read character (non-blocking)
+
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldt);  // restore old settings
+    return c;
+  }
+  
 
   bool getSensornodePose(){
     
@@ -231,7 +252,7 @@ public:
     
     move_group_interface::MoveGroup group_r("right_arm_group");
     move_group_interface::MoveGroup group_l("left_arm_group");
-    move_group_interface::MoveGroup group("both_arms");
+    move_group_interface::MoveGroup group_both("both_arms");
 
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     
@@ -245,6 +266,9 @@ public:
     group_r.setStartStateToCurrentState();
     group_l.setWorkspace (0, 0, 0, 5, 5, 5);
     group_l.setStartStateToCurrentState();
+    group_both.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_both.setStartStateToCurrentState();
+
     
     geometry_msgs::PoseStamped target_pose_r;
     target_pose_r.header.frame_id = "/quanjo_body";
@@ -273,8 +297,7 @@ public:
     target_pose_l.pose.orientation.y = handholds_[used_handle_l].entry.rotation.y;
     target_pose_l.pose.orientation.z = handholds_[used_handle_l].entry.rotation.z;
 
-    group_l.setPoseTarget(target_pose_l); 
-    
+    group_l.setPoseTarget(target_pose_l);   
 
     //------------------constraints------------------------
     /*moveit_msgs::OrientationConstraint ocm;
@@ -296,6 +319,8 @@ public:
     group_r.setPlanningTime(10.0);
     group_l.setGoalOrientationTolerance(0.01);
     group_l.setPlanningTime(10.0);
+    group_both.setGoalOrientationTolerance(0.01);
+    group_both.setPlanningTime(10.0);
 
     moveit::planning_interface::MoveGroup::Plan my_plan_r, my_plan_l;
     //my_plan.trajectory_ = trajectory;
@@ -315,16 +340,16 @@ public:
     }
 
 
-    //-------------------Linear Movement to through all points ------------------------
+    //-------------------Linear Movement through all points ------------------------
     if(success){
 
       group_r.setStartStateToCurrentState();      
       group_l.setStartStateToCurrentState();
+      group_both.setStartStateToCurrentState();
 
       std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
       geometry_msgs::Pose target_pose2_r = group_r.getCurrentPose().pose;
       geometry_msgs::Pose target_pose2_l = group_l.getCurrentPose().pose;
-
       
     
       //right
@@ -361,52 +386,164 @@ public:
       target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
       target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
       waypoints_l.push_back(target_pose2_l);
-
-      std::cout << target_pose2_l << std::endl;
+ 
 
       target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
       target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
       waypoints_l.push_back(target_pose2_l);
 
-      std::cout << target_pose2_l << std::endl;
 
       target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
       target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
       waypoints_l.push_back(target_pose2_l);
 
-      std::cout << target_pose2_l << std::endl;
-
 
       moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
-      moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l;
+      moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
       double fraction_r = group_r.computeCartesianPath(waypoints_r,
 						   0.01,  // eef_step
     						   0.0,   // jump_threshold
 						   trajectory_r);  
       linear_plan_r.trajectory_ = trajectory_r;
-      std::cout << "WARNING IM SENDING THE TRAJECTORY IN RRRRRRRRRRRRRRRR 10sec" << std::endl;
-      sleep(10.0);
-      //group_r.asyncExecute(linear_plan_r);
       sleep(10.0);
 
-
-     double fraction_l = group_l.computeCartesianPath(waypoints_l,
-						   0.01,  // eef_step
-    						   0.0,   // jump_threshold
-						   trajectory_l);  
-      linear_plan_l.trajectory_ = trajectory_l;
-      std::cout << "WARNING IM SENDING THE TRAJECTORY IN LLLLLLLLLLLLLLLL 10sec" << std::endl;
-      sleep(10.0);
-      // group_l.asyncExecute(linear_plan_l);
-      sleep(10.0);
+      double fraction_l = group_l.computeCartesianPath(waypoints_l,
+						       0.01,  // eef_step
+						       0.0,   // jump_threshold
+						       trajectory_l);  
       
+      linear_plan_l.trajectory_ = trajectory_l;
+      sleep(10.0);
 
+      mergedPlan = mergePlan(linear_plan_r,linear_plan_l);
+      group_both.execute(mergedPlan);
+      sleep(10.0);
+
+      /*std::cout << "WARNING IM SENDING THE TRAJECTORY IN RRRRRRRRRRRRRRRR 10sec" << std::endl;
+	sleep(10.0);
+	//group_r.asyncExecute(linear_plan_r);
+	sleep(10.0);
+
+	std::cout << "WARNING IM SENDING THE TRAJECTORY IN LLLLLLLLLLLLLLLL 10sec" << std::endl;
+	sleep(10.0);
+	// group_l.asyncExecute(linear_plan_l);
+	sleep(10.0);*/
     }
+  }
+
+  void synchronizedMovement(){
     
-    std::cout << "---------------</planning>----------------------------" << std::endl;
-  }  
+            
+  }
+
+  //code from Prace project, IPA: Benjamin Maidel
+  move_group_interface::MoveGroup::Plan mergePlan(move_group_interface::MoveGroup::Plan plan1, move_group_interface::MoveGroup::Plan plan2)
+  {
+    move_group_interface::MoveGroup::Plan mergedPlan;
+    mergedPlan = plan1;
+    mergedPlan.trajectory_.joint_trajectory.joint_names.insert(mergedPlan.trajectory_.joint_trajectory.joint_names.end(),
+							       plan2.trajectory_.joint_trajectory.joint_names.begin(),
+							       plan2.trajectory_.joint_trajectory.joint_names.end());
+ 
+
+    size_t i;
+    for(i = 0; (i < mergedPlan.trajectory_.joint_trajectory.points.size())
+	  && (i < plan2.trajectory_.joint_trajectory.points.size()); i++)
+
+      {
+	mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
+									       mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.end(),
+									       plan2.trajectory_.joint_trajectory.points[i].accelerations.begin(),
+									       plan2.trajectory_.joint_trajectory.points[i].accelerations.end());
+
+
+	mergedPlan.trajectory_.joint_trajectory.points[i].positions.insert(
+									   mergedPlan.trajectory_.joint_trajectory.points[i].positions.end(),
+									   plan2.trajectory_.joint_trajectory.points[i].positions.begin(),
+									   plan2.trajectory_.joint_trajectory.points[i].positions.end());
+
+	mergedPlan.trajectory_.joint_trajectory.points[i].velocities.insert(
+									    mergedPlan.trajectory_.joint_trajectory.points[i].velocities.end(),
+									    plan2.trajectory_.joint_trajectory.points[i].velocities.begin(),
+									    plan2.trajectory_.joint_trajectory.points[i].velocities.end());
+      }
+
+    if(plan1.trajectory_.joint_trajectory.points.size() > plan2.trajectory_.joint_trajectory.points.size())
+      {
+	for(size_t j = i; j < plan1.trajectory_.joint_trajectory.points.size(); j++)
+	  {
+	    mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.insert(
+										   mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.end(),
+										   plan2.trajectory_.joint_trajectory.points.back().accelerations.begin(),
+										   plan2.trajectory_.joint_trajectory.points.back().accelerations.end());
+
+	    mergedPlan.trajectory_.joint_trajectory.points[j].positions.insert(
+									       mergedPlan.trajectory_.joint_trajectory.points[j].positions.end(),
+									       plan2.trajectory_.joint_trajectory.points.back().positions.begin(),
+									       plan2.trajectory_.joint_trajectory.points.back().positions.end());
+
+	    mergedPlan.trajectory_.joint_trajectory.points[j].velocities.insert(
+										mergedPlan.trajectory_.joint_trajectory.points[j].velocities.end(),
+										plan2.trajectory_.joint_trajectory.points.back().velocities.begin(),
+										plan2.trajectory_.joint_trajectory.points.back().velocities.end());
+	  }
+      }
+
+    if(plan1.trajectory_.joint_trajectory.points.size() < plan2.trajectory_.joint_trajectory.points.size())
+      {
+	trajectory_msgs::JointTrajectoryPoint point;
+	for(size_t j = i; j < plan2.trajectory_.joint_trajectory.points.size(); j++)
+	  {
+	    point  = mergedPlan.trajectory_.joint_trajectory.points.back();
+
+	    point.accelerations.insert(
+				       point.accelerations.end(),
+				       plan2.trajectory_.joint_trajectory.points[j].accelerations.begin(),
+				       plan2.trajectory_.joint_trajectory.points[j].accelerations.end());
+
+	    point.positions.insert(
+				   point.positions.end(),
+				   plan2.trajectory_.joint_trajectory.points[j].positions.begin(),
+				   plan2.trajectory_.joint_trajectory.points[j].positions.end());
+
+	    point.velocities.insert(
+				    point.velocities.end(),
+				    plan2.trajectory_.joint_trajectory.points[j].velocities.begin(),
+				    plan2.trajectory_.joint_trajectory.points[j].velocities.end());
+	    
+	    point.time_from_start = plan2.trajectory_.joint_trajectory.points[j].time_from_start;
+
+	    mergedPlan.trajectory_.joint_trajectory.points.push_back(point);
+	  }
+      }
+
+    return mergedPlan;
+  }
+
+  //HERE
+  void loadTeachedPoints(std::vector<double>* vec_r,std::vector<double>* vec_l){
+    
+    SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
+    std::vector<std::vector<double> > tmp;
+
+    ser->openArray("dual_aarm_movement");
+    ser->readArray("dual_arm_movement",&tmp);
+    ser->closeArray();
+    ser->close();
+
+    //vec_r.push_back(tmp[0]);
+    
+    //std::cout << vec_r[0] << std::endl;
+
+    /*for(unsigned int i = 0; i < tmp.size(); i++){
+      afiducialmarkers->points.push_back(transformToPoint4d(tmp[i]));
+      }*/
+ 
+    delete ser;
+    
+  }	
 
   //main loop
   //check Sensornode position and start planning
@@ -419,12 +556,14 @@ public:
     while(ros::ok()){
     
       bool valid_detection =  getSensornodePose();
-	
+
       if(inGrabPosition() && valid_detection){
 	ROS_INFO("IN POSITION");
 	pnpPlanner();
+	synchronizedMovement();
+	//pnpPlannerBothArms();
       } else {
-	ROS_INFO("WRONG POSITION");
+	ROS_INFO("No valid position or teach mode activated");
       }
       //ros::spinOnce();
     }

@@ -63,11 +63,13 @@ struct trigger_points{
   cv::Point3d down;
 };
 
+using namespace std;
+
 bool loadParameters(std::vector<fiducialmarker>*,std::vector<handle>*, trigger_points*, pose*);
 
 //---------------------------<coordinate transformations>---------------------------------------
 cv::Mat eulerToMatrix(double rot1, double rot2, double rot3);
-void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2,std::vector<double>* q);
+void multiplyFrame7(std::vector<double> q1,std::vector<double> q2,std::vector<double>* q);
 std::vector<double> FrameToVec7(const cv::Mat frame);
 //---------------------------</coordinate transformations>---------------------------------------
 
@@ -76,10 +78,17 @@ std::vector<handle> handles;
 trigger_points trigger_offset;
 pose grab_entry;
 double gripper_length = 0.255; 
+pose3d sensornode_pose;
 
 boost::mutex tf_lock_;
 ros::Timer tf_pub_timer_;
 tf::StampedTransform marker_tf_;
+
+//camera in quanjo system as vec7
+tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
+std::vector<double> camera7(&tmp[0], &tmp[0]+7);
+
 
 //------------------------------<Callbacks>----------------------------------------------------------
 //The sensorsondeCoordinateManager manages and publishes all coordinate transform for the sensornode
@@ -93,15 +102,15 @@ void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArra
   //dummy quanjo_position
   static tf::TransformBroadcaster br20;
   tf::Transform transform20;
-  transform20.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+  transform20.setOrigin( tf::Vector3(0,0,0) );
   transform20.setRotation( tf::createQuaternionFromRPY(0,0,0) );
   br20.sendTransform(tf::StampedTransform(transform20, ros::Time::now(), "/world_dummy_link", "/quanjo_body"));
 
   static tf::TransformBroadcaster br;
   tf::Transform transform;
   //Camera Position
-  transform.setOrigin( tf::Vector3(0.935, 0.0, 0.452) );
-  transform.setRotation( tf::createQuaternionFromRPY(-PI/2,0,-PI/2) );
+  transform.setOrigin( tf::Vector3(camera7[0],camera7[1],camera7[2]) );
+  transform.setRotation( tf::Quaternion(camera7[4],camera7[5],camera7[6],camera7[3]) );
   br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/quanjo_body", "/quanjo_camera"));
 
   pose origin;
@@ -125,8 +134,6 @@ void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArra
     transform2.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
     transform2.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
     br2.sendTransform(tf::StampedTransform(transform2,  ros::Time::now(), "/quanjo_camera", "/seneka_marker"));
-
-    pose3d sensornode_pose;
 
     //-> Transform each marker pose to object pose
     for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
@@ -155,6 +162,7 @@ void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArra
 	transform10.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
 	br10.sendTransform(tf::StampedTransform(transform10,  ros::Time::now(), "/seneka_marker", "/sensornode"));
 
+	//not good to do it this way
 	sensornode_pose.translation.x = q_sn_m[0];
 	sensornode_pose.translation.y = q_sn_m[1];
 	sensornode_pose.translation.z = q_sn_m[2];
@@ -224,6 +232,7 @@ void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArra
   }   
 }
 //------------------------------</Callbacks>----------------------------------------------------------
+
 
 //Load Parameters positions of markers,handles and triggers in reference to the sensorsonde using my own SerializeIO class + scaling the values.
 bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<handle>* ahandles, trigger_points* atriggers, pose* aentry){
@@ -390,8 +399,6 @@ bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<h
 
 
 //------------------------Coordinate Transformations----------------------------------------------------------------------------------
-
-
 //XYZ (Roll,Pitch,Yaw) Euler System to Matrix representation
 cv::Mat eulerToMatrix(double rot1, double rot2, double rot3) {
   
@@ -529,7 +536,7 @@ std::vector<double> FrameToVec7(const cv::Mat frame)
 /** Quaternion multiplication
  *  Its not used right now
  */
-void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2, std::vector<double>* q)
+void multiplyFrame7(std::vector<double> q1,std::vector<double> q2, std::vector<double>* q)
 {
     // First quaternion q1 (x1 y1 z1 r1)
     double x1=q1[4];
@@ -543,6 +550,13 @@ void multiplyQuaternion(std::vector<double> q1,std::vector<double> q2, std::vect
     double z2=q2[6];
     double r2=q2[3];
 
+
+    //translation
+    q->push_back(q1[0]+q2[0]); 
+    q->push_back(q1[1]+q2[1]);
+    q->push_back(q1[2]+q2[2]);
+
+    //quaternion
     q->push_back(r1*r2 - x1*x2 - y1*y2 - z1*z2);   // r component
     q->push_back(x1*r2 + r1*x2 + y1*z2 - z1*y2);   // x component
     q->push_back(r1*y2 - x1*z2 + y1*r2 + z1*x2);   // y component

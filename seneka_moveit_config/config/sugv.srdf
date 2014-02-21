@@ -9,25 +9,8 @@
     <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
-<!--
-    <group name="left_arm_group">
-        <link name="left_arm_shoulder_pan_link" />
-        <link name="left_arm_shoulder_lift_link" />
-        <link name="left_arm_elbow_link" />
-        <link name="left_arm_wrist_1_link" />
-        <link name="left_arm_wrist_2_link" />
-        <link name="left_arm_wrist_3_link" />
-    </group>
-    <group name="right_arm_group">
-        <link name="right_arm_shoulder_pan_link" />
-        <link name="right_arm_shoulder_lift_link" />
-        <link name="right_arm_elbow_link" />
-        <link name="right_arm_wrist_1_link" />
-        <link name="right_arm_wrist_2_link" />
-        <link name="right_arm_wrist_3_link" />
-    </group>
--->
-    <group name="left_arm_group">
+
+   <!-- <group name="left_arm_group">
         <link name="left_arm_base_link" />
         <link name="left_arm_shoulder_link" />
         <link name="left_arm_upper_arm_link" />
@@ -35,10 +18,7 @@
         <link name="left_arm_wrist_1_link" />
         <link name="left_arm_wrist_2_link" />
         <link name="left_arm_wrist_3_link" />
-        <link name="left_arm_wrist_3_link" />
         <link name="left_arm_ee_link" />
-	<!--<link name="left_arm_gripper_link" />
-	<link name="left_arm_rviz_link" />-->
     </group>
 
     <group name="right_arm_group">
@@ -50,14 +30,52 @@
         <link name="right_arm_wrist_2_link" />
         <link name="right_arm_wrist_3_link" />
         <link name="right_arm_ee_link" /> 
-	<!--<link name="right_arm_gripper_link" />
-	<link name="right_arm_rviz_link" />-->
     </group> 
 
     <group name="both_arms">
-	<group name="left_arm_group">
-	<group name="right_arm_group">
+	<group name="left_arm_group" />
+	<group name="right_arm_group" />
+    </group> -->
+
+    <group name="left_arm_group">
+        <joint name="left_arm_shoulder_pan_joint" />
+        <joint name="left_arm_shoulder_lift_joint" />
+        <joint name="left_arm_elbow_joint" />
+        <joint name="left_arm_wrist_1_joint" />
+        <joint name="left_arm_wrist_2_joint" />
+        <joint name="left_arm_wrist_3_joint" />
+        <joint name="left_arm_ee_fixed_joint" />
     </group>
+
+     <group name="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" />
+        <joint name="right_arm_shoulder_lift_joint" />
+        <joint name="right_arm_elbow_joint" />
+        <joint name="right_arm_wrist_1_joint" />
+        <joint name="right_arm_wrist_2_joint" />
+        <joint name="right_arm_wrist_3_joint" />
+        <joint name="right_arm_ee_fixed_joint" />
+    </group>
+
+    <group name="left_gripper">
+	<joint name="left_arm_gripper_joint" />
+	<joint name="left_arm_rviz_joint" />
+    </group>
+
+    <group name="right_gripper">
+	<joint name="right_arm_gripper_joint" />
+	<joint name="right_arm_rviz_joint" />
+    </group>
+
+
+    <group name="both_arms">
+	<group name="left_arm_group" />
+	<group name="right_arm_group" />
+    </group>
+
+
+	<end_effector name="left_eef" parent_link="left_arm_ee_link" group="left_gripper" parent_group="left_arm_group"/>
+	<end_effector name="right_eef" parent_link="right_arm_ee_link" group="right_gripper" parent_roup="right_arm_group"/>
 
  <!--   <group name="manipulator">
         <link name="base_link" />
@@ -89,6 +107,7 @@
 
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
 	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
+
 
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="left_arm_base_link" link2="left_arm_forearm_link" reason="Never" />
