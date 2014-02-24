@@ -54,7 +54,11 @@ Required:
 ---------------------------------------------------------------------
 Go to the launchfile of the cob_fiducial package **../cob_object_perception/cob_fiducials/ros/launch/fiducials.launch**.
 Make sure that the rgb_topic argument points to the right image publisher.
-E.g. for the kinect use <arg name="rgb_topic" default="/camera/rgb/" />.
+E.g. for the Kinect use ** /camera/rgb/ **. 
+Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
+The line 
+> <rosparam command="load" ns="fiducials" file="$(find cob_fiducials)/ros/launch/fiducials_fpitag.yaml"/>
+
 
 
 
