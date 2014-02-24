@@ -40,26 +40,26 @@ Getting started with detection of sensornode:
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection)
 
 
-Getting started:
+#Getting started:
 =========
 
-Required:
+##Required:
 ---------
 * git clone https://github.com/ipa320/universal_robot/tree/groovy_dev (WRONG!!!! -> Talk to Matthias Gruler) 
 * git clone https://github.com/ipa320/cob_perception_common (catkin) (make sure you are using the groovy_dev_catkin branch) 
 * git clone https://github.com/ipa320/cob_object_perception (rosbuild)
 * git clone https://github.com/Equanox/seneka_deployment_unit (catkin)
 
-1. Configuration
+##1. Configuration
 ---------------------------------------------------------------------
 * Go to the launchfile of the cob_fiducial package **../cob_object_perception/cob_fiducials/ros/launch/fiducials.launch**.
 Make sure that the rgb_topic argument points to the right image publisher.
-E.g. for the Kinect use ** /camera/rgb/ **. 
+E.g. for the Kinect use **/camera/rgb/**.
 
 * Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
 See http://wiki.ros.org/cob_fiducials for details.
 
-2. Connect the Pipeline
+##2. Connect the Pipeline
 ---------------------------------------------------------------------
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection nodes)
 * rostopic hz /fiducials/detect_fiducials (start marker detection)
@@ -67,9 +67,24 @@ See http://wiki.ros.org/cob_fiducials for details.
 * roslaunch seneka_moveit_config move_group.launch (load the move group and moveit config)
 * roslaunch seneka_moveit_config moveit_rviz.launch (visualization of planed trajectories)
 
-3. Pick up
+##3. Pick up
 ---------------------------------------------------------------------
-* rosrun seneka_pnp seneka_pick_and_place (starts the pick up process for a sensosonde, watch to rviz and HANDS ON RED BUTTON)
+* rosrun seneka_pnp seneka_pick_and_place
+
+This node manages the pick up process for a sensosonde (REMEMBER: Watch to rviz and **HANDS ON RED THE BUTTONS**).
+There are multiple sleep commands in the code to enable visual trajectory checking with rviz.
+At first the node is planning a path to pickup the sensorsonde. 
+Second the arms move through the waypoints saved in **..seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def**.
+
+##4. Teach
+---------------------------------------------------------------------
+* rosrun seneka_pnp seneka_teach
+
+For teaching it is necessary to be connected with both arms. Each time you press **t** the position and orientation of the endeffectors are saved.
+**Note1:** You can't move the arms when a connection between the arms and the pc is established. So each time you want to move the arms you have to kill the 
+ugv_bringup node and reconnect before you press **t**.
+**Note1:** There is now override protection. You can easily change the storage file in the code and recompile.
+
 
 
 ---------------------------------------------------------------------
