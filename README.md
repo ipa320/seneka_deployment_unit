@@ -4,7 +4,7 @@ SENEKA_DEPLOYMENT_UNIT
 This repository contains source code for the deployment units developed at Fraunhofer IPA in the SENEKA project.
 The package is made to work with ros groovy and gazebo version 1.5
 
-The seneka project uses the cob_fiducial node for marker detection. A documentation of cob_fiducials can be found here http://wiki.ros.org/cob_fiducials
+The seneka project uses the cob_fiducial package for marker detection. A documentation of cob_fiducials can be found here http://wiki.ros.org/cob_fiducials
 
 ----------------------------------------------------------------------
 
@@ -13,26 +13,18 @@ PACKAGES:
 
 Functionality packages:
 -----------------------
-* seneka_pnp_planer (not working) -> pick and place planner for the deployment of the sensor node
-* seneka_sensornode_detection (not working) -> starts the cob_fiducial node and manages the detection process
-
+* seneka_pnp -> pick and place planner for picking up the sensorsonde
+* seneka_sensornode_detection -> Brings up the cob_fiducial node and manages the detection process. It also publish all the necessary tf positions of the sensorsonde
+				
 Description packages:
 -----------------------
-* seneka_ugv_description -> Quanjo description files and gazebo launch + sensornode xacro blueprint
+* seneka_ugv_description -> Quanjo description files and gazebo_bringup + seneka_bringup
 * seneka_moveit_config -> moveit config for Quanjo
 * seneka_msgs -> msgs to send fiducial Array from cob_fiducials to seneka_sensornode_detection
 * universal_robot -> configured universal robot stack for seneka project
 
 ----------------------------------------------------------------------
 
-Install:
---------
-* git clone https://github.com/ipa320/universal_robot/tree/groovy_dev
-* git clone https://github.com/ipa320/cob_perception_common (rosbuild package)
-* git clone https://github.com/Equanox/cob_object_perception/tree/seneka_fiducials (rosbuild package)
-* git clone https://github.com/Equanox/seneka_deployment_unit (catkin package)
-
-----------------------------------------------------------------------
 
 Getting started with Quanjo in gazebo:
 ----------------------------------------
@@ -48,15 +40,26 @@ Getting started with detection of sensornode:
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection)
 
 
-TODO: (for milestone february)
-----------------------------------------------------------------------
-* Publish handle tf
-* choose a grabbing strategy
-* choose a pickup strategy (start with very simple task)
-* synchronize movement of both arms (ideas?)
-* when sensornode is in position start the pickup process
+Getting started:
+=========
 
-----------------------------------------------------------------------
+Required:
+---------
+* git clone https://github.com/ipa320/universal_robot/tree/groovy_dev (WRONG!!!! -> Talk to Matthias Gruler) 
+* git clone https://github.com/ipa320/cob_perception_common (catkin) (make sure you are using the groovy_dev_catkin branch) 
+* git clone https://github.com/ipa320/cob_object_perception (rosbuild)
+* git clone https://github.com/Equanox/seneka_deployment_unit (catkin)
+
+1. Configuration
+---------------------------------------------------------------------
+Go to the launchfile of the cob_fiducial package ../cob_object_perception/cob_fiducials/ros/launch/fiducials.launch .
+Make sure that the rgb_topic argument points to the right image publisher.
+E.g. for the kinect use <arg name="rgb_topic" default="/camera/rgb/" />.
+
+
+
+
+---------------------------------------------------------------------
 * Author: Matthias Nösner 
 * Readme updated: 13.12.2013
 
