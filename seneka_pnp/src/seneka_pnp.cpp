@@ -65,7 +65,7 @@ private:
   pose trigger_down;
   pose inital_grab_pose;
 
-  std::vector<double> teached_wayp_r, teached_wayp_l;
+  std::vector<std::vector<double> > teached_wayp_r, teached_wayp_l;
 
   tf::TransformListener listener;
   tf::StampedTransform transform;
@@ -94,11 +94,11 @@ public:
   void init(){
     
     trigger_up.x = 0;
-    trigger_up.y = 0.1 ;
+    trigger_up.y = 0.1;
     trigger_up.z = 0;
 
     trigger_down.x = 0;
-    trigger_down.y = -0.1 ;
+    trigger_down.y = -0.1;
     trigger_down.z = 0;
 
     inital_grab_pose.x = trigger_down.x - 0.2;
@@ -122,8 +122,7 @@ public:
 
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);  // restore old settings
     return c;
-  }
-  
+  }  
 
   bool getSensornodePose(){
     
@@ -243,7 +242,8 @@ public:
     
   //pick and place planner
   void pnpPlanner(){
-  
+
+    bool planexecution = false;
     std::cout << "---------------<planning>-----------------------------" << std::endl;
     unsigned int used_handle_r = 2;//real handle id 1-6
     unsigned int used_handle_l = 6;//real handle id 1-6
@@ -340,7 +340,7 @@ public:
     }
 
 
-    //-------------------Linear Movement through all points ------------------------
+    //-------------------Linear Movement through all points (grabbing the sensornode) ------------------------
     if(success){
 
       group_r.setStartStateToCurrentState();      
@@ -407,7 +407,7 @@ public:
     						   0.0,   // jump_threshold
 						   trajectory_r);  
       linear_plan_r.trajectory_ = trajectory_r;
-      sleep(10.0);
+      sleep(10.0);//Time for Visualization    
 
       double fraction_l = group_l.computeCartesianPath(waypoints_l,
 						       0.01,  // eef_step
@@ -415,30 +415,76 @@ public:
 						       trajectory_l);  
       
       linear_plan_l.trajectory_ = trajectory_l;
-      sleep(10.0);
+      sleep(10.0);//Time for Visualization    
 
       mergedPlan = mergePlan(linear_plan_r,linear_plan_l);
-      group_both.execute(mergedPlan);
-      sleep(10.0);
+      if(planexecution){
+	group_both.execute(mergedPlan);
+	sleep(10.0);
+      }
 
-      /*std::cout << "WARNING IM SENDING THE TRAJECTORY IN RRRRRRRRRRRRRRRR 10sec" << std::endl;
-	sleep(10.0);
-	//group_r.asyncExecute(linear_plan_r);
-	sleep(10.0);
 
-	std::cout << "WARNING IM SENDING THE TRAJECTORY IN LLLLLLLLLLLLLLLL 10sec" << std::endl;
+      //------------------------TEACHED MOVEMENT--------------------------------------------------------------------
+      ROS_INFO("----------PLANNING WITH TEACHED WAYPOINTS------------");
+      waypoints_r.clear();
+      waypoints_l.clear();      
+
+      for(unsigned int i = 0; i < teached_wayp_r.size();i++){
+	if(teached_wayp_r[i].size() == 7){
+	  target_pose2_r.position.x = teached_wayp_r[i][0];
+	  target_pose2_r.position.y = teached_wayp_r[i][1];
+	  target_pose2_r.position.z = teached_wayp_r[i][2];
+	  target_pose2_r.orientation.w = teached_wayp_r[i][3];
+	  target_pose2_r.orientation.x = teached_wayp_r[i][4];
+	  target_pose2_r.orientation.y = teached_wayp_r[i][5];
+	  target_pose2_r.orientation.z = teached_wayp_r[i][6];
+	  waypoints_r.push_back(target_pose2_r);
+	} else {
+	  ROS_WARN("Something is wrong with the teached waypoints! Right arm  waypoint %u denied",i+1);
+	}	
+      }
+      
+      for(unsigned int i = 0; i < teached_wayp_l.size();i++){
+	if(teached_wayp_l[i].size() == 7){
+	  target_pose2_l.position.x = teached_wayp_l[i][0];
+	  target_pose2_l.position.y = teached_wayp_l[i][1];
+	  target_pose2_l.position.z = teached_wayp_l[i][2];
+	  target_pose2_l.orientation.w = teached_wayp_l[i][3];
+	  target_pose2_l.orientation.x = teached_wayp_l[i][4];
+	  target_pose2_l.orientation.y = teached_wayp_l[i][5];
+	  target_pose2_l.orientation.z = teached_wayp_l[i][6];
+	  waypoints_l.push_back(target_pose2_l);
+	} else {
+	  ROS_WARN("Something is wrong with the teached waypoints! Right arm  waypoint %u denied",i+1);
+	}	
+      }
+
+      //-------RIGHT-------------------------
+      group_r.computeCartesianPath(waypoints_r,
+				   0.01,  // eef_step
+				   0.0,   // jump_threshold
+				   trajectory_r);  
+
+
+      linear_plan_r.trajectory_ = trajectory_r;
+      sleep(10.0);//Time for Visualization    
+
+      //-------LEFT-------------------------
+      group_l.computeCartesianPath(waypoints_l,
+				   0.01,  // eef_step
+				   0.0,   // jump_threshold
+				   trajectory_l);  
+      
+      linear_plan_l.trajectory_ = trajectory_l;
+      sleep(10.0);//Time for Visualization    
+
+      if(planexecution){
 	sleep(10.0);
-	// group_l.asyncExecute(linear_plan_l);
-	sleep(10.0);*/
+      }      
     }
-  }
+  } 
 
-  void synchronizedMovement(){
-    
-            
-  }
-
-  //code from Prace project, IPA: Benjamin Maidel
+  //code from prace project, IPA: Benjamin Maidel
   move_group_interface::MoveGroup::Plan mergePlan(move_group_interface::MoveGroup::Plan plan1, move_group_interface::MoveGroup::Plan plan2)
   {
     move_group_interface::MoveGroup::Plan mergedPlan;
@@ -446,100 +492,98 @@ public:
     mergedPlan.trajectory_.joint_trajectory.joint_names.insert(mergedPlan.trajectory_.joint_trajectory.joint_names.end(),
 							       plan2.trajectory_.joint_trajectory.joint_names.begin(),
 							       plan2.trajectory_.joint_trajectory.joint_names.end());
- 
 
     size_t i;
     for(i = 0; (i < mergedPlan.trajectory_.joint_trajectory.points.size())
-	  && (i < plan2.trajectory_.joint_trajectory.points.size()); i++)
+	  && (i < plan2.trajectory_.joint_trajectory.points.size()); i++){
 
-      {
-	mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
-									       mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.end(),
-									       plan2.trajectory_.joint_trajectory.points[i].accelerations.begin(),
-									       plan2.trajectory_.joint_trajectory.points[i].accelerations.end());
+      mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
+									     mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.end(),
+									     plan2.trajectory_.joint_trajectory.points[i].accelerations.begin(),
+									     plan2.trajectory_.joint_trajectory.points[i].accelerations.end());
 
+      mergedPlan.trajectory_.joint_trajectory.points[i].positions.insert(
+									 mergedPlan.trajectory_.joint_trajectory.points[i].positions.end(),
+									 plan2.trajectory_.joint_trajectory.points[i].positions.begin(),
+									 plan2.trajectory_.joint_trajectory.points[i].positions.end());
 
-	mergedPlan.trajectory_.joint_trajectory.points[i].positions.insert(
-									   mergedPlan.trajectory_.joint_trajectory.points[i].positions.end(),
-									   plan2.trajectory_.joint_trajectory.points[i].positions.begin(),
-									   plan2.trajectory_.joint_trajectory.points[i].positions.end());
+      mergedPlan.trajectory_.joint_trajectory.points[i].velocities.insert(
+									  mergedPlan.trajectory_.joint_trajectory.points[i].velocities.end(),
+									  plan2.trajectory_.joint_trajectory.points[i].velocities.begin(),
+									  plan2.trajectory_.joint_trajectory.points[i].velocities.end());
+    }
 
-	mergedPlan.trajectory_.joint_trajectory.points[i].velocities.insert(
-									    mergedPlan.trajectory_.joint_trajectory.points[i].velocities.end(),
-									    plan2.trajectory_.joint_trajectory.points[i].velocities.begin(),
-									    plan2.trajectory_.joint_trajectory.points[i].velocities.end());
+    if(plan1.trajectory_.joint_trajectory.points.size() > plan2.trajectory_.joint_trajectory.points.size()){
+
+      for(size_t j = i; j < plan1.trajectory_.joint_trajectory.points.size(); j++){
+
+	mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.insert(
+									       mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.end(),
+									       plan2.trajectory_.joint_trajectory.points.back().accelerations.begin(),
+									       plan2.trajectory_.joint_trajectory.points.back().accelerations.end());
+
+	mergedPlan.trajectory_.joint_trajectory.points[j].positions.insert(
+									   mergedPlan.trajectory_.joint_trajectory.points[j].positions.end(),
+									   plan2.trajectory_.joint_trajectory.points.back().positions.begin(),
+									   plan2.trajectory_.joint_trajectory.points.back().positions.end());
+
+	mergedPlan.trajectory_.joint_trajectory.points[j].velocities.insert(
+									    mergedPlan.trajectory_.joint_trajectory.points[j].velocities.end(),
+									    plan2.trajectory_.joint_trajectory.points.back().velocities.begin(),
+									    plan2.trajectory_.joint_trajectory.points.back().velocities.end());
       }
+    }
 
-    if(plan1.trajectory_.joint_trajectory.points.size() > plan2.trajectory_.joint_trajectory.points.size())
-      {
-	for(size_t j = i; j < plan1.trajectory_.joint_trajectory.points.size(); j++)
-	  {
-	    mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.insert(
-										   mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.end(),
-										   plan2.trajectory_.joint_trajectory.points.back().accelerations.begin(),
-										   plan2.trajectory_.joint_trajectory.points.back().accelerations.end());
+    if(plan1.trajectory_.joint_trajectory.points.size() < plan2.trajectory_.joint_trajectory.points.size()){
 
-	    mergedPlan.trajectory_.joint_trajectory.points[j].positions.insert(
-									       mergedPlan.trajectory_.joint_trajectory.points[j].positions.end(),
-									       plan2.trajectory_.joint_trajectory.points.back().positions.begin(),
-									       plan2.trajectory_.joint_trajectory.points.back().positions.end());
+      trajectory_msgs::JointTrajectoryPoint point;
+      for(size_t j = i; j < plan2.trajectory_.joint_trajectory.points.size(); j++){
 
-	    mergedPlan.trajectory_.joint_trajectory.points[j].velocities.insert(
-										mergedPlan.trajectory_.joint_trajectory.points[j].velocities.end(),
-										plan2.trajectory_.joint_trajectory.points.back().velocities.begin(),
-										plan2.trajectory_.joint_trajectory.points.back().velocities.end());
-	  }
-      }
+	point  = mergedPlan.trajectory_.joint_trajectory.points.back();
 
-    if(plan1.trajectory_.joint_trajectory.points.size() < plan2.trajectory_.joint_trajectory.points.size())
-      {
-	trajectory_msgs::JointTrajectoryPoint point;
-	for(size_t j = i; j < plan2.trajectory_.joint_trajectory.points.size(); j++)
-	  {
-	    point  = mergedPlan.trajectory_.joint_trajectory.points.back();
+	point.accelerations.insert(
+				   point.accelerations.end(),
+				   plan2.trajectory_.joint_trajectory.points[j].accelerations.begin(),
+				   plan2.trajectory_.joint_trajectory.points[j].accelerations.end());
 
-	    point.accelerations.insert(
-				       point.accelerations.end(),
-				       plan2.trajectory_.joint_trajectory.points[j].accelerations.begin(),
-				       plan2.trajectory_.joint_trajectory.points[j].accelerations.end());
+	point.positions.insert(
+			       point.positions.end(),
+			       plan2.trajectory_.joint_trajectory.points[j].positions.begin(),
+			       plan2.trajectory_.joint_trajectory.points[j].positions.end());
 
-	    point.positions.insert(
-				   point.positions.end(),
-				   plan2.trajectory_.joint_trajectory.points[j].positions.begin(),
-				   plan2.trajectory_.joint_trajectory.points[j].positions.end());
-
-	    point.velocities.insert(
-				    point.velocities.end(),
-				    plan2.trajectory_.joint_trajectory.points[j].velocities.begin(),
-				    plan2.trajectory_.joint_trajectory.points[j].velocities.end());
+	point.velocities.insert(
+				point.velocities.end(),
+				plan2.trajectory_.joint_trajectory.points[j].velocities.begin(),
+				plan2.trajectory_.joint_trajectory.points[j].velocities.end());
 	    
-	    point.time_from_start = plan2.trajectory_.joint_trajectory.points[j].time_from_start;
+	point.time_from_start = plan2.trajectory_.joint_trajectory.points[j].time_from_start;
 
-	    mergedPlan.trajectory_.joint_trajectory.points.push_back(point);
-	  }
+	mergedPlan.trajectory_.joint_trajectory.points.push_back(point);
       }
+    }
 
     return mergedPlan;
   }
 
   //HERE
-  void loadTeachedPoints(std::vector<double>* vec_r,std::vector<double>* vec_l){
+  void loadTeachedPoints(std::vector<std::vector<double> >* vec_r,std::vector<std::vector<double> >* vec_l){
     
     SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
     std::vector<std::vector<double> > tmp;
 
-    ser->openArray("dual_aarm_movement");
+    ser->openArray("dual_arm_movement");
     ser->readArray("dual_arm_movement",&tmp);
     ser->closeArray();
     ser->close();
 
-    //vec_r.push_back(tmp[0]);
-    
-    //std::cout << vec_r[0] << std::endl;
-
-    /*for(unsigned int i = 0; i < tmp.size(); i++){
-      afiducialmarkers->points.push_back(transformToPoint4d(tmp[i]));
-      }*/
+    for(unsigned int i = 0; i < tmp.size(); i++){
+      
+      if((i%2)==0){
+	vec_r->push_back(tmp[i]);
+      } else {
+	vec_l->push_back(tmp[i]);
+      }
+    }
  
     delete ser;
     
@@ -560,7 +604,7 @@ public:
       if(inGrabPosition() && valid_detection){
 	ROS_INFO("IN POSITION");
 	pnpPlanner();
-	synchronizedMovement();
+	//synchronizedMovement();
 	//pnpPlannerBothArms();
       } else {
 	ROS_INFO("No valid position or teach mode activated");

@@ -86,13 +86,13 @@ public:
       vec_r.push_back(pose_r.orientation.y);
       vec_r.push_back(pose_r.orientation.z);
 
-      vec_l.push_back(pose_r.position.x);
-      vec_l.push_back(pose_r.position.y);
-      vec_l.push_back(pose_r.position.z);
-      vec_l.push_back(pose_r.orientation.w);
-      vec_l.push_back(pose_r.orientation.x);
-      vec_l.push_back(pose_r.orientation.y);
-      vec_l.push_back(pose_r.orientation.z);
+      vec_l.push_back(pose_l.position.x);
+      vec_l.push_back(pose_l.position.y);
+      vec_l.push_back(pose_l.position.z);
+      vec_l.push_back(pose_l.orientation.w);
+      vec_l.push_back(pose_l.orientation.x);
+      vec_l.push_back(pose_l.orientation.y);
+      vec_l.push_back(pose_l.orientation.z);
 
       ser->writeVector(vec_r);
       ser->writeVector(vec_l);

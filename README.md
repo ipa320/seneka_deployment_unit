@@ -20,7 +20,7 @@ Description packages:
 -----------------------
 * seneka_ugv_description -> Quanjo description files and gazebo_bringup + seneka_bringup
 * seneka_moveit_config -> moveit config for Quanjo
-* seneka_msgs -> msgs to send fiducial Array from cob_fiducials to seneka_sensornode_detection
+* seneka_msgs -> not used
 * universal_robot -> configured universal robot stack for seneka project
 
 
@@ -57,7 +57,9 @@ See http://wiki.ros.org/cob_fiducials for details.
 
 This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
 There are multiple sleep commands in the code to enable visual trajectory checking with rviz before executing the trajectory.
+
 At first the node is planning a path to pickup the sensorsonde. 
+
 Second the arms move through the waypoints saved in **..seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def**.
 
 ##4. Teach (development)
@@ -69,9 +71,7 @@ For teaching it is necessary to be connected with both arms. Each time you press
 **- Note1:** You can't move the arms when a connection between arms and pc is established. So each time you want to move the arms you have to kill the 
 ugv_bringup node and reconnect before you press **t**.
 
-**- Note2:** There is now override protection. You can easily change the storage file in the code and recompile.
-
-
+**- Note2:** There is no file override protection. You can easily change the storage file in the code and recompile.
 
 ---------------------------------------------------------------------
 * Author: Matthias Nösner 
