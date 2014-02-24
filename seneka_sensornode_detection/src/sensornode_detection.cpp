@@ -276,7 +276,7 @@ bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<h
   if(!ser->readVariable("fiducial6_ROT2",&(fiducial6.rot.y))) return false;
   if(!ser->readVariable("fiducial6_ROT3",&(fiducial6.rot.z))) return false;	
 
-  //--- Read handel pose ---
+  //--- Read handle pose ---
   if(!ser->readVariable("handle1_x",&(handle1.trans.x))) return false;
   if(!ser->readVariable("handle1_y",&(handle1.trans.y))) return false;
   if(!ser->readVariable("handle1_z",&(handle1.trans.z))) return false;
@@ -349,7 +349,7 @@ bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<h
 
   *atriggers = triggers;
 
-  //Scale to m
+  //Scale to meter
   for(unsigned int i = 0; i < afiducialmarkers->size(); i++){
 	  
     (*afiducialmarkers)[i].trans.x =  (*afiducialmarkers)[i].trans.x * scale;
