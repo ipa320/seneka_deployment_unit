@@ -23,24 +23,8 @@ Description packages:
 * seneka_msgs -> msgs to send fiducial Array from cob_fiducials to seneka_sensornode_detection
 * universal_robot -> configured universal robot stack for seneka project
 
-----------------------------------------------------------------------
 
-
-Getting started with Quanjo in gazebo:
-----------------------------------------
-* roslaunch seneka_ugv_description ugv.launch
-* roslaunch seneka_moveit_config move_group.launch
-* roslaunch seneka_moveit_config moveit_rviz.launch
-* rosrun seneka_sensornode_detection sensornode_detection (places the sensornode to a defined position)
-
-----------------------------------------------------------------------
-
-Getting started with detection of sensornode:
------------------------------------------
-* roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection)
-
-
-#Getting started:
+Getting started:
 =========
 
 ##Required:
@@ -59,7 +43,7 @@ E.g. for the Kinect use **/camera/rgb/**.
 * Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
 See http://wiki.ros.org/cob_fiducials for details.
 
-##2. Connect the Pipeline
+##2. Connect the Pipeline (stable)
 ---------------------------------------------------------------------
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection nodes)
 * rostopic hz /fiducials/detect_fiducials (start marker detection)
@@ -67,22 +51,22 @@ See http://wiki.ros.org/cob_fiducials for details.
 * roslaunch seneka_moveit_config move_group.launch (load the move group and moveit config)
 * roslaunch seneka_moveit_config moveit_rviz.launch (visualization of planed trajectories)
 
-##3. Pick up
+##3. Pick up (development)
 ---------------------------------------------------------------------
 * rosrun seneka_pnp seneka_pick_and_place
 
-This node manages the pick up process for a sensosonde (REMEMBER: Watch to rviz and **HANDS ON RED THE BUTTONS**).
-There are multiple sleep commands in the code to enable visual trajectory checking with rviz.
+This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
+There are multiple sleep commands in the code to enable visual trajectory checking with rviz before executing the trajectory.
 At first the node is planning a path to pickup the sensorsonde. 
 Second the arms move through the waypoints saved in **..seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def**.
 
-##4. Teach
+##4. Teach (development)
 ---------------------------------------------------------------------
 * rosrun seneka_pnp seneka_teach
 
 For teaching it is necessary to be connected with both arms. Each time you press **t** the position and orientation of the endeffectors are saved.
 
-**- Note1:** You can't move the arms when a connection between the arms and the pc is established. So each time you want to move the arms you have to kill the 
+**- Note1:** You can't move the arms when a connection between arms and pc is established. So each time you want to move the arms you have to kill the 
 ugv_bringup node and reconnect before you press **t**.
 
 **- Note2:** There is now override protection. You can easily change the storage file in the code and recompile.
@@ -91,5 +75,5 @@ ugv_bringup node and reconnect before you press **t**.
 
 ---------------------------------------------------------------------
 * Author: Matthias Nösner 
-* Readme updated: 13.12.2013
+* Readme updated: 24.02.2014
 
