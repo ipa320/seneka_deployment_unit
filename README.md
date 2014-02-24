@@ -52,15 +52,24 @@ Required:
 
 1. Configuration
 ---------------------------------------------------------------------
-Go to the launchfile of the cob_fiducial package **../cob_object_perception/cob_fiducials/ros/launch/fiducials.launch**.
+* Go to the launchfile of the cob_fiducial package **../cob_object_perception/cob_fiducials/ros/launch/fiducials.launch**.
 Make sure that the rgb_topic argument points to the right image publisher.
 E.g. for the Kinect use ** /camera/rgb/ **. 
-Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
-The line 
-> <rosparam command="load" ns="fiducials" file="$(find cob_fiducials)/ros/launch/fiducials_fpitag.yaml"/>
 
+* Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
+See http://wiki.ros.org/cob_fiducials for details.
 
+2. Connect the Pipeline
+---------------------------------------------------------------------
+* roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection nodes)
+* rostopic hz /fiducials/detect_fiducials (start marker detection)
+* roslaunch seneka_ugv_description ugv_bringup.launch robot_ip_l:=192.168.1.11 robot_ip_r:=192.168.1.12 (connection for two ur10's with static ip's. The pc needs a static ip in the same subnet)
+* roslaunch seneka_moveit_config move_group.launch (load the move group and moveit config)
+* roslaunch seneka_moveit_config moveit_rviz.launch (visualization of planed trajectories)
 
+3. Pick up
+---------------------------------------------------------------------
+* rosrun seneka_pnp seneka_pick_and_place (starts the pick up process for a sensosonde, watch to rviz and HANDS ON RED BUTTON)
 
 
 ---------------------------------------------------------------------
