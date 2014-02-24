@@ -81,9 +81,11 @@ Second the arms move through the waypoints saved in **..seneka_deployment_unit/s
 * rosrun seneka_pnp seneka_teach
 
 For teaching it is necessary to be connected with both arms. Each time you press **t** the position and orientation of the endeffectors are saved.
-**Note1:** You can't move the arms when a connection between the arms and the pc is established. So each time you want to move the arms you have to kill the 
+
+**- Note1:** You can't move the arms when a connection between the arms and the pc is established. So each time you want to move the arms you have to kill the 
 ugv_bringup node and reconnect before you press **t**.
-**Note1:** There is now override protection. You can easily change the storage file in the code and recompile.
+
+**- Note2:** There is now override protection. You can easily change the storage file in the code and recompile.
 
 
 
