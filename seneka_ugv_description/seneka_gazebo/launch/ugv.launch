@@ -12,7 +12,7 @@
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="spawn_gazebo_quanjo" pkg="gazebo" type="spawn_model" args="-urdf -param robot_description -model quanjo -z 1" respawn="false" output="screen" />
-  <node name="spawn_gazebo_sensornode" pkg="gazebo" type="spawn_model" args="-urdf -param sensornode_description -model sensornode -x 1 -y 1 -z 1" respawn="false" output="screen" />
+  <node name="spawn_gazebo_sensornode" pkg="gazebo" type="spawn_model" args="-urdf -param sensornode_description -model sensornode -x 2 -y 2 -z 1" respawn="false" output="screen" />
 
   <!-- Controller Manager -->
   <include file="$(find pr2_controller_manager)/controller_manager.launch" />

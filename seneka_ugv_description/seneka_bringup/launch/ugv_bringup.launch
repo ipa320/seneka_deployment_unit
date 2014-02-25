@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- robot_ip: IP-address of the robot's socket-messaging server -->
+  <arg name="robot_ip_l" />
+  <arg name="robot_ip_r" />
+
+  <!-- robot model -->
+  <include file="$(find seneka_ugv_description)/seneka_bringup/launch/ugv_upload.launch" />
+  
+  <!-- copy the specified IP address to be consistant with ROS-Industrial spec.
+  NOTE: The ip address is actually passed to the driver on the command line -->
+  <param name="/robot_ip_address_l" type="str" value="$(arg robot_ip_l)"/>
+  <param name="/robot_ip_address_r" type="str" value="$(arg robot_ip_r)"/>	
+  
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+  <!-- driver -->
+  <node ns="right_arm_controller" name="ur_driver" pkg="ur_driver" type="driver.py" args="$(arg robot_ip_r)" output="screen" />
+  <node ns="left_arm_controller"  name="ur_driver" pkg="ur_driver" type="driver_l.py" args="$(arg robot_ip_l)" output="screen" />	
+   
+  <!-- TF Buffer Server -->
+  <!--<node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server">
+    <param name="buffer_size" value="120.0"/>
+  </node>-->
+
+	
+</launch>
+
+
+
+

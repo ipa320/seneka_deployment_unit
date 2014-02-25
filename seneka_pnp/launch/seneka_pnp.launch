@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- send quanjo urdf to param server -->	
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />
+  
+  <node pkg="seneka_pnp" type="seneka_pick_and_place" name="seneka_pick_and_place" output="screen">	
+  </node>
+
+
+</launch>
