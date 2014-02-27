@@ -123,9 +123,6 @@ public:
   }
 };
 
-
-
-
 int main(int argc, char** argv)
 {
     /// initialize ROS, specify name of node

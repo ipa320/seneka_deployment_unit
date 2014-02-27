@@ -2,7 +2,6 @@
   seneka_pnp (pick and place)
   Author: Matthias Nösner  
 */
-
 #include <ros/ros.h>
 
 #include <opencv/cv.h>
@@ -54,7 +53,6 @@ struct handhold{
 
 private:
   ros::NodeHandle node_handle_;
-  pose3d sensornode_;
   std::vector<handhold> handholds_;
   
   std::vector<std::vector<double> > teached_wayp_r, teached_wayp_l;
@@ -182,18 +180,6 @@ public:
       handh.down.rotation.z = transform_down.getRotation().getZ();      
 
       handholds_.push_back(handh);
-  
-      //TODO: Make it usefuel
-      if(i == 1){
-	sensornode_.translation.x = transform.getOrigin().x();
-	sensornode_.translation.y = transform.getOrigin().y();
-	sensornode_.translation.z = transform.getOrigin().z();
-  
-	sensornode_.rotation.w = transform.getRotation().getW();
-	sensornode_.rotation.x = transform.getRotation().getX();
-	sensornode_.rotation.y = transform.getRotation().getY();
-	sensornode_.rotation.z = transform.getRotation().getZ();
-      }
     }
     return ret;
   }
@@ -225,9 +211,6 @@ public:
     moveit_msgs::DisplayTrajectory display_trajectory;;
 
     moveit::planning_interface::MoveGroup::Plan mergedPlan;
- 
-    //ROS_INFO("Reference frame: %s", group.getPlanningFrame().c_str());
-    //ROS_INFO("Reference frame: %s", group.getEndEffectorLink().c_str());
 
     group_r.setWorkspace (0, 0, 0, 5, 5, 5);
     group_r.setStartStateToCurrentState();
@@ -235,6 +218,13 @@ public:
     group_l.setStartStateToCurrentState();
     group_both.setWorkspace (0, 0, 0, 5, 5, 5);
     group_both.setStartStateToCurrentState();
+
+    group_r.setGoalOrientationTolerance(0.01);
+    group_r.setPlanningTime(10.0);
+    group_l.setGoalOrientationTolerance(0.01);
+    group_l.setPlanningTime(10.0);
+    group_both.setGoalOrientationTolerance(0.01);
+    group_both.setPlanningTime(10.0);
 
     //The nonlinearplanner is not used rigth now
 
@@ -283,14 +273,7 @@ public:
     group.setPathConstraints(test_constraints);*/
     //----------------constraints------------------------
 
-    group_r.setGoalOrientationTolerance(0.01);
-    group_r.setPlanningTime(10.0);
-    group_l.setGoalOrientationTolerance(0.01);
-    group_l.setPlanningTime(10.0);
-    group_both.setGoalOrientationTolerance(0.01);
-    group_both.setPlanningTime(10.0);
-
-    moveit::planning_interface::MoveGroup::Plan my_plan_r, my_plan_l;
+    /*moveit::planning_interface::MoveGroup::Plan my_plan_r, my_plan_l;
     //my_plan.trajectory_ = trajectory;
     bool success_r = true;//group_r.plan(my_plan_r);
     bool success_l = true;//group_l.plan(my_plan_l);
@@ -300,12 +283,12 @@ public:
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
     if(!success){
       std::cout << "WARNING IM SENDING THE TRAJECTORY IN 10sec" << std::endl;
-      sleep(10.0);
+      //sleep(10.0);
       //group_r.execute(my_plan_r);
       //eep(10.0);
       //group_l.execute(my_plan_l);
       //sleep(20.0);
-    }
+    }*/
 
 
     //-------------------Linear Movement through all points (grabbing the sensornode) ------------------------
@@ -418,7 +401,6 @@ public:
 	sleep(20.0);
       }
     }
-    exit(0);
   } 
 
   move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l){

@@ -2,7 +2,6 @@
 * Author: Matthias Nösner
 ********************** */
 #include <ros/ros.h>
-#include "gazebo_msgs/SetModelState.h"
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
