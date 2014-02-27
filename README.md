@@ -29,10 +29,10 @@ Getting started:
 
 ##Required:
 ---------
-* git clone https://github.com/ipa320/universal_robot/tree/groovy_dev (WRONG!!!! -> Talk to Matthias Gruler) 
-* git clone https://github.com/ipa320/cob_perception_common (catkin) (make sure you are using the groovy_dev_catkin branch) 
-* git clone https://github.com/ipa320/cob_object_perception (rosbuild)
-* git clone https://github.com/Equanox/seneka_deployment_unit (catkin)
+* git clone https://github.com/ipa-mig/universal_robot [rosbuild] (use the seneka_groovy_dev branch) 
+* git clone https://github.com/ipa320/cob_perception_common [catkin] (make sure you are using the groovy_dev_catkin branch) 
+* git clone https://github.com/ipa320/cob_object_perception [rosbuild]
+* git clone https://github.com/ipa320/seneka_deployment_unit [catkin]
 
 ##1. Configuration
 ---------------------------------------------------------------------
@@ -42,6 +42,12 @@ E.g. for the Kinect use **/camera/rgb/**.
 
 * Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
 See http://wiki.ros.org/cob_fiducials for details.
+---------------------------------------------------------------------
+* All the coordinate systems of the sensorsonde (marker,handle, grabpoints) can be adjusted in **../seneka_deployment_unit/seneka_sensornode_detection/common/sensorsonde_coordinates.def**. Right now only fiducial1 has valid coordinates.
+
+* gripper length and camera position is hardcoded in **../seneka_deployment_unit/seneka_sensornode_detection/src/sensornode_detection.cpp**
+
+* for plan execution the boolean **planexecution** in **seneka_pnp.cpp** need to be **true**
 
 ##2. Connect the Pipeline (stable)
 ---------------------------------------------------------------------
@@ -73,7 +79,11 @@ ugv_bringup node and reconnect before you press **t**.
 
 **- Note2:** There is no file override protection. You can easily change the storage file in the code and recompile.
 
+##5. TODO
 ---------------------------------------------------------------------
+* Right now only the marker with id 1 is used for the detection!
+
+
 * Author: Matthias Nösner 
 * Readme updated: 24.02.2014
 

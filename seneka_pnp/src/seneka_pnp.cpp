@@ -7,14 +7,10 @@
 
 #include <opencv/cv.h>
 
-#include <seneka_msgs/FiducialArray.h>
-#include <seneka_msgs/Fiducial.h>
-
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
 #include <SerializeIO.h>
-#include <termios.h>
 
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_msgs/DisplayRobotState.h>
@@ -61,10 +57,6 @@ private:
   pose3d sensornode_;
   std::vector<handhold> handholds_;
   
-  pose trigger_up;
-  pose trigger_down;
-  pose inital_grab_pose;
-
   std::vector<std::vector<double> > teached_wayp_r, teached_wayp_l;
 
   tf::TransformListener listener;
@@ -93,35 +85,8 @@ public:
 
   void init(){
     
-    trigger_up.x = 0;
-    trigger_up.y = 0.1;
-    trigger_up.z = 0;
-
-    trigger_down.x = 0;
-    trigger_down.y = -0.1;
-    trigger_down.z = 0;
-
-    inital_grab_pose.x = trigger_down.x - 0.2;
-    inital_grab_pose.y = trigger_down.y;
-    inital_grab_pose.z = trigger_down.z;
-    
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     mainLoop();
-  }  
-
-  //std stuff to handle keycommands
-  int getch()
-  {
-    static struct termios oldt, newt;
-    tcgetattr( STDIN_FILENO, &oldt);           // save old settings
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON);                 // disable buffering      
-    tcsetattr( STDIN_FILENO, TCSANOW, &newt);  // apply new settings
-
-    int c = getchar();  // read character (non-blocking)
-
-    tcsetattr( STDIN_FILENO, TCSANOW, &oldt);  // restore old settings
-    return c;
   }  
 
   bool getSensornodePose(){
@@ -218,6 +183,7 @@ public:
 
       handholds_.push_back(handh);
   
+      //TODO: Make it usefuel
       if(i == 1){
 	sensornode_.translation.x = transform.getOrigin().x();
 	sensornode_.translation.y = transform.getOrigin().y();
@@ -235,7 +201,6 @@ public:
   bool inGrabPosition(){
   
     //Check if the Sonde is in a valid grabbing position!!
-    //Keep it simple and hardcoded for milestone februrary
 
     return true;
   }
@@ -243,10 +208,10 @@ public:
   //pick and place planner
   void pnpPlanner(){
 
-    bool planexecution = false;
     std::cout << "---------------<planning>-----------------------------" << std::endl;
+ 
     unsigned int used_handle_r = 2;//real handle id 1-6
-    unsigned int used_handle_l = 6;//real handle id 1-6
+    unsigned int used_handle_l = 5;//real handle id 1-6
     used_handle_r--;
     used_handle_l--;
     
@@ -258,7 +223,9 @@ public:
     
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;;
-                       
+
+    moveit::planning_interface::MoveGroup::Plan mergedPlan;
+ 
     //ROS_INFO("Reference frame: %s", group.getPlanningFrame().c_str());
     //ROS_INFO("Reference frame: %s", group.getEndEffectorLink().c_str());
 
@@ -269,8 +236,9 @@ public:
     group_both.setWorkspace (0, 0, 0, 5, 5, 5);
     group_both.setStartStateToCurrentState();
 
-    
-    geometry_msgs::PoseStamped target_pose_r;
+    //The nonlinearplanner is not used rigth now
+
+    /*geometry_msgs::PoseStamped target_pose_r;
     target_pose_r.header.frame_id = "/quanjo_body";
 
     target_pose_r.pose.position.x = handholds_[used_handle_r].entry.translation.x;
@@ -333,15 +301,17 @@ public:
     if(!success){
       std::cout << "WARNING IM SENDING THE TRAJECTORY IN 10sec" << std::endl;
       sleep(10.0);
-      group_r.execute(my_plan_r);
-      sleep(10.0);
+      //group_r.execute(my_plan_r);
+      //eep(10.0);
       //group_l.execute(my_plan_l);
       //sleep(20.0);
     }
 
 
     //-------------------Linear Movement through all points (grabbing the sensornode) ------------------------
-    if(success){
+    if(true){
+
+      bool planexecution = false;
 
       group_r.setStartStateToCurrentState();      
       group_l.setStartStateToCurrentState();
@@ -351,9 +321,9 @@ public:
       geometry_msgs::Pose target_pose2_r = group_r.getCurrentPose().pose;
       geometry_msgs::Pose target_pose2_l = group_l.getCurrentPose().pose;
       
-    
-      //right
-      //waypoints_r.push_back(target_pose2_r);
+      //------------------------Drive to entry point of pickup process-------------------------------------------------
+      waypoints_r.clear();
+      waypoints_l.clear();
 
       target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
       target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
@@ -364,20 +334,6 @@ public:
       target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
       waypoints_r.push_back(target_pose2_r);
 
-      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
-      waypoints_r.push_back(target_pose2_r);
-
-      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
-      waypoints_r.push_back(target_pose2_r);
-
-
-      //left
-      //waypoints_l.push_back(target_pose2_l);
-
       target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
       target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
@@ -386,43 +342,40 @@ public:
       target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
       target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
       waypoints_l.push_back(target_pose2_l);
- 
+
+      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+      if(planexecution){
+	group_both.execute(mergedPlan);
+	sleep(10.0);
+      }      
+
+      //------------------------PICK UP-----------------------------------------------------------------------------
+      waypoints_r.clear();
+      waypoints_l.clear();
+
+      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
+      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
+      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
+      waypoints_r.push_back(target_pose2_r);
+      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
+      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
+      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+      waypoints_r.push_back(target_pose2_r);
 
       target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
       target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
       waypoints_l.push_back(target_pose2_l);
-
-
       target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
       target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
       waypoints_l.push_back(target_pose2_l);
-
-
-      moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
-      moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
-      double fraction_r = group_r.computeCartesianPath(waypoints_r,
-						   0.01,  // eef_step
-    						   0.0,   // jump_threshold
-						   trajectory_r);  
-      linear_plan_r.trajectory_ = trajectory_r;
-      sleep(10.0);//Time for Visualization    
-
-      double fraction_l = group_l.computeCartesianPath(waypoints_l,
-						       0.01,  // eef_step
-						       0.0,   // jump_threshold
-						       trajectory_l);  
       
-      linear_plan_l.trajectory_ = trajectory_l;
-      sleep(10.0);//Time for Visualization    
-
-      mergedPlan = mergePlan(linear_plan_r,linear_plan_l);
+      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
       if(planexecution){
 	group_both.execute(mergedPlan);
 	sleep(10.0);
-      }
-
+      }  
 
       //------------------------TEACHED MOVEMENT--------------------------------------------------------------------
       ROS_INFO("----------PLANNING WITH TEACHED WAYPOINTS------------");
@@ -459,30 +412,58 @@ public:
 	}	
       }
 
-      //-------RIGHT-------------------------
-      group_r.computeCartesianPath(waypoints_r,
-				   0.01,  // eef_step
-				   0.0,   // jump_threshold
-				   trajectory_r);  
-
-
-      linear_plan_r.trajectory_ = trajectory_r;
-      sleep(10.0);//Time for Visualization    
-
-      //-------LEFT-------------------------
-      group_l.computeCartesianPath(waypoints_l,
-				   0.01,  // eef_step
-				   0.0,   // jump_threshold
-				   trajectory_l);  
-      
-      linear_plan_l.trajectory_ = trajectory_l;
-      sleep(10.0);//Time for Visualization    
-
+      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
       if(planexecution){
-	sleep(10.0);
-      }      
+	//group_both.execute(mergedPlan);
+	sleep(20.0);
+      }
     }
+    exit(0);
   } 
+
+  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l){
+    
+    double visualizationtime = 15.0;
+
+    move_group_interface::MoveGroup group_r("right_arm_group");
+    move_group_interface::MoveGroup group_l("left_arm_group");
+
+    moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
+    moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
+
+    group_r.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_r.setStartStateToCurrentState();
+    group_r.setGoalOrientationTolerance(0.01);
+    group_r.setPlanningTime(10.0);
+
+    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_l.setStartStateToCurrentState();
+    group_l.setGoalOrientationTolerance(0.01);
+    group_l.setPlanningTime(10.0);
+
+    //-------RIGHT-------------------------
+    group_r.computeCartesianPath(waypoints_r,
+				 0.01,  // eef_step
+				 0.0,   // jump_threshold
+				 trajectory_r);  
+
+
+    linear_plan_r.trajectory_ = trajectory_r;
+    sleep(visualizationtime);
+
+    //-------LEFT-------------------------
+    group_l.computeCartesianPath(waypoints_l,
+				 0.01,  // eef_step
+				 0.0,   // jump_threshold
+				 trajectory_l);  
+      
+    linear_plan_l.trajectory_ = trajectory_l;
+    sleep(visualizationtime);
+
+    mergedPlan = mergePlan(linear_plan_r,linear_plan_l);
+
+    return mergedPlan;
+  }
 
   //code from prace project, IPA: Benjamin Maidel
   move_group_interface::MoveGroup::Plan mergePlan(move_group_interface::MoveGroup::Plan plan1, move_group_interface::MoveGroup::Plan plan2)
@@ -604,16 +585,13 @@ public:
       if(inGrabPosition() && valid_detection){
 	ROS_INFO("IN POSITION");
 	pnpPlanner();
-	//synchronizedMovement();
-	//pnpPlannerBothArms();
       } else {
-	ROS_INFO("No valid position or teach mode activated");
+	ROS_INFO("No valid position");
       }
       //ros::spinOnce();
     }
   }
 };
-
 
 int main(int argc, char** argv)
 {
