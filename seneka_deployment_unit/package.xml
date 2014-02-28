@@ -10,22 +10,18 @@
   <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
   <maintainer email="frm@ipa.fraunhofer.de">Florian Mirus</maintainer>
 
-
   <!-- One license tag required, multiple allowed, one license per tag -->
   <license>LGPL</license>
-
-  <!-- Author tags are optional, mutiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintianers, but could be -->
-  <author email="mig@ipa.fraunhofer.de">Matthias Gruhler</author>
-  <author email="frm@ipa.fraunhofer.de">Florian Mirus</author>  
-
 
   <!-- The *_depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    <metapackage/>
-  </export>
+  <run_depend>seneka_moveit_config</run_depend>
+  <run_depend>seneka_msgs</run_depend>
+  <run_depend>seneka_pnp</run_depend>
+  <run_depend>seneka_sensornode_detection</run_depend>
+  <run_depend>seneka_ugv_description</run_depend>
+
+
 </package>
