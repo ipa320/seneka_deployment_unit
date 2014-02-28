@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_deployment_unit</name>
+  <version>0.0.0</version>
+  <description>The seneka_deployment_unit metapackage contains packages specifically for the deployment unit developed at Fraunhofer IPA in the SENEKA project.
+    The deployment unit is used to deploy and retrieve the sensor nodes developed in the same project. Code for those can be found in the seneka_sensor_node repository.
+  </description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
+  <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <maintainer email="frm@ipa.fraunhofer.de">Florian Mirus</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>LGPL</license>
+
+  <!-- The *_depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>seneka_moveit_config</run_depend>
+  <run_depend>seneka_msgs</run_depend>
+  <run_depend>seneka_pnp</run_depend>
+  <run_depend>seneka_sensornode_detection</run_depend>
+  <run_depend>seneka_ugv_description</run_depend>
+
+
+</package>
