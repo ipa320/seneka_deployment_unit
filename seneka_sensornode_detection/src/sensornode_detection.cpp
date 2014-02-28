@@ -95,7 +95,7 @@ std::vector<double> camera7(&tmp[0], &tmp[0]+7);
 //TODO: Compute sensorsonde pose from all markers. (Right now only marker 1 is used)
 void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArray::ConstPtr& msg)
 {
-  ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", msg->detections.size());
+  ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", (unsigned int)msg->detections.size());
 
   //dummy quanjo_position
   static tf::TransformBroadcaster br;

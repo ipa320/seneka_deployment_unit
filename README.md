@@ -29,10 +29,10 @@ Getting started:
 
 ##Required:
 ---------
-* git clone https://github.com/ipa-mig/universal_robot [rosbuild] (use the seneka_groovy_dev branch) 
-* git clone https://github.com/ipa320/cob_perception_common [catkin] (make sure you are using the groovy_dev_catkin branch) 
-* git clone https://github.com/ipa320/cob_object_perception [rosbuild]
-* git clone https://github.com/ipa320/seneka_deployment_unit [catkin]
+* git clone https://github.com/ipa-mig/universal_robot  [rosbuild] (use the seneka_groovy_dev branch) 
+* git clone https://github.com/ipa320/cob_perception_common  [catkin] (make sure you are using the groovy_dev_catkin branch) 
+* git clone https://github.com/ipa320/cob_object_perception  [rosbuild]
+* git clone https://github.com/ipa320/seneka_deployment_unit  [catkin]
 
 ##1. Configuration
 ---------------------------------------------------------------------
@@ -40,8 +40,8 @@ Getting started:
 Make sure that the rgb_topic argument points to the right image publisher.
 E.g. for the Kinect use **/camera/rgb/**.
 
-* Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file).
-See http://wiki.ros.org/cob_fiducials for details.
+* Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file). See http://wiki.ros.org/cob_fiducials for details.
+
 ---------------------------------------------------------------------
 * All the coordinate systems of the sensorsonde (marker,handle, grabpoints) can be adjusted in **../seneka_deployment_unit/seneka_sensornode_detection/common/sensorsonde_coordinates.def**. Right now only fiducial1 has valid coordinates.
 
