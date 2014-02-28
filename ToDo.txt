@@ -1,0 +1,18 @@
+ToDo's:
+
+Open Pull-Requests:
+cob_perception_common
+cob_object_perception
+
+Overall:
+- expose hardcoded parameters (e.g. camera pose, gripper length, ...) as parameters
+
+
+seneka_sensornode_detection:
+- at the moment, only one marker (id1) is used for finding the pose of the node. All markers should be detected and an interpolation between the poses made (slerp, possibly in quaternion class)
+- create own fiducial launch file and yamls?
+- check how the rotation of the markers is specified (rpy like on Wikipedia)
+
+seneka_msgs:
+- either remove or rename (not used atm)
+
