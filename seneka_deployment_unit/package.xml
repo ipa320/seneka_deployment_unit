@@ -8,7 +8,6 @@
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
-  <maintainer email="frm@ipa.fraunhofer.de">Florian Mirus</maintainer>
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <license>LGPL</license>
