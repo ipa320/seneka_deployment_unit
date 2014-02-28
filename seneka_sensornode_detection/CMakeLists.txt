@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   moveit_core 
-  moveit_ros_planning
   moveit_ros_planning_interface
   pluginlib	
   cob_object_detection_msgs
@@ -57,6 +56,8 @@ add_executable(sensornode_detection
   src/sensornode_detection.cpp
   src/SerializeIO.cpp
 )
+
+add_dependencies(sensornode_detection cob_object_detection_msgs_gencpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sensornode_detection
