@@ -78,12 +78,7 @@ find_package(Eigen REQUIRED)
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 # )
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-  seneka_msgs
-)
+
 
 ###################################
 ## catkin specific configuration ##
@@ -112,13 +107,8 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES seneka_pnp
   CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs tf moveit_core moveit_ros_planning_interface
-  DEPENDS system_lib
 )
 
-## Declare a cpp library
-# add_library(seneka_pnp
-#   src/${PROJECT_NAME}/seneka_pnp.cpp
-# )
 add_library(seneka_pnp
   src/seneka_pnp.cpp
   src/SerializeIO.cpp
@@ -140,9 +130,10 @@ add_dependencies(seneka_teach seneka_pnp_generate_messages_cpp)
 # target_link_libraries(seneka_pnp_node
 #   ${catkin_LIBRARIES}
 # )
-
 target_link_libraries(seneka_pick_and_place seneka_pnp ${OpenCV_LIBS} ${catkin_LIBRARIES})
 target_link_libraries(seneka_teach seneka_pnp ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
+
 #############
 ## Install ##
 #############

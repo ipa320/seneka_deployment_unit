@@ -2,14 +2,10 @@
 * Author: Matthias Nösner
 ********************** */
 #include <ros/ros.h>
-#include "gazebo_msgs/SetModelState.h"
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cob_object_detection_msgs/DetectObjects.h>
-
-#include <seneka_msgs/FiducialArray.h>
-#include <seneka_msgs/Fiducial.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -78,6 +74,7 @@ std::vector<handle> handles;
 trigger_points trigger_offset;
 pose grab_entry;
 double gripper_length = 0.255; 
+double gripper_depth = 0.00;
 pose3d sensornode_pose;
 
 boost::mutex tf_lock_;
@@ -86,7 +83,8 @@ tf::StampedTransform marker_tf_;
 
 //camera in quanjo system as vec7
 tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
-double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
+//double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
+double tmp[7] = { 1.05,0.015,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
 std::vector<double> camera7(&tmp[0], &tmp[0]+7);
 
 //------------------------------<Callbacks>----------------------------------------------------------
@@ -97,7 +95,7 @@ std::vector<double> camera7(&tmp[0], &tmp[0]+7);
 //TODO: Compute sensorsonde pose from all markers. (Right now only marker 1 is used)
 void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArray::ConstPtr& msg)
 {
-  ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", msg->detections.size());
+  ROS_INFO("[sensornode_detection] I heard from  [%u] fiducial detections", (unsigned int)msg->detections.size());
 
   //dummy quanjo_position
   static tf::TransformBroadcaster br;
@@ -136,7 +134,7 @@ void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArra
       //for loop j to iterate through container
       if(msg->detections[0].id == fiducialmarkers[i].id){
 
-	//all transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
+	//transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
         //tm = transformation matrix, q = quaternion7
 	//m = marker, sn = sensornode, hl = handle, ca = camera
 	cv::Mat tm_m_sn = eulerToMatrix(fiducialmarkers[i].rot.x,fiducialmarkers[i].rot.y,fiducialmarkers[i].rot.z);
@@ -192,7 +190,7 @@ void sensorsondeCoordinateManager(const cob_object_detection_msgs::DetectionArra
       transform.setRotation( tf::Quaternion(q_hl_sn[4],q_hl_sn[5],q_hl_sn[6],q_hl_sn[3]));
       br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/sensornode", handle_name));
 
-      //publish trigger points for grabbing process
+      //publish trigger points and initial grabbing pose
       char trigger_name[50];      
       sprintf(trigger_name,"trigger_%u_up",i+1);
       transform.setOrigin( tf::Vector3(trigger_offset.up.x, trigger_offset.up.y, trigger_offset.up.z));
@@ -362,13 +360,13 @@ bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<h
     (*ahandles)[i].trans.y =  (*ahandles)[i].trans.y * scale;
     (*ahandles)[i].trans.z =  (*ahandles)[i].trans.z * scale;
   }
-  atriggers->up.x = atriggers->up.x * scale;
+  atriggers->up.x = atriggers->up.x * scale + gripper_depth;
   atriggers->up.y = atriggers->up.y * scale;
   atriggers->up.z = atriggers->up.z * scale + gripper_length;
-  atriggers->down.x = atriggers->down.x * scale;
+  atriggers->down.x = atriggers->down.x * scale + gripper_depth;
   atriggers->down.y = atriggers->down.y * scale;
   atriggers->down.z = (atriggers->down.z * scale) + gripper_length;
-  aentry->x = aentry->x * scale;
+  aentry->x = aentry->x * scale + gripper_depth;
   aentry->y = aentry->y * scale;
   aentry->z = aentry->z * scale + gripper_length;
 

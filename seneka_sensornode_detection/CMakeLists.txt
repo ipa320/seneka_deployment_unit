@@ -72,12 +72,11 @@ find_package(Boost REQUIRED COMPONENTS system)
 # )
 
 # Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  seneka_msgs
-  cob_object_detection_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#  cob_object_detection_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -92,7 +91,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES seneka_sensornode_detection
   CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface cob_object_detection_msgs
-  DEPENDS system_lib
+  #DEPENDS system_lib
 )
 
 ###########
@@ -122,11 +121,8 @@ add_executable(sensornode_detection src/sensornode_detection.cpp)
 add_dependencies(sensornode_detection seneka_sensornode_detection_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(sensornode_detection
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(sensornode_detection ${OpenCV_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(sensornode_detection seneka_sensornode_detection)
+target_link_libraries(sensornode_detection ${OpenCV_LIBS} ${Boost_LIBRARIES} ${catkin_LIBRARIES} seneka_sensornode_detection)
+
 
 #############
 ## Install ##
