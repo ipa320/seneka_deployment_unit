@@ -110,5 +110,7 @@
   </joint>
   <link name="left_arm_rviz_link" />
 
+ <gravity>false</gravity>
+
 </robot>
 
