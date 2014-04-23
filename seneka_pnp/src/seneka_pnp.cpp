@@ -23,6 +23,8 @@
 
 #include <moveit/robot_state/robot_state.h>
 
+#include "seneka_pnp/getState.h"
+
 class SenekaPickAndPlace
 {
 
@@ -68,6 +70,9 @@ private:
     
   tf::TransformListener listener_down;
   tf::StampedTransform transform_down;
+
+  std::string currentState_;
+  ros::ServiceServer service_;
   
 
 public:
@@ -191,13 +196,100 @@ public:
     return true;
   }
     
+  //--------------------------------------------------------- Transitions------------------------------------------------------------------
+
+  //TRANSITION: toHomeState
+  bool toHomeState(){
+
+    move_group_interface::MoveGroup group_r("right_arm_group");
+    move_group_interface::MoveGroup group_l("left_arm_group");
+    move_group_interface::MoveGroup group_both("both_arms");
+    
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    moveit_msgs::DisplayTrajectory display_trajectory;
+
+    moveit::planning_interface::MoveGroup::Plan mergedPlan;
+    moveit::planning_interface::MoveGroup::Plan myPlan;
+
+    //planning settings
+    group_r.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_r.setStartStateToCurrentState();
+    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_l.setStartStateToCurrentState();
+    group_both.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_both.setStartStateToCurrentState();
+
+    group_r.setGoalOrientationTolerance(0.01);
+    group_r.setPlanningTime(10.0);
+    group_l.setGoalOrientationTolerance(0.01);
+    group_l.setPlanningTime(10.0);
+    group_both.setGoalOrientationTolerance(0.01);
+    group_both.setPlanningTime(10.0);
+
+    group_l.setNamedTarget("lhome");
+    group_r.setNamedTarget("rhome");
+    
+    bool success = false;
+    //l
+    success = group_l.plan(myPlan);
+    ROS_INFO("Visualizing plan 2 (joint space goal) %s",success?"":"FAILED");
+    sleep(5.0);
+    group_l.execute(myPlan);    
+    
+    //r
+    if(success){
+      success = group_r.plan(myPlan);
+      ROS_INFO("Visualizing plan 2 (joint space goal) %s",success?"":"FAILED");
+      sleep(5.0);
+      group_r.execute(myPlan);
+    }
+    return success;
+  }
+
+  //TRANSITION:avoidCollisionState
+  //Moves the arm to a collision free state
+  bool avoidCollisionState(){
+
+    bool ret = false;
+
+    move_group_interface::MoveGroup group_l("left_arm_group");
+    moveit::planning_interface::MoveGroup::Plan myPlan;
+
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    
+    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
+    group_l.setStartStateToCurrentState();
+    group_l.setGoalOrientationTolerance(0.01);
+    group_l.setPlanningTime(10.0);
+
+    std::vector<double> group_variable_values;
+    std::vector<std::string> group_variable_names;
+    group_variable_values = group_l.getCurrentJointValues();
+    group_variable_names = group_l.getJoints();
+
+
+    if(group_variable_values.size() != 6 || group_variable_names.size() != 6){
+      ROS_ERROR("Number of joints must be 6");
+    }
+    
+    //Gazebo Simulation -> Drive left arm out of initial collision pose
+    group_variable_values[1] = -1.0;
+    group_l.setJointValueTarget(group_variable_values);
+    ret = group_l.plan(myPlan);
+    sleep(5.0);
+    if(ret)
+       group_l.execute(myPlan);
+
+    return ret;
+  }
+
   //pick and place planner
   void pnpPlanner(){
 
     std::cout << "---------------<planning>-----------------------------" << std::endl;
  
-    unsigned int used_handle_r = 2;//real handle id 1-6
-    unsigned int used_handle_l = 5;//real handle id 1-6
+    unsigned int used_handle_r = 2;//use the real handle id 1-6
+    unsigned int used_handle_l = 5;//use the real handle id 1-6
     used_handle_r--;
     used_handle_l--;
     
@@ -226,7 +318,7 @@ public:
     group_both.setGoalOrientationTolerance(0.01);
     group_both.setPlanningTime(10.0);
 
-    //The nonlinearplanner is not used rigth now
+    //The nonlinearplanner is not used right now
 
     /*geometry_msgs::PoseStamped target_pose_r;
     target_pose_r.header.frame_id = "/quanjo_body";
@@ -291,7 +383,7 @@ public:
     }*/
 
 
-    //-------------------Linear Movement through all points (grabbing the sensornode) ------------------------
+    //-------------------Cartesian Planner - Linear Movement through all points (grabbing the sensornode) ------------------------
     if(true){
 
       bool planexecution = false;
@@ -361,7 +453,7 @@ public:
       }  
 
       //------------------------TEACHED MOVEMENT--------------------------------------------------------------------
-      ROS_INFO("----------PLANNING WITH TEACHED WAYPOINTS------------");
+      /*      ROS_INFO("----------PLANNING WITH TEACHED WAYPOINTS------------");
       waypoints_r.clear();
       waypoints_l.clear();      
 
@@ -400,6 +492,7 @@ public:
 	//group_both.execute(mergedPlan);
 	sleep(20.0);
       }
+      */
     }
   } 
 
@@ -552,24 +645,87 @@ public:
     
   }	
 
+  //STATES: home, gazebo_home, collision_free
+  //TRANSITSIONS: avoidCollisionState
+  std::string stateMachine(std::string currentState){
+
+    //std::string transition = getTransition();
+    std::string transition;
+    
+    if(currentState.compare("gazebo_home") == 0){
+      //Adjustments and state checking
+      transition = "avoidCollisionState";    
+      std::string ret = "gazebo_home";
+
+      //Transitions
+      if(transition.compare("avoidCollisionState") == 0){
+	if(avoidCollisionState()){
+	  return "collision_free";
+	}
+      }
+      
+      return ret;
+    }
+    else if(currentState.compare("collision_free") == 0){
+      transition = "toHomeState";
+      std::string ret = "collision_free";
+      
+      //Transitions
+      if(transition.compare("toHomeState") == 0){
+	if(toHomeState())
+	  return "home";
+      }
+      
+      return ret;
+    }
+    else if(currentState.compare("home") == 0){
+      std::string ret = "home";
+
+      return ret;
+    }
+    else{
+      return "unknown_state";
+    }
+
+    return "unknown_state";
+  }
+
+  //------------ Services -----------------------------------
+  //seneka_pnp::getState::Response &res
+  bool getState(seneka_pnp::getState::Request &req,
+		seneka_pnp::getState::Response &res)
+  {
+    res.state = currentState_;
+    return true;
+  }
+  //------------ Services -----------------------------------
+
   //main loop
   //check Sensornode position and start planning
   void mainLoop(){
-    
+
+    currentState_ = "gazebo_home";
+
+    service_ = node_handle_.advertiseService("seneka_pnp/getState", &SenekaPickAndPlace::getState, this);
+    //ros::ServiceServer ss = n.advertiseService("add_two_ints", &AddTwo::add, &a);,
+
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
 
     ros::Rate loop_rate(10);
     while(ros::ok()){
-    
-      bool valid_detection =  getSensornodePose();
+      
+      currentState_ = stateMachine(currentState_);
+      ROS_INFO("Current state: %s",currentState_.c_str());
 
+      /*bool valid_detection =  getSensornodePose();
       if(inGrabPosition() && valid_detection){
 	ROS_INFO("IN POSITION");
-	pnpPlanner();
+	//pnpPlanner();
+	planToHomeState();
       } else {
 	ROS_INFO("No valid position");
-      }
+      }*/
       //ros::spinOnce();
     }
   }

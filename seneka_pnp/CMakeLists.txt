@@ -15,9 +15,20 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core 
   moveit_ros_planning_interface
   pluginlib	
+  message_generation
 )
 find_package(OpenCV REQUIRED)
 find_package(Eigen REQUIRED)
+
+add_service_files(
+  FILES
+  getState.srv
+)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 
 ###################################
 ## catkin specific configuration ##

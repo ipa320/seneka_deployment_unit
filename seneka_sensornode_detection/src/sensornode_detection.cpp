@@ -8,6 +8,7 @@
 #include <cob_object_detection_msgs/DetectObjects.h>
 
 #include <gazebo_msgs/GetModelState.h>
+#include "geometry_msgs/Quaternion.h"
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -105,26 +106,34 @@ bool simulation_ = true;
 //Coordinate transformation for simulation in gazebo
 void getSensornodeStateGazebo(ros::NodeHandle& n){
 
-  sensornodeGlobalCoordinates();
-
-  //get sensornode state from gazebo
-  gazebo_msgs::GetModelState gms;
-  gms.request.model_name="sensornode";
-  gms.request.relative_entity_name="world_dummy_link";
-  ros::ServiceClient gms_c = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
-  gms_c.call(gms);//gms now holds the current state
   
 
+  sensornodeGlobalCoordinates();
+
+  gazebo_msgs::GetModelState gms_r,gms_p;
+  ros::ServiceClient gms_c;
+
+  //get sensornode state from gazebo in world frame (rot)
+  gms_r.request.model_name="sensornode";
+  gms_c = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
+  gms_c.call(gms_r);//gms_r now holds the current state
+
+  //get sensornode state from gazebo in world_dummy_link/quanjo frame (pos)
+  gms_p.request.model_name="sensornode";
+  gms_p.request.relative_entity_name="world_dummy_link";
+  gms_c = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
+  gms_c.call(gms_p);//gms now holds the current state
+  
+  tf::Quaternion quat(gms_r.response.pose.orientation.x,gms_r.response.pose.orientation.y,gms_r.response.pose.orientation.z,gms_r.response.pose.orientation.w);
+  
   static tf::TransformBroadcaster br;
   tf::Transform transform;
   
-  transform.setOrigin( tf::Vector3(gms.response.pose.position.x,gms.response.pose.position.y,gms.response.pose.position.z) );
-  transform.setRotation( tf::Quaternion(gms.response.pose.orientation.x,gms.response.pose.orientation.y,gms.response.pose.orientation.z,gms.response.pose.orientation.w));
-  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/world_dummy_link", "/sensornode"));
+  transform.setOrigin( tf::Vector3(gms_p.response.pose.position.x,gms_p.response.pose.position.y,gms_p.response.pose.position.z) );
+  transform.setRotation(quat);
+  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/quanjo_body", "/sensornode"));
 
   sensornodeLocalCoordinates();  
-
-  ROS_INFO("The sensonode is at pose %f",gms.response.pose.position.x);
 }
 
 //Coordinate transformation for real world sensornode detection
@@ -259,8 +268,6 @@ void sensornodeLocalCoordinates(){
     transform.setRotation( tf::Quaternion(0,0,0,1));
     br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), handle_name, trigger_name));       
   }
-
-
 }
 
 //Load Parameters positions of markers,handles and triggers in reference to the sensorsonde using my own SerializeIO class + scaling the values.
