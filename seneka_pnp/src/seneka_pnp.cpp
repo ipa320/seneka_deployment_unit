@@ -24,6 +24,8 @@
 #include <moveit/robot_state/robot_state.h>
 
 #include "seneka_pnp/getState.h"
+#include "seneka_pnp/setTransition.h"
+#include "seneka_pnp/setStop.h"
 
 class SenekaPickAndPlace
 {
@@ -72,7 +74,15 @@ private:
   tf::StampedTransform transform_down;
 
   std::string currentState_;
-  ros::ServiceServer service_;
+  std::string transition_;
+  ros::ServiceServer service_getstate_,service_settransition_,service_setstop_;
+
+  bool trajectoryexecution_;
+  bool asynchandle_;
+
+  move_group_interface::MoveGroup *group_r_;
+  move_group_interface::MoveGroup *group_l_;
+  move_group_interface::MoveGroup *group_both_;
   
 
 public:
@@ -88,7 +98,14 @@ public:
 
   void init(){
     
+    //params
+    currentState_ = "gazebo_home";
+    transition_ = "";
+    asynchandle_ = false;
+    //trajectoryexecution = false;
+
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
+    loadMoveGroups();
     mainLoop();
   }  
 
@@ -199,32 +216,13 @@ public:
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
 
   //TRANSITION: toHomeState
-  bool toHomeState(){
-
-    move_group_interface::MoveGroup group_r("right_arm_group");
-    move_group_interface::MoveGroup group_l("left_arm_group");
-    move_group_interface::MoveGroup group_both("both_arms");
+  bool toHomeState(move_group_interface::MoveGroup group_l, move_group_interface::MoveGroup group_r, move_group_interface::MoveGroup group_both){
     
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;
 
     moveit::planning_interface::MoveGroup::Plan mergedPlan;
     moveit::planning_interface::MoveGroup::Plan myPlan;
-
-    //planning settings
-    group_r.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_r.setStartStateToCurrentState();
-    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_l.setStartStateToCurrentState();
-    group_both.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_both.setStartStateToCurrentState();
-
-    group_r.setGoalOrientationTolerance(0.01);
-    group_r.setPlanningTime(10.0);
-    group_l.setGoalOrientationTolerance(0.01);
-    group_l.setPlanningTime(10.0);
-    group_both.setGoalOrientationTolerance(0.01);
-    group_both.setPlanningTime(10.0);
 
     group_l.setNamedTarget("lhome");
     group_r.setNamedTarget("rhome");
@@ -248,25 +246,18 @@ public:
 
   //TRANSITION:avoidCollisionState
   //Moves the arm to a collision free state
-  bool avoidCollisionState(){
-
+  bool avoidCollisionState(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+    
     bool ret = false;
 
-    move_group_interface::MoveGroup group_l("left_arm_group");
     moveit::planning_interface::MoveGroup::Plan myPlan;
 
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     
-    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_l.setStartStateToCurrentState();
-    group_l.setGoalOrientationTolerance(0.01);
-    group_l.setPlanningTime(10.0);
-
     std::vector<double> group_variable_values;
     std::vector<std::string> group_variable_names;
-    group_variable_values = group_l.getCurrentJointValues();
-    group_variable_names = group_l.getJoints();
-
+    group_variable_values = group_l->getCurrentJointValues();
+    group_variable_names = group_l->getJoints();
 
     if(group_variable_values.size() != 6 || group_variable_names.size() != 6){
       ROS_ERROR("Number of joints must be 6");
@@ -274,11 +265,11 @@ public:
     
     //Gazebo Simulation -> Drive left arm out of initial collision pose
     group_variable_values[1] = -1.0;
-    group_l.setJointValueTarget(group_variable_values);
-    ret = group_l.plan(myPlan);
+    group_l->setJointValueTarget(group_variable_values);
+    ret = group_l->plan(myPlan);
     sleep(5.0);
     if(ret)
-       group_l.execute(myPlan);
+      asynchandle_ = group_l->asyncExecute(myPlan);    
 
     return ret;
   }
@@ -621,7 +612,6 @@ public:
     return mergedPlan;
   }
 
-  //HERE
   void loadTeachedPoints(std::vector<std::vector<double> >* vec_r,std::vector<std::vector<double> >* vec_l){
     
     SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
@@ -644,22 +634,44 @@ public:
     delete ser;
     
   }	
+  
+  void loadMoveGroups()
+  {
+    
+    group_r_ =  new move_group_interface::MoveGroup("right_arm_group");
+    group_l_ =  new move_group_interface::MoveGroup("left_arm_group");
+    group_both_ = new move_group_interface::MoveGroup("both_arms");
+
+    //planning settings
+    group_r_->setWorkspace (0, 0, 0, 5, 5, 5);
+    group_r_->setStartStateToCurrentState();
+    group_l_->setWorkspace (0, 0, 0, 5, 5, 5);
+    group_l_->setStartStateToCurrentState();
+    group_both_->setWorkspace (0, 0, 0, 5, 5, 5);
+    group_both_->setStartStateToCurrentState();
+
+    group_r_->setGoalOrientationTolerance(0.01);
+    group_r_->setPlanningTime(10.0);
+    group_l_->setGoalOrientationTolerance(0.01);
+    group_l_->setPlanningTime(10.0);
+    group_both_->setGoalOrientationTolerance(0.01);
+    group_both_->setPlanningTime(10.0);
+
+  }
 
   //STATES: home, gazebo_home, collision_free
   //TRANSITSIONS: avoidCollisionState
-  std::string stateMachine(std::string currentState){
-
-    //std::string transition = getTransition();
-    std::string transition;
+  std::string stateMachine(std::string currentState)
+  {
+    std::string transition = getTransition();
     
     if(currentState.compare("gazebo_home") == 0){
-      //Adjustments and state checking
-      transition = "avoidCollisionState";    
+      //Adjustments and state checking    
       std::string ret = "gazebo_home";
 
       //Transitions
       if(transition.compare("avoidCollisionState") == 0){
-	if(avoidCollisionState()){
+	if(avoidCollisionState(group_l_,group_r_,group_both_)){
 	  return "collision_free";
 	}
       }
@@ -667,12 +679,11 @@ public:
       return ret;
     }
     else if(currentState.compare("collision_free") == 0){
-      transition = "toHomeState";
       std::string ret = "collision_free";
       
       //Transitions
       if(transition.compare("toHomeState") == 0){
-	if(toHomeState())
+	if(toHomeState(*group_l_,*group_r_,*group_both_))
 	  return "home";
       }
       
@@ -691,32 +702,58 @@ public:
   }
 
   //------------ Services -----------------------------------
-  //seneka_pnp::getState::Response &res
   bool getState(seneka_pnp::getState::Request &req,
 		seneka_pnp::getState::Response &res)
   {
     res.state = currentState_;
     return true;
   }
+ 
+  bool setTransition(seneka_pnp::setTransition::Request &req,
+		     seneka_pnp::setTransition::Response &res)
+  {
+    transition_ = req.transition;
+    res.transition = transition_;
+    return true;
+  }
+
+ bool setStop(seneka_pnp::setStop::Request &req,
+		     seneka_pnp::setStop::Response &res)
+  {
+    group_l_->stop();
+    group_r_->stop();
+    group_both_->stop();
+    
+    transition_ = "";
+
+    res.success = true;
+
+    return true;
+  }
+
   //------------ Services -----------------------------------
+  std::string getTransition(){
+    return transition_;
+  }
 
   //main loop
   //check Sensornode position and start planning
   void mainLoop(){
 
-    currentState_ = "gazebo_home";
-
-    service_ = node_handle_.advertiseService("seneka_pnp/getState", &SenekaPickAndPlace::getState, this);
-    //ros::ServiceServer ss = n.advertiseService("add_two_ints", &AddTwo::add, &a);,
+    service_getstate_ = node_handle_.advertiseService("seneka_pnp/getState", &SenekaPickAndPlace::getState, this);
+    service_settransition_ = node_handle_.advertiseService("seneka_pnp/setTransition", &SenekaPickAndPlace::setTransition, this);
+    service_setstop_ = node_handle_.advertiseService("seneka_pnp/setStop", &SenekaPickAndPlace::setStop, this);
 
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(1);
     while(ros::ok()){
       
       currentState_ = stateMachine(currentState_);
       ROS_INFO("Current state: %s",currentState_.c_str());
+      ROS_INFO("asynchandle: %d",asynchandle_);
+      loop_rate.sleep();
 
       /*bool valid_detection =  getSensornodePose();
       if(inGrabPosition() && valid_detection){

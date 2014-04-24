@@ -23,6 +23,8 @@ find_package(Eigen REQUIRED)
 add_service_files(
   FILES
   getState.srv
+  setTransition.srv
+  setStop.srv
 )
 generate_messages(
   DEPENDENCIES
