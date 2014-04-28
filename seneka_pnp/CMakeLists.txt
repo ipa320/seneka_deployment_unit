@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  actionlib_msgs
+  control_msgs
   geometry_msgs
   tf
   moveit_core 
@@ -29,6 +31,8 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  actionlib_msgs
+  control_msgs
 )
 
 

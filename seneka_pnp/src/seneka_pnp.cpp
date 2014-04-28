@@ -27,6 +27,12 @@
 #include "seneka_pnp/setTransition.h"
 #include "seneka_pnp/setStop.h"
 
+#include "actionlib_msgs/GoalStatusArray.h"
+#include "control_msgs/FollowJointTrajectoryActionResult.h"
+
+#include <boost/thread/mutex.hpp>
+
+
 class SenekaPickAndPlace
 {
 
@@ -55,9 +61,16 @@ struct handhold{
   pose3d down;
 };
 
+struct trajectory_execution_validation{
+  bool finished;
+  bool success;
+};
+  
 private:
   ros::NodeHandle node_handle_;
   std::vector<handhold> handholds_;
+
+  ros::Subscriber subscr_;
   
   std::vector<std::vector<double> > teached_wayp_r, teached_wayp_l;
 
@@ -83,7 +96,10 @@ private:
   move_group_interface::MoveGroup *group_r_;
   move_group_interface::MoveGroup *group_l_;
   move_group_interface::MoveGroup *group_both_;
-  
+
+  //tje = trajectory execution
+  trajectory_execution_validation tje_validation_;  
+  boost::mutex tje_lock_;
 
 public:
   //Constructor
@@ -102,6 +118,10 @@ public:
     currentState_ = "gazebo_home";
     transition_ = "";
     asynchandle_ = false;
+    tje_lock_.lock();
+    tje_validation_.finished = false;
+    tje_validation_.success = false;
+    tje_lock_.unlock();
     //trajectoryexecution = false;
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
@@ -216,32 +236,68 @@ public:
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
 
   //TRANSITION: toHomeState
-  bool toHomeState(move_group_interface::MoveGroup group_l, move_group_interface::MoveGroup group_r, move_group_interface::MoveGroup group_both){
-    
+  bool toHomeState(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+    bool ret = false;
+
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;
 
     moveit::planning_interface::MoveGroup::Plan mergedPlan;
     moveit::planning_interface::MoveGroup::Plan myPlan;
 
-    group_l.setNamedTarget("lhome");
-    group_r.setNamedTarget("rhome");
+    group_l->setNamedTarget("lhome");
+    group_r->setNamedTarget("rhome");
     
     bool success = false;
     //l
-    success = group_l.plan(myPlan);
+    success = group_l->plan(myPlan);
     ROS_INFO("Visualizing plan 2 (joint space goal) %s",success?"":"FAILED");
     sleep(5.0);
-    group_l.execute(myPlan);    
+    group_l->asyncExecute(myPlan);    
+
+    if(success){
+      tje_lock_.lock();
+      tje_validation_.finished = false;
+      tje_validation_.success = false;
+      tje_lock_.unlock();
+ 
+      asynchandle_ = group_l->asyncExecute(myPlan);    
+      subscr_ = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
+      while(!tje_validation_.finished){
+	ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+      }
+      subscr_ = ros::Subscriber();//ugly way to unsubscribe
+      
+      ret = tje_validation_.success;
+    }
+
     
     //r
-    if(success){
-      success = group_r.plan(myPlan);
+    if(success && ret){
+      success = group_r->plan(myPlan);
       ROS_INFO("Visualizing plan 2 (joint space goal) %s",success?"":"FAILED");
       sleep(5.0);
-      group_r.execute(myPlan);
+      group_r->asyncExecute(myPlan);
+
+      if(success){
+	tje_lock_.lock();
+	tje_validation_.finished = false;
+	tje_validation_.success = false;
+	tje_lock_.unlock();
+ 
+	asynchandle_ = group_l->asyncExecute(myPlan);    
+	subscr_ = node_handle_.subscribe("/right_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
+	while(!tje_validation_.finished){
+	  ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+	}
+	subscr_ = ros::Subscriber();//ugly way to unsubscribe
+      
+	ret = tje_validation_.success;
+      }
     }
-    return success;
+
+
+    return ret;
   }
 
   //TRANSITION:avoidCollisionState
@@ -268,10 +324,37 @@ public:
     group_l->setJointValueTarget(group_variable_values);
     ret = group_l->plan(myPlan);
     sleep(5.0);
-    if(ret)
+
+    if(ret){
+      tje_lock_.lock();
+      tje_validation_.finished = false;
+      tje_validation_.success = false;
+      tje_lock_.unlock();
+ 
       asynchandle_ = group_l->asyncExecute(myPlan);    
+      subscr_ = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
+      while(!tje_validation_.finished){
+	ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+      }
+      subscr_ = ros::Subscriber();//ugly way to unsubscribe
+      
+      ret = tje_validation_.success;
+    }
 
     return ret;
+  }
+  
+  //workaround to check asynch trajectory execution
+  //for simulation with gazebo use this topic /left_arm_controller/follow_joint_trajectory/result
+  void trajectoryStatus(const control_msgs::FollowJointTrajectoryActionResult::ConstPtr& msg){
+
+    ROS_INFO("RESULT %i",msg->status.status);
+    ROS_INFO("RESULT %i",msg->result.error_code);
+      
+    tje_lock_.lock();
+    tje_validation_.finished = true;
+    tje_validation_.success = true;//TODO: add error handling (http://mirror.umd.edu/roswiki/doc/diamondback/api/control_msgs/html/msg/FollowJointTrajectoryActionResult.html)
+    tje_lock_.unlock();
   }
 
   //pick and place planner
@@ -664,36 +747,39 @@ public:
   std::string stateMachine(std::string currentState)
   {
     std::string transition = getTransition();
-    
+
+    //---------GAZEBO_HOME----------------------------------
     if(currentState.compare("gazebo_home") == 0){
-      //Adjustments and state checking    
-      std::string ret = "gazebo_home";
 
       //Transitions
       if(transition.compare("avoidCollisionState") == 0){
 	if(avoidCollisionState(group_l_,group_r_,group_both_)){
 	  return "collision_free";
+	} else {
+	  return "unknown_state";
 	}
-      }
-      
-      return ret;
+      }      
+      return "gazebo_home" ;
     }
+
+    //------COLLISION_FREE----------------------------------
     else if(currentState.compare("collision_free") == 0){
-      std::string ret = "collision_free";
       
       //Transitions
       if(transition.compare("toHomeState") == 0){
-	if(toHomeState(*group_l_,*group_r_,*group_both_))
+	if(toHomeState(group_l_,group_r_,group_both_))
 	  return "home";
       }
       
-      return ret;
+      return "collision_free";
     }
-    else if(currentState.compare("home") == 0){
-      std::string ret = "home";
 
-      return ret;
+    //------HOME-------------------------------------------
+    else if(currentState.compare("home") == 0){
+      return "home";
     }
+    
+    //------UNKNOWN_STATE-------------------------------------------
     else{
       return "unknown_state";
     }
@@ -752,7 +838,7 @@ public:
       
       currentState_ = stateMachine(currentState_);
       ROS_INFO("Current state: %s",currentState_.c_str());
-      ROS_INFO("asynchandle: %d",asynchandle_);
+      //ROS_INFO("asynchandle: %d",asynchandle_);
       loop_rate.sleep();
 
       /*bool valid_detection =  getSensornodePose();
