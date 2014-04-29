@@ -62,6 +62,7 @@ struct handhold{
 };
 
 struct trajectory_execution_validation{
+  unsigned int dual_flag;
   bool finished;
   bool success;
 };
@@ -90,9 +91,6 @@ private:
   std::string transition_;
   ros::ServiceServer service_getstate_,service_settransition_,service_setstop_;
 
-  bool trajectoryexecution_;
-  bool asynchandle_;
-
   move_group_interface::MoveGroup *group_r_;
   move_group_interface::MoveGroup *group_l_;
   move_group_interface::MoveGroup *group_both_;
@@ -117,12 +115,11 @@ public:
     //params
     currentState_ = "gazebo_home";
     transition_ = "";
-    asynchandle_ = false;
     tje_lock_.lock();
+    tje_validation_.dual_flag = 0; 
     tje_validation_.finished = false;
-    tje_validation_.success = false;
+    tje_validation_.success = true;//must be true
     tje_lock_.unlock();
-    //trajectoryexecution = false;
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
@@ -248,54 +245,22 @@ public:
     group_l->setNamedTarget("lhome");
     group_r->setNamedTarget("rhome");
     
-    bool success = false;
     //l
-    success = group_l->plan(myPlan);
-    ROS_INFO("Visualizing plan 2 (joint space goal) %s",success?"":"FAILED");
-    sleep(5.0);
-    group_l->asyncExecute(myPlan);    
-
-    if(success){
-      tje_lock_.lock();
-      tje_validation_.finished = false;
-      tje_validation_.success = false;
-      tje_lock_.unlock();
- 
-      asynchandle_ = group_l->asyncExecute(myPlan);    
-      subscr_ = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
-      while(!tje_validation_.finished){
-	ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
-      }
-      subscr_ = ros::Subscriber();//ugly way to unsubscribe
-      
-      ret = tje_validation_.success;
+    if(group_l->plan(myPlan)){
+      sleep(5.0);
+      group_l->asyncExecute(myPlan);
+      ret = monitorArmMovement(true,false);
     }
-
     
     //r
-    if(success && ret){
-      success = group_r->plan(myPlan);
-      ROS_INFO("Visualizing plan 2 (joint space goal) %s",success?"":"FAILED");
-      sleep(5.0);
-      group_r->asyncExecute(myPlan);
-
-      if(success){
-	tje_lock_.lock();
-	tje_validation_.finished = false;
-	tje_validation_.success = false;
-	tje_lock_.unlock();
- 
-	asynchandle_ = group_l->asyncExecute(myPlan);    
-	subscr_ = node_handle_.subscribe("/right_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
-	while(!tje_validation_.finished){
-	  ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
-	}
-	subscr_ = ros::Subscriber();//ugly way to unsubscribe
-      
-	ret = tje_validation_.success;
+    if(ret){
+      ret = false;
+      if(group_r->plan(myPlan)){
+	sleep(5.0);
+	group_r->asyncExecute(myPlan);
+	ret = monitorArmMovement(false,true);
       }
     }
-
 
     return ret;
   }
@@ -322,39 +287,97 @@ public:
     //Gazebo Simulation -> Drive left arm out of initial collision pose
     group_variable_values[1] = -1.0;
     group_l->setJointValueTarget(group_variable_values);
-    ret = group_l->plan(myPlan);
-    sleep(5.0);
 
-    if(ret){
-      tje_lock_.lock();
-      tje_validation_.finished = false;
-      tje_validation_.success = false;
-      tje_lock_.unlock();
- 
-      asynchandle_ = group_l->asyncExecute(myPlan);    
-      subscr_ = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
-      while(!tje_validation_.finished){
-	ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
-      }
-      subscr_ = ros::Subscriber();//ugly way to unsubscribe
-      
-      ret = tje_validation_.success;
+    if(group_l->plan(myPlan)){
+      sleep(5.0);
+      group_l->asyncExecute(myPlan); 
+      ret = monitorArmMovement(true,false);
     }
 
     return ret;
   }
+
+
+  //
+  bool toPickUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+    bool ret = false;
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+
+    moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
+    
+    group_l->setNamedTarget("lpickup");
+    group_r->setNamedTarget("rpickup");
+    
+    if(!group_l->plan(lplan))
+      return false;
+      
+    if(!group_r->plan(rplan))
+      return false;
+
+    merged_plan = mergePlan(lplan,rplan);
+
+    group_both->asyncExecute(merged_plan);
+    ret = monitorArmMovement(true,true);
+
+    return ret;
+  }
+
+
+  bool monitorArmMovement(bool left,bool right){
+
+    ros::Subscriber subscr_l,subscr_r;
+    bool dual_mode = false;
+
+    if(left && right)
+      dual_mode = true;
+
+    tje_lock_.lock();
+    tje_validation_.dual_flag = 0;
+    tje_validation_.finished = false;
+    tje_validation_.success = true;//muste be true
+    tje_lock_.unlock();
+   
+    if(left)
+      subscr_l = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
+    if(right)
+      subscr_r = node_handle_.subscribe("/right_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
+
+    //both needed finished for single mode .. dual_flag for dual mode
+    while(!tje_validation_.finished || (dual_mode && (tje_validation_.dual_flag < 2))){
+      ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+      if(tje_validation_.success == false){//break while loop and stop execution when one arm controller fails
+	this->setStop();
+	break;
+      }
+    }
+    subscr_l = ros::Subscriber();//ugly way to unsubscribe
+    subscr_r = ros::Subscriber();//ugly way to unsubscribe
+      
+    return tje_validation_.success;
+  }
   
   //workaround to check asynch trajectory execution
   //for simulation with gazebo use this topic /left_arm_controller/follow_joint_trajectory/result
+  //TODO: add error handling (http://mirror.umd.edu/roswiki/doc/diamondback/api/control_msgs/html/msg/FollowJointTrajectoryActionResult.html)
   void trajectoryStatus(const control_msgs::FollowJointTrajectoryActionResult::ConstPtr& msg){
 
     ROS_INFO("RESULT %i",msg->status.status);
     ROS_INFO("RESULT %i",msg->result.error_code);
-      
+
+    int status = msg->status.status;
+    int error_code = msg->result.error_code;
+
     tje_lock_.lock();
+    tje_validation_.dual_flag = tje_validation_.dual_flag + 1;
+    if(status == actionlib_msgs::GoalStatus::SUCCEEDED || status == actionlib_msgs::GoalStatus::ABORTED){
+      tje_validation_.success = true;
+    } else {
+      tje_validation_.success = false;
+    }
+    
     tje_validation_.finished = true;
-    tje_validation_.success = true;//TODO: add error handling (http://mirror.umd.edu/roswiki/doc/diamondback/api/control_msgs/html/msg/FollowJointTrajectoryActionResult.html)
-    tje_lock_.unlock();
+    tje_lock_.unlock();    
   }
 
   //pick and place planner
@@ -767,19 +790,62 @@ public:
       
       //Transitions
       if(transition.compare("toHomeState") == 0){
-	if(toHomeState(group_l_,group_r_,group_both_))
+	if(toHomeState(group_l_,group_r_,group_both_)){
 	  return "home";
-      }
-      
+	} else {
+	  return "unknown_state";
+	}
+      }      
       return "collision_free";
     }
 
     //------HOME-------------------------------------------
     else if(currentState.compare("home") == 0){
+
+      //Transitions
+      if(transition.compare("toPickUp") == 0){
+	if(toPickUp(group_l_,group_r_,group_both_)){
+	  return "pick_up";
+	} else {
+	  return "unknown_state";
+	}
+      }    
       return "home";
     }
+
+    //------PICK_UP-------------------------------------------
+    else if(currentState.compare("pick_up") == 0){
+
+      //Transitions
+      if(transition.compare("toHomeState") == 0){
+	if(toHomeState(group_l_,group_r_,group_both_)){
+	  return "home";
+	} else {
+	  return "unknown_state";
+	}
+      }      
+      return "pick_up";
+    }
+    
     
     //------UNKNOWN_STATE-------------------------------------------
+    else if(currentState.compare("unknown_state") == 0){
+      //Debug
+      if(transition.compare("setToGH") == 0){
+	return "gazebo_home";
+      }      
+
+      if(transition.compare("setToHome") == 0){
+	return "home";
+      } 
+      if(transition.compare("setToCF") == 0){
+	return "collision_free";
+      }
+      //Debug
+      
+      return "unknown_state";
+    }
+    
     else{
       return "unknown_state";
     }
@@ -806,9 +872,7 @@ public:
  bool setStop(seneka_pnp::setStop::Request &req,
 		     seneka_pnp::setStop::Response &res)
   {
-    group_l_->stop();
-    group_r_->stop();
-    group_both_->stop();
+    this->setStop();
     
     transition_ = "";
 
@@ -817,6 +881,13 @@ public:
     return true;
   }
 
+  bool setStop(){
+    group_l_->stop();
+    group_r_->stop();
+    group_both_->stop();
+
+    return true;
+  }
   //------------ Services -----------------------------------
   std::string getTransition(){
     return transition_;
@@ -838,7 +909,6 @@ public:
       
       currentState_ = stateMachine(currentState_);
       ROS_INFO("Current state: %s",currentState_.c_str());
-      //ROS_INFO("asynchandle: %d",asynchandle_);
       loop_rate.sleep();
 
       /*bool valid_detection =  getSensornodePose();

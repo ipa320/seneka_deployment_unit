@@ -105,6 +105,23 @@
         <joint name="right_arm_wrist_3_joint" value="-1.7" />
     </group_state>
 
+   <group_state name="lpickup" group="left_arm_group">
+        <joint name="left_arm_shoulder_pan_joint" value="1.5705" />
+	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
+        <joint name="left_arm_elbow_joint" value="0.5" />
+        <joint name="left_arm_wrist_1_joint" value="0" />
+        <joint name="left_arm_wrist_2_joint" value="3.141" />
+        <joint name="left_arm_wrist_3_joint" value="2.7" />
+    </group_state>
+    <group_state name="rpickup" group="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" value="-1.5705" />
+	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
+        <joint name="right_arm_elbow_joint" value="-0.5" />
+        <joint name="right_arm_wrist_1_joint" value="3.141" />
+        <joint name="right_arm_wrist_2_joint" value="3.141" />
+        <joint name="right_arm_wrist_3_joint" value="-2.7" />
+    </group_state>
+
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
 	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
 
