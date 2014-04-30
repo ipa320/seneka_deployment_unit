@@ -113,7 +113,6 @@ public:
   void init(){
     
     //params
-    currentState_ = "gazebo_home";
     transition_ = "";
     tje_lock_.lock();
     tje_validation_.dual_flag = 0; 
@@ -121,11 +120,14 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
 
+    //read params from parameter server
+    node_handle_.param<std::string>("/seneka_pnp/start_state", currentState_, "gazebo_home");
+
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
     mainLoop();
   }  
-
+  
   bool getSensornodePose(){
     
     handholds_.clear();
@@ -233,7 +235,7 @@ public:
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
 
   //TRANSITION: toHomeState
-  bool toHomeState(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+  bool toHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     bool ret = false;
 
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
@@ -267,7 +269,7 @@ public:
 
   //TRANSITION:avoidCollisionState
   //Moves the arm to a collision free state
-  bool avoidCollisionState(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+  bool toCollisionFree(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
     bool ret = false;
 
@@ -298,7 +300,7 @@ public:
   }
 
 
-  //
+  //moves the arms to the initial pickup pose
   bool toPickUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
     bool ret = false;
@@ -321,6 +323,60 @@ public:
     ret = monitorArmMovement(true,true);
 
     return ret;
+  }
+
+  bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+    bool ret = false;
+
+    unsigned int used_handle_r = 2;//use the real handle id 1-6
+    unsigned int used_handle_l = 5;//use the real handle id 1-6
+    used_handle_r--;
+    used_handle_l--;
+
+    moveit::planning_interface::MoveGroup::Plan mergedPlan;
+
+    group_r->setStartStateToCurrentState();      
+    group_l->setStartStateToCurrentState();
+    group_both->setStartStateToCurrentState();
+
+    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+    geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
+    geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+      
+    //------------------------Drive to entry point of pickup process-------------------------------------------------
+    waypoints_r.clear();
+    waypoints_l.clear();
+
+    if(!getSensornodePose()){
+      ROS_INFO("Could not detect the Sensornode");
+      return false;
+    }
+
+    target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
+    target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
+    target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+    target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
+    target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
+    target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
+    target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+    waypoints_r.push_back(target_pose2_r);
+
+    target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
+    target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
+    target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+    target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
+    target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
+    target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
+    target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+    waypoints_l.push_back(target_pose2_l);
+
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+    
+    group_both->asyncExecute(mergedPlan);
+    ret = monitorArmMovement(true,true);
+
+    return ret;    
   }
 
 
@@ -749,6 +805,10 @@ public:
     group_both_ = new move_group_interface::MoveGroup("both_arms");
 
     //planning settings
+    double planning_time = 10.0;
+    double orientation_tolerance = 100;
+    double position_tolerance = 100;
+
     group_r_->setWorkspace (0, 0, 0, 5, 5, 5);
     group_r_->setStartStateToCurrentState();
     group_l_->setWorkspace (0, 0, 0, 5, 5, 5);
@@ -756,12 +816,15 @@ public:
     group_both_->setWorkspace (0, 0, 0, 5, 5, 5);
     group_both_->setStartStateToCurrentState();
 
-    group_r_->setGoalOrientationTolerance(0.01);
-    group_r_->setPlanningTime(10.0);
-    group_l_->setGoalOrientationTolerance(0.01);
-    group_l_->setPlanningTime(10.0);
-    group_both_->setGoalOrientationTolerance(0.01);
-    group_both_->setPlanningTime(10.0);
+    group_r_->setGoalOrientationTolerance(orientation_tolerance);
+    group_r_->setGoalPositionTolerance(position_tolerance);
+    group_r_->setPlanningTime(planning_time);
+    group_l_->setGoalOrientationTolerance(orientation_tolerance);
+    group_l_->setGoalPositionTolerance(position_tolerance);
+    group_l_->setPlanningTime(planning_time);
+    group_both_->setGoalOrientationTolerance(orientation_tolerance);
+    group_both_->setGoalPositionTolerance(position_tolerance);
+    group_both_->setPlanningTime(planning_time);
 
   }
 
@@ -775,8 +838,8 @@ public:
     if(currentState.compare("gazebo_home") == 0){
 
       //Transitions
-      if(transition.compare("avoidCollisionState") == 0){
-	if(avoidCollisionState(group_l_,group_r_,group_both_)){
+      if(transition.compare("toCollisionFree") == 0){
+	if(toCollisionFree(group_l_,group_r_,group_both_)){
 	  return "collision_free";
 	} else {
 	  return "unknown_state";
@@ -789,8 +852,8 @@ public:
     else if(currentState.compare("collision_free") == 0){
       
       //Transitions
-      if(transition.compare("toHomeState") == 0){
-	if(toHomeState(group_l_,group_r_,group_both_)){
+      if(transition.compare("toHome") == 0){
+	if(toHome(group_l_,group_r_,group_both_)){
 	  return "home";
 	} else {
 	  return "unknown_state";
@@ -803,9 +866,9 @@ public:
     else if(currentState.compare("home") == 0){
 
       //Transitions
-      if(transition.compare("toPickUp") == 0){
+      if(transition.compare("toPreGrasp") == 0){
 	if(toPickUp(group_l_,group_r_,group_both_)){
-	  return "pick_up";
+	  return "pregrasp";
 	} else {
 	  return "unknown_state";
 	}
@@ -813,19 +876,44 @@ public:
       return "home";
     }
 
-    //------PICK_UP-------------------------------------------
-    else if(currentState.compare("pick_up") == 0){
+    //------PREGRASP-------------------------------------------
+    else if(currentState.compare("pregrasp") == 0){
 
       //Transitions
-      if(transition.compare("toHomeState") == 0){
-	if(toHomeState(group_l_,group_r_,group_both_)){
+      if(transition.compare("toHome") == 0){
+	if(toHome(group_l_,group_r_,group_both_)){
 	  return "home";
 	} else {
 	  return "unknown_state";
 	}
-      }      
-      return "pick_up";
+      }     
+
+      if(transition.compare("toPickedUp") == 0){
+	if(toPickedUp(group_l_,group_r_,group_both_)){
+	  return "pickedup";
+	} else {
+	  return "unknown_state";
+	}
+      } 
+ 
+      return "pregrasp";
     }
+
+    //------PICKED_UP-------------------------------------------
+    else if(currentState.compare("pickedup") == 0){
+
+      //Transitions
+      if(transition.compare("toHome") == 0){
+	if(toHome(group_l_,group_r_,group_both_)){
+	  return "home";
+	} else {
+	  return "unknown_state";
+	}
+      }    
+
+      return "pickedup";
+    }
+
     
     
     //------UNKNOWN_STATE-------------------------------------------
