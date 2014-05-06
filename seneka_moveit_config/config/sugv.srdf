@@ -36,6 +36,7 @@
 	<group name="left_arm_group" />
 	<group name="right_arm_group" />
     </group> -->
+	
 
     <group name="left_arm_group">
         <joint name="left_arm_shoulder_pan_joint" />
@@ -59,12 +60,12 @@
 
     <group name="left_gripper">
 	<joint name="left_arm_gripper_joint" />
-	<joint name="left_arm_rviz_joint" />
+	<!--<joint name="left_arm_rviz_joint" />-->
     </group>
 
     <group name="right_gripper">
 	<joint name="right_arm_gripper_joint" />
-	<joint name="right_arm_rviz_joint" />
+	<!--<joint name="right_arm_rviz_joint" />-->
     </group>
 
 

@@ -104,9 +104,7 @@ bool simulation_ = true;
 
 
 //Coordinate transformation for simulation in gazebo
-void getSensornodeStateGazebo(ros::NodeHandle& n){
-
-  
+void getSensornodeStateGazebo(ros::NodeHandle& n){  
 
   sensornodeGlobalCoordinates();
 
@@ -123,14 +121,20 @@ void getSensornodeStateGazebo(ros::NodeHandle& n){
   gms_p.request.relative_entity_name="world_dummy_link";
   gms_c = n.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
   gms_c.call(gms_p);//gms now holds the current state
+
   
   tf::Quaternion quat(gms_r.response.pose.orientation.x,gms_r.response.pose.orientation.y,gms_r.response.pose.orientation.z,gms_r.response.pose.orientation.w);
+  tf::Matrix3x3 m(quat);
+  double roll, pitch, yaw;
+  m.getRPY(roll, pitch, yaw);  
+  tf::Quaternion quat_t;
+  quat_t.setRPY(roll,pitch,yaw+0.78);
   
   static tf::TransformBroadcaster br;
   tf::Transform transform;
   
   transform.setOrigin( tf::Vector3(gms_p.response.pose.position.x,gms_p.response.pose.position.y,gms_p.response.pose.position.z) );
-  transform.setRotation(quat);
+  transform.setRotation(quat_t);
   br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/quanjo_body", "/sensornode"));
 
   sensornodeLocalCoordinates();  
@@ -274,7 +278,11 @@ void sensornodeLocalCoordinates(){
 bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<handle>* ahandles, trigger_points* atriggers, pose* aentry){
   
   SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates.def",'i');
-	
+  if(simulation_){
+    ser->close();
+    ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates_sim.def",'i');
+  }
+
   fiducialmarker fiducial1, fiducial2, fiducial3, fiducial4, fiducial5, fiducial6;
   handle handle1, handle2, handle3, handle4, handle5, handle6;
   trigger_points triggers;

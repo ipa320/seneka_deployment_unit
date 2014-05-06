@@ -236,16 +236,29 @@ public:
 
   //TRANSITION: toHomeState
   bool toHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+    
     bool ret = false;
 
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;
 
-    moveit::planning_interface::MoveGroup::Plan mergedPlan;
+    moveit::planning_interface::MoveGroup::Plan lplan, rplan, merged_plan;
     moveit::planning_interface::MoveGroup::Plan myPlan;
 
     group_l->setNamedTarget("lhome");
     group_r->setNamedTarget("rhome");
+    
+    /*
+    if(!group_l->plan(lplan))
+      return false;
+      
+    if(!group_r->plan(rplan))
+      return false;
+
+    merged_plan = mergePlan(lplan,rplan);
+
+    group_both->asyncExecute(merged_plan);
+    ret = monitorArmMovement(true,true);*/
     
     //l
     if(group_l->plan(myPlan)){
@@ -301,7 +314,7 @@ public:
 
 
   //moves the arms to the initial pickup pose
-  bool toPickUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+  bool toPreGrasp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
     bool ret = false;
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
@@ -334,7 +347,7 @@ public:
     used_handle_r--;
     used_handle_l--;
 
-    moveit::planning_interface::MoveGroup::Plan mergedPlan;
+    moveit::planning_interface::MoveGroup::Plan myPlan, mergedPlan;
 
     group_r->setStartStateToCurrentState();      
     group_l->setStartStateToCurrentState();
@@ -344,12 +357,12 @@ public:
     geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
       
-    //------------------------Drive to entry point of pickup process-------------------------------------------------
+    //------------------------Pickup Position/Orientation -------------------------------------------------
     waypoints_r.clear();
     waypoints_l.clear();
 
     if(!getSensornodePose()){
-      ROS_INFO("Could not detect the Sensornode");
+ moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;      ROS_INFO("Could not detect the Sensornode");
       return false;
     }
 
@@ -371,10 +384,59 @@ public:
     target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
     waypoints_l.push_back(target_pose2_l);
 
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+    /*mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
     
     group_both->asyncExecute(mergedPlan);
-    ret = monitorArmMovement(true,true);
+    ret = monitorArmMovement(true,true);*/
+    group_l->setPoseTarget(target_pose2_l);
+    group_r->setPoseTarget(target_pose2_r);
+
+    //l
+    if(group_l->plan(myPlan)){
+      sleep(5.0);
+      group_l->asyncExecute(myPlan);
+      ret = monitorArmMovement(true,false);
+    }
+    
+    //r
+    if(ret){
+      ret = false;
+      if(group_r->plan(myPlan)){
+	sleep(5.0);
+	group_r->asyncExecute(myPlan);
+	ret = monitorArmMovement(false,true);
+      }
+    }
+    
+
+
+    //------------------------PICK UP-----------------------------------------------------------------------------
+    if(ret){
+      waypoints_r.clear();
+      waypoints_l.clear();
+
+      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
+      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
+      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
+      waypoints_r.push_back(target_pose2_r);
+      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
+      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
+      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+      waypoints_r.push_back(target_pose2_r);
+
+      target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
+      target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
+      target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
+      waypoints_l.push_back(target_pose2_l);
+      target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
+      target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
+      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
+      waypoints_l.push_back(target_pose2_l);
+      
+      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+      group_both->asyncExecute(mergedPlan);
+      ret = monitorArmMovement(true,true);
+    }
 
     return ret;    
   }
@@ -867,7 +929,7 @@ public:
 
       //Transitions
       if(transition.compare("toPreGrasp") == 0){
-	if(toPickUp(group_l_,group_r_,group_both_)){
+	if(toPreGrasp(group_l_,group_r_,group_both_)){
 	  return "pregrasp";
 	} else {
 	  return "unknown_state";
@@ -962,14 +1024,15 @@ public:
   {
     this->setStop();
     
-    transition_ = "";
-
     res.success = true;
 
     return true;
   }
 
   bool setStop(){
+
+    transition_ = "";
+
     group_l_->stop();
     group_r_->stop();
     group_both_->stop();
