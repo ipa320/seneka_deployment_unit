@@ -39,23 +39,27 @@
 	
 
     <group name="left_arm_group">
-        <joint name="left_arm_shoulder_pan_joint" />
+        <!--<joint name="left_arm_shoulder_pan_joint" />
         <joint name="left_arm_shoulder_lift_joint" />
         <joint name="left_arm_elbow_joint" />
         <joint name="left_arm_wrist_1_joint" />
         <joint name="left_arm_wrist_2_joint" />
         <joint name="left_arm_wrist_3_joint" />
-        <joint name="left_arm_ee_fixed_joint" />
+        <joint name="left_arm_ee_fixed_joint" />-->
+
+	<chain base_link="left_arm_base_link" tip_link="left_arm_ee_link"/>
     </group>
 
      <group name="right_arm_group">
-        <joint name="right_arm_shoulder_pan_joint" />
+        <!--<joint name="right_arm_shoulder_pan_joint" />
         <joint name="right_arm_shoulder_lift_joint" />
         <joint name="right_arm_elbow_joint" />
         <joint name="right_arm_wrist_1_joint" />
         <joint name="right_arm_wrist_2_joint" />
         <joint name="right_arm_wrist_3_joint" />
-        <joint name="right_arm_ee_fixed_joint" />
+        <joint name="right_arm_ee_fixed_joint" />-->
+
+	<chain base_link="right_arm_base_link" tip_link="right_arm_ee_link"/>
     </group>
 
     <group name="left_gripper">
@@ -107,23 +111,40 @@
     </group_state>
 
    <group_state name="lpickup" group="left_arm_group">
-        <joint name="left_arm_shoulder_pan_joint" value="1.5705" />
+        <joint name="left_arm_shoulder_pan_joint" value="1.9705" />
 	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
-        <joint name="left_arm_elbow_joint" value="0.5" />
+        <joint name="left_arm_elbow_joint" value="0.8" />
+        <joint name="left_arm_wrist_1_joint" value="0" />
+        <joint name="left_arm_wrist_2_joint" value="3.141" />
+        <joint name="left_arm_wrist_3_joint" value="3.3" />
+    </group_state>
+    <group_state name="rpickup" group="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
+	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
+        <joint name="right_arm_elbow_joint" value="-0.8" />
+        <joint name="right_arm_wrist_1_joint" value="3.141" />
+        <joint name="right_arm_wrist_2_joint" value="3.141" />
+        <joint name="right_arm_wrist_3_joint" value="-3.3" />
+    </group_state>
+
+   <!--<group_state name="lpickedup" group="left_arm_group">
+        <joint name="left_arm_shoulder_pan_joint" value="1.9705" />
+	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
+        <joint name="left_arm_elbow_joint" value="0.8" />
         <joint name="left_arm_wrist_1_joint" value="0" />
         <joint name="left_arm_wrist_2_joint" value="3.141" />
         <joint name="left_arm_wrist_3_joint" value="2.7" />
     </group_state>
-    <group_state name="rpickup" group="right_arm_group">
-        <joint name="right_arm_shoulder_pan_joint" value="-1.5705" />
+    <group_state name="rpickedup" group="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
 	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
-        <joint name="right_arm_elbow_joint" value="-0.5" />
+        <joint name="right_arm_elbow_joint" value="-0.8" />
         <joint name="right_arm_wrist_1_joint" value="3.141" />
         <joint name="right_arm_wrist_2_joint" value="3.141" />
         <joint name="right_arm_wrist_3_joint" value="-2.7" />
-    </group_state>
+    </group_state>-->
 
-    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+	
 	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
 
 

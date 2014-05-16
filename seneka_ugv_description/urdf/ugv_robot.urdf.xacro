@@ -20,12 +20,14 @@
  <joint name="right_arm_ur10_connector" type="fixed">
   <parent link="quanjo_body" />
   <child link = "right_arm_base_link" />
+  <!--<origin xyz="0.615 -0.46 0.87" rpy="-0.2 0 -1.57" />-->
   <origin xyz="0.615 -0.46 0.87" rpy="-0.2 0 -1.57" />
  </joint>
 
  <joint name="left_arm_ur10_connector" type="fixed">
   <parent link="quanjo_body" />
   <child link = "left_arm_base_link" />
+  <!--<origin xyz="0.615 0.46 0.87" rpy="-0.2 0 -1.57" />-->
   <origin xyz="0.615 0.46 0.87" rpy="-0.2 0 -1.57" />
  </joint>
 

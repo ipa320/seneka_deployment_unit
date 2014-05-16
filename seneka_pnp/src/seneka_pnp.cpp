@@ -4,6 +4,13 @@
 */
 #include <ros/ros.h>
 
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <cstdio>
+#include <iomanip> 
+
 #include <opencv/cv.h>
 
 #include <tf/transform_broadcaster.h>
@@ -20,8 +27,18 @@
 
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
+#include <moveit_msgs/GetPositionIK.h>
+#include <moveit_msgs/MoveItErrorCodes.h>
 
 #include <moveit/robot_state/robot_state.h>
+#include <moveit/robot_state/joint_state_group.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit/robot_model/joint_model_group.h>
+
+#include <gazebo_msgs/SetModelState.h>
+#include <gazebo_msgs/ModelState.h>
+#include <gazebo_msgs/GetModelState.h> 
 
 #include "seneka_pnp/getState.h"
 #include "seneka_pnp/setTransition.h"
@@ -31,6 +48,8 @@
 #include "control_msgs/FollowJointTrajectoryActionResult.h"
 
 #include <boost/thread/mutex.hpp>
+
+
 
 
 class SenekaPickAndPlace
@@ -70,6 +89,7 @@ struct trajectory_execution_validation{
 private:
   ros::NodeHandle node_handle_;
   std::vector<handhold> handholds_;
+  pose3d sensornode_;
 
   ros::Subscriber subscr_;
   
@@ -90,10 +110,13 @@ private:
   std::string currentState_;
   std::string transition_;
   ros::ServiceServer service_getstate_,service_settransition_,service_setstop_;
+  ros::ServiceClient service_client, service_gazebo, service_gazebo_get;
 
   move_group_interface::MoveGroup *group_r_;
   move_group_interface::MoveGroup *group_l_;
   move_group_interface::MoveGroup *group_both_;
+
+  std::ofstream outf_;
 
   //tje = trajectory execution
   trajectory_execution_validation tje_validation_;  
@@ -120,8 +143,15 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
 
+    outf_.open("/home/matthias/data.txt"); 
+
     //read params from parameter server
     node_handle_.param<std::string>("/seneka_pnp/start_state", currentState_, "gazebo_home");
+
+    //services to call
+    service_client = node_handle_.serviceClient<moveit_msgs::GetPositionIK> ("compute_ik");
+    service_gazebo = node_handle_.serviceClient<gazebo_msgs::SetModelState> ("/gazebo/set_model_state");
+    service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
@@ -133,7 +163,28 @@ public:
     handholds_.clear();
     
     int ret = true;  
-     
+
+    //sensornode pose
+    try{
+      listener.waitForTransform("/quanjo_body", "/sensornode" , ros::Time::now(), ros::Duration(0.2));
+      listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      ret = false;
+    }
+
+    sensornode_.translation.x = transform.getOrigin().x();
+    sensornode_.translation.y = transform.getOrigin().y();
+    sensornode_.translation.z = transform.getOrigin().z();
+
+    sensornode_.rotation.w = transform.getRotation().getW();
+    sensornode_.rotation.x = transform.getRotation().getX();
+    sensornode_.rotation.y = transform.getRotation().getY();
+    sensornode_.rotation.z = transform.getRotation().getZ();
+
+
+     //handholds and helper points
      for(unsigned int i = 1; i < 7;i++){
       
       //get all tf transformations
@@ -340,7 +391,7 @@ public:
 
   bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
-    bool ret = false;
+    bool ret = true;
 
     unsigned int used_handle_r = 2;//use the real handle id 1-6
     unsigned int used_handle_l = 5;//use the real handle id 1-6
@@ -356,58 +407,40 @@ public:
     std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
     geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+
+    if(!getSensornodePose()){
+      return false;
+    }
       
     //------------------------Pickup Position/Orientation -------------------------------------------------
     waypoints_r.clear();
     waypoints_l.clear();
 
-    if(!getSensornodePose()){
- moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;      ROS_INFO("Could not detect the Sensornode");
-      return false;
-    }
-
     target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
     target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
     target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+    waypoints_r.push_back(target_pose2_r);
     target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
     target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
     target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
     target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
     waypoints_r.push_back(target_pose2_r);
 
+
     target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
     target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
     target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+    waypoints_l.push_back(target_pose2_l);
     target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
     target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
     target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
     target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
     waypoints_l.push_back(target_pose2_l);
 
-    /*mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
     
     group_both->asyncExecute(mergedPlan);
-    ret = monitorArmMovement(true,true);*/
-    group_l->setPoseTarget(target_pose2_l);
-    group_r->setPoseTarget(target_pose2_r);
-
-    //l
-    if(group_l->plan(myPlan)){
-      sleep(5.0);
-      group_l->asyncExecute(myPlan);
-      ret = monitorArmMovement(true,false);
-    }
-    
-    //r
-    if(ret){
-      ret = false;
-      if(group_r->plan(myPlan)){
-	sleep(5.0);
-	group_r->asyncExecute(myPlan);
-	ret = monitorArmMovement(false,true);
-      }
-    }
-    
+    ret = monitorArmMovement(true,true);  
 
 
     //------------------------PICK UP-----------------------------------------------------------------------------
@@ -415,9 +448,16 @@ public:
       waypoints_r.clear();
       waypoints_l.clear();
 
+      target_pose2_r = group_r->getCurrentPose().pose;
+      target_pose2_l = group_l->getCurrentPose().pose;
+
       target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
       target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
       target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
+      target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
+      target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
+      target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
+      target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
       waypoints_r.push_back(target_pose2_r);
       target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
       target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
@@ -427,10 +467,14 @@ public:
       target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
       target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
+      target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
+      target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
+      target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
+      target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
       waypoints_l.push_back(target_pose2_l);
       target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
       target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
-      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
+      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
       waypoints_l.push_back(target_pose2_l);
       
       mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
@@ -497,6 +541,204 @@ public:
     tje_validation_.finished = true;
     tje_lock_.unlock();    
   }
+
+
+  bool workspace_sim(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+    tje_lock_.lock();
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    moveit_msgs::DisplayTrajectory display_trajectory;
+
+    moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
+    moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
+
+    unsigned int used_handle_r = 2;//use the real handle id 1-6
+    unsigned int used_handle_l = 5;//use the real handle id 1-6
+    used_handle_r--;
+    used_handle_l--;
+
+    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+    
+    for(double x = 1.5 ; x <= 1.8 ; x = x + 0.5){
+      for(double y = -0.5 ; y <= 0.5 ; y = y + 0.5){	  
+
+	group_r->setStartStateToCurrentState();      
+	group_l->setStartStateToCurrentState();
+	group_both->setStartStateToCurrentState();
+
+	waypoints_r.clear();
+	waypoints_l.clear();
+
+	setSensornodeState(x,y);
+
+	if(!getSensornodePose()){
+	  return false;
+	}
+
+	geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
+	geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+
+	target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
+	target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
+	target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+	waypoints_r.push_back(target_pose2_r);
+	target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
+	target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
+	target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
+	target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;   
+	waypoints_r.push_back(target_pose2_r);
+	target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
+	target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
+	target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
+	waypoints_r.push_back(target_pose2_r);
+	target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
+	target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
+	target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+	waypoints_r.push_back(target_pose2_r);
+
+	target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
+	target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
+	target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+	waypoints_l.push_back(target_pose2_l);
+	target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
+	target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
+	target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
+	target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+	waypoints_l.push_back(target_pose2_l);
+	target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
+	target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
+	target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
+	waypoints_l.push_back(target_pose2_l);
+	target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
+	target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
+	target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
+	waypoints_l.push_back(target_pose2_l);
+
+
+	//-----
+	outf_ << x << " " << y << " ";
+
+	double fraction_r = group_r->computeCartesianPath(waypoints_r,
+				     0.01,  // eef_step
+				     1000.0,   // jump_threshold
+				     trajectory_r);
+
+	double fraction_l = group_l->computeCartesianPath(waypoints_l,
+							  0.01,  // eef_step
+							  1000.0,   // jump_threshold
+							  trajectory_l);
+	
+	//group_r->setPoseTarget(target_pose2_r);
+	//bool plan = group_r->plan(linear_plan_r);
+
+	ROS_INFO("FRACTION: %f", fraction_r);
+	//if(!plan){
+	if(fraction_r < 1.0 || fraction_l < 1.0){
+	   outf_ << "x";
+	} else {
+	  outf_ << 1;
+	}
+	
+	//-----
+	//-----
+	/*bool result = false;
+	moveit_msgs::GetPositionIK::Request service_request;
+	moveit_msgs::GetPositionIK::Response service_response; 
+
+	service_request.ik_request.attempts = 10;
+	service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link"; 
+ 	service_request.ik_request.avoid_collisions = true;
+
+	//left arm
+	service_request.ik_request.group_name = "left_arm_group";
+	service_request.ik_request.pose_stamped.pose = target_pose2_l;    
+	service_client.call(service_request, service_response);
+	
+	if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+	  result = true;
+	} 
+
+	//right arm
+	if(result){
+	  service_request.ik_request.group_name = "right_arm_group"; 
+	  service_request.ik_request.pose_stamped.pose = target_pose2_r;    
+	  service_client.call(service_request, service_response);
+
+	  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+	    result = true;
+	  } else {
+	    result = false;
+	  }
+	}
+
+	outf_ << x << " " << y << " ";
+
+	//result
+	if(result){
+	  outf_ << 1;
+	} else {
+	  outf_ << "x";
+	}*/
+	
+	outf_  << '\n';	
+	//-----
+
+      }
+      outf_ << '\n';
+    }
+    outf_.close();
+    tje_lock_.unlock(); 
+    return true;
+  }
+
+  bool setSensornodeState(double x, double y)
+  {
+    gazebo_msgs::ModelState state;
+    geometry_msgs::Pose pose;
+    gazebo_msgs::SetModelState::Request req;
+    gazebo_msgs::SetModelState::Response resp;
+
+    gazebo_msgs::GetModelState::Request get_req;
+    gazebo_msgs::GetModelState::Response get_resp;
+    
+
+    //set pose in world_dummy_link
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = 0.01;
+
+    state.reference_frame = "world_dummy_link";
+    state.model_name = "sensornode";
+    state.pose = pose;    
+
+    req.model_state = state;
+    service_gazebo.call(req,resp);   
+
+    //get pose in world frame
+    get_req.model_name = "sensornode";
+    get_req.relative_entity_name = "world";
+    service_gazebo_get.call(get_req,get_resp);
+
+    pose = get_resp.pose;
+
+
+    //set pose in world frame
+    //use orientation in world frame (don't use "world_dummy_link")
+    pose.orientation.w =  0.438058031738; 
+    pose.orientation.x =  0.438036624618;
+    pose.orientation.y = -0.555087759704;
+    pose.orientation.z = -0.555073558504;
+
+    state.reference_frame = "world";
+    state.model_name = "sensornode";
+    state.pose = pose;    
+
+    req.model_state = state;
+    service_gazebo.call(req,resp);    
+
+    ROS_INFO("SetModelState : %u", resp.success);
+  }
+
+
 
   //pick and place planner
   void pnpPlanner(){
@@ -713,7 +955,7 @@ public:
 
   move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l){
     
-    double visualizationtime = 15.0;
+    double visualizationtime = 5;
 
     move_group_interface::MoveGroup group_r("right_arm_group");
     move_group_interface::MoveGroup group_l("left_arm_group");
@@ -730,23 +972,27 @@ public:
     group_l.setStartStateToCurrentState();
     group_l.setGoalOrientationTolerance(0.01);
     group_l.setPlanningTime(10.0);
-
+    
+    double fraction_r = 0;
+    double fraction_l = 0;
+    uint attempts = 10;
     //-------RIGHT-------------------------
-    group_r.computeCartesianPath(waypoints_r,
-				 0.01,  // eef_step
-				 0.0,   // jump_threshold
-				 trajectory_r);  
-
-
+    for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
+      fraction_r = group_r.computeCartesianPath(waypoints_r,
+						0.01,  // eef_step
+						1000.0,   // jump_threshold
+						trajectory_r);
+    }
     linear_plan_r.trajectory_ = trajectory_r;
     sleep(visualizationtime);
 
     //-------LEFT-------------------------
-    group_l.computeCartesianPath(waypoints_l,
-				 0.01,  // eef_step
-				 0.0,   // jump_threshold
-				 trajectory_l);  
-      
+    for(uint i=0; fraction_l < 1.0 && i < attempts; i++){
+      fraction_l = group_l.computeCartesianPath(waypoints_l,
+				   0.01,  // eef_step
+				   1000.0,   // jump_threshold
+				   trajectory_l);  
+    }      
     linear_plan_l.trajectory_ = trajectory_l;
     sleep(visualizationtime);
 
@@ -836,6 +1082,29 @@ public:
     return mergedPlan;
   }
 
+  bool sensornodePosValid()
+  {
+    if(!getSensornodePose()){
+      return false;
+    }
+
+    double x_lower_bound =  1.5;
+    double x_upper_bound =  1.7;
+    double y_lower_bound = -0.2;
+    double y_upper_bound =  0.2;
+
+   ROS_INFO("Sensornode pose is X:%f Y:%f", sensornode_.translation.x, sensornode_.translation.y);
+   ROS_INFO("Bounds X: %f and %f", x_lower_bound, x_upper_bound);
+   ROS_INFO("Bounds Y: %f and %f", y_lower_bound, y_upper_bound);
+
+    if((x_lower_bound < sensornode_.translation.x && sensornode_.translation.x < x_upper_bound) &&
+	(y_lower_bound < sensornode_.translation.y && sensornode_.translation.y < y_upper_bound)){
+	 return true;	  
+       }   
+
+    return false;
+  }
+
   void loadTeachedPoints(std::vector<std::vector<double> >* vec_r,std::vector<std::vector<double> >* vec_l){
     
     SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
@@ -868,8 +1137,8 @@ public:
 
     //planning settings
     double planning_time = 10.0;
-    double orientation_tolerance = 100;
-    double position_tolerance = 100;
+    double orientation_tolerance = 0.01;
+    double position_tolerance = 0.01;
 
     group_r_->setWorkspace (0, 0, 0, 5, 5, 5);
     group_r_->setStartStateToCurrentState();
@@ -1014,8 +1283,18 @@ public:
   bool setTransition(seneka_pnp::setTransition::Request &req,
 		     seneka_pnp::setTransition::Response &res)
   {
-    transition_ = req.transition;
+    transition_ = req.transition;    
     res.transition = transition_;
+
+    if(transition_.compare("toPickedUp") == 0){
+      if(!sensornodePosValid()){
+	transition_ = "";
+	res.transition = "Sensornode is not in a valid grab position";
+	return true;
+      }
+    }
+
+ 
     return true;
   }
 
@@ -1055,11 +1334,15 @@ public:
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
 
+    workspace_sim(group_l_,group_r_,group_both_);
+
+
     ros::Rate loop_rate(1);
     while(ros::ok()){
       
       currentState_ = stateMachine(currentState_);
       ROS_INFO("Current state: %s",currentState_.c_str());
+      //workspace_sim();
       loop_rate.sleep();
 
       /*bool valid_detection =  getSensornodePose();
