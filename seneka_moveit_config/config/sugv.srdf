@@ -115,19 +115,19 @@
 	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
         <joint name="left_arm_elbow_joint" value="0.8" />
         <joint name="left_arm_wrist_1_joint" value="0" />
-        <joint name="left_arm_wrist_2_joint" value="3.141" />
+        <joint name="left_arm_wrist_2_joint" value="3.041" />
         <joint name="left_arm_wrist_3_joint" value="3.3" />
     </group_state>
     <group_state name="rpickup" group="right_arm_group">
         <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
 	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
         <joint name="right_arm_elbow_joint" value="-0.8" />
-        <joint name="right_arm_wrist_1_joint" value="3.141" />
-        <joint name="right_arm_wrist_2_joint" value="3.141" />
+        <joint name="right_arm_wrist_1_joint" value="3.2" />
+        <joint name="right_arm_wrist_2_joint" value="3.241" />
         <joint name="right_arm_wrist_3_joint" value="-3.3" />
     </group_state>
 
-   <!--<group_state name="lpickedup" group="left_arm_group">
+   <group_state name="lprepack" group="left_arm_group">
         <joint name="left_arm_shoulder_pan_joint" value="1.9705" />
 	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
         <joint name="left_arm_elbow_joint" value="0.8" />
@@ -135,17 +135,17 @@
         <joint name="left_arm_wrist_2_joint" value="3.141" />
         <joint name="left_arm_wrist_3_joint" value="2.7" />
     </group_state>
-    <group_state name="rpickedup" group="right_arm_group">
+    <group_state name="rprepack" group="right_arm_group">
         <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
 	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
         <joint name="right_arm_elbow_joint" value="-0.8" />
         <joint name="right_arm_wrist_1_joint" value="3.141" />
         <joint name="right_arm_wrist_2_joint" value="3.141" />
         <joint name="right_arm_wrist_3_joint" value="-2.7" />
-    </group_state>-->
+    </group_state>
 
 	
-	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
+    <virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
 
 
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->

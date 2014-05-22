@@ -50,8 +50,6 @@
 #include <boost/thread/mutex.hpp>
 
 
-
-
 class SenekaPickAndPlace
 {
 
@@ -483,6 +481,52 @@ public:
     }
 
     return ret;    
+  }
+
+  bool toPrePack(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+    
+    bool ret = false;
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+
+    std::vector<double> group_variable_values;
+    std::vector<std::string> group_variable_names;
+    group_variable_values = group_l->getCurrentJointValues();
+    group_variable_names = group_l->getJoints();
+
+    if(group_variable_values.size() != 6 || group_variable_names.size() != 6){
+      ROS_ERROR("Number of joints must be 6");
+    }
+    
+    //Gazebo Simulation -> Drive left arm out of initial collision pose
+    group_variable_values[0] = -1.0;
+    group_variable_values[1] = -1.0;
+    group_variable_values[2] = -1.0;
+    group_variable_values[3] = -1.0;
+    group_variable_values[4] = -1.0;
+    group_variable_values[5] = -1.0;
+    group_l->setJointValueTarget(group_variable_values);
+
+
+
+
+
+    moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
+    
+    group_l->setNamedTarget("lprepack");
+    group_r->setNamedTarget("rprepack");
+    
+    if(!group_l->plan(lplan))
+      return false;
+      
+    if(!group_r->plan(rplan))
+      return false;
+
+    merged_plan = mergePlan(lplan,rplan);
+
+    group_both->asyncExecute(merged_plan);
+    ret = monitorArmMovement(true,true);
+
+    return ret;
   }
 
 
@@ -1232,6 +1276,28 @@ public:
 
     //------PICKED_UP-------------------------------------------
     else if(currentState.compare("pickedup") == 0){
+
+      //Transitions
+      if(transition.compare("toHome") == 0){
+	if(toHome(group_l_,group_r_,group_both_)){
+	  return "home";
+	} else {
+	  return "unknown_state";
+	}
+      }    
+      if(transition.compare("toPrePack") == 0){
+	if(toPrePack(group_l_,group_r_,group_both_)){
+	  return "prepack";
+	} else {
+	  return "unknown_state";
+	}
+      } 
+
+      return "pickedup";
+    }
+
+    //------PREPACK-------------------------------------------
+    else if(currentState.compare("prepack") == 0){
 
       //Transitions
       if(transition.compare("toHome") == 0){

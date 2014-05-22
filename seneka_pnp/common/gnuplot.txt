@@ -1,0 +1,11 @@
+reset
+set terminal pngcairo truecolor size 350,262 crop enhanced font 'helvetica,8'
+set output '/home/matthias/MYTEST.png'
+#set output '/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/plots/straight.png'
+set title "Both ARMS straight"
+set object 1 rectangle from screen 0,0 to screen 1,1 fillcolor rgb"#ffffff" behind
+unset key
+set yrange [1.5:1.9]
+set xrange [0.6:-0.6]
+set view map
+splot "data.txt" using 2:1:3
