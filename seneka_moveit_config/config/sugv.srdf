@@ -110,7 +110,7 @@
         <joint name="right_arm_wrist_3_joint" value="-1.7" />
     </group_state>
 
-   <group_state name="lpickup" group="left_arm_group">
+   <group_state name="lpregrasp" group="left_arm_group">
         <joint name="left_arm_shoulder_pan_joint" value="1.9705" />
 	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
         <joint name="left_arm_elbow_joint" value="0.8" />
@@ -118,7 +118,7 @@
         <joint name="left_arm_wrist_2_joint" value="3.041" />
         <joint name="left_arm_wrist_3_joint" value="3.3" />
     </group_state>
-    <group_state name="rpickup" group="right_arm_group">
+    <group_state name="rpregrasp" group="right_arm_group">
         <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
 	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
         <joint name="right_arm_elbow_joint" value="-0.8" />
@@ -128,20 +128,20 @@
     </group_state>
 
    <group_state name="lprepack" group="left_arm_group">
-        <joint name="left_arm_shoulder_pan_joint" value="1.9705" />
-	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
-        <joint name="left_arm_elbow_joint" value="0.8" />
-        <joint name="left_arm_wrist_1_joint" value="0" />
-        <joint name="left_arm_wrist_2_joint" value="3.141" />
-        <joint name="left_arm_wrist_3_joint" value="2.7" />
+        <joint name="left_arm_shoulder_pan_joint" value="1.04728" />
+	<joint name="left_arm_shoulder_lift_joint" value="-1.53308" />
+        <joint name="left_arm_elbow_joint" value="-4.73616" />
+        <joint name="left_arm_wrist_1_joint" value="-0.0179251" />
+        <joint name="left_arm_wrist_2_joint" value="2.61733" />
+        <joint name="left_arm_wrist_3_joint" value="-2.91619" />
     </group_state>
     <group_state name="rprepack" group="right_arm_group">
-        <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
-	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
-        <joint name="right_arm_elbow_joint" value="-0.8" />
-        <joint name="right_arm_wrist_1_joint" value="3.141" />
-        <joint name="right_arm_wrist_2_joint" value="3.141" />
-        <joint name="right_arm_wrist_3_joint" value="-2.7" />
+        <joint name="right_arm_shoulder_pan_joint" value="-1.04915" />
+	<joint name="right_arm_shoulder_lift_joint" value="-1.60908" />
+        <joint name="right_arm_elbow_joint" value="4.73713" />
+        <joint name="right_arm_wrist_1_joint" value="-3.12726" />
+        <joint name="right_arm_wrist_2_joint" value="-2.61798" />
+        <joint name="right_arm_wrist_3_joint" value="2.94228" />
     </group_state>
 
 

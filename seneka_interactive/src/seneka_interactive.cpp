@@ -1,10 +1,25 @@
 #include <ros/ros.h>
 
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <cstdio>
+#include <iomanip> 
+
 #include <interactive_markers/interactive_marker_server.h>
 
 // Moveit msgs
 #include <moveit_msgs/GetPositionIK.h>
 #include <moveit_msgs/MoveItErrorCodes.h>
+
+
+#include <moveit/move_group_interface/move_group.h>
+#include <moveit_msgs/DisplayRobotState.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+
+#include <moveit_msgs/DisplayRobotState.h>
+#include <moveit_msgs/DisplayTrajectory.h>
 
 // MoveIt!
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -16,9 +31,26 @@
 #include <moveit/robot_state/conversions.h>
 #include <moveit_msgs/DisplayRobotState.h>
 
+//services
+#include "seneka_interactive/setStartState.h"
+#include "seneka_interactive/simulate.h"
+#include "seneka_interactive/createNewState.h"
+#include "seneka_interactive/getStates.h"
+#include "seneka_interactive/printStatesToFile.h"
+
+
 #include <boost/bind.hpp>
 
+
 const double PI = 3.14159265359;
+
+struct node_pose{
+	std::string name;
+	std::vector<std::string> joint_names_r;
+	std::vector<std::string> joint_names_l;
+	std::vector<double> joint_states_r;
+	std::vector<double> joint_states_l;		
+};
 
 class SenekaInteractive
 {
@@ -26,13 +58,20 @@ class SenekaInteractive
 private:
   ros::NodeHandle node_handle_;
   
+  ros::ServiceServer service_setStartState_, service_simulate_, service_createNewState_, service_getStates_, service_printStatesToFile_;
+  
   ros::Publisher robot_state_publisher_l_, robot_state_publisher_r_;
   interactive_markers::InteractiveMarkerServer* server_;
   geometry_msgs::Pose marker_pose_;
   geometry_msgs::Pose handle_l_, handle_r_;  
   bool marker_changed_;
   double gripper_length;
+  std::vector<node_pose> stored_poses; 
+  
+  bool simulate_;
 
+  node_pose start_pose_, tmp_pose;
+  
 public:
   //Constructor
   SenekaInteractive(ros::NodeHandle& nh){
@@ -45,10 +84,21 @@ public:
   }
 
   void init(){
-	  
+	
+	create_stored_poses();	
 	robot_state_publisher_l_ = node_handle_.advertise<moveit_msgs::DisplayRobotState>( "robot_state_l", 1 );
 	robot_state_publisher_r_ = node_handle_.advertise<moveit_msgs::DisplayRobotState>( "robot_state_r", 1 );
+	
+	service_setStartState_ = node_handle_.advertiseService("seneka_interactive/setStartState", &SenekaInteractive::setStartState, this);
+	service_simulate_ = node_handle_.advertiseService("seneka_interactive/simulate", &SenekaInteractive::simulate, this);
+	service_createNewState_ = node_handle_.advertiseService("seneka_interactive/createNewState", &SenekaInteractive::createNewState, this);
+	service_getStates_ = node_handle_.advertiseService("seneka_interactive/getStates", &SenekaInteractive::getStates, this);
+	service_printStatesToFile_ = node_handle_.advertiseService("seneka_interactive/printStatesToFile", &SenekaInteractive::printStatesToFile, this);
+	
+	tmp_pose.name = "tmp_pose";
+	
     marker_changed_ = false;
+    simulate_ = false;
     
     gripper_length = 0.26;
     
@@ -68,7 +118,7 @@ public:
 	  left_arm_wrist_3_joint
 	  */
 	    
-	  double jiggle = PI/4;
+	  double jiggle = PI;
 	  
 	  moveit_msgs::Constraints constraint;
 	  
@@ -79,7 +129,7 @@ public:
 	  jconstraint.tolerance_above = jiggle;
 	  jconstraint.tolerance_below = jiggle;
 	  jconstraint.weight = 1;
-	  constraint.joint_constraints.push_back(jconstraint);
+	  //constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "right_arm_shoulder_lift_joint";
 	  jconstraint.position = -PI/2;
@@ -93,7 +143,7 @@ public:
   
   moveit_msgs::Constraints leftArmConstraints(){
 	  
-	  double jiggle = PI/4;
+	  double jiggle = PI;
 	  
 	  moveit_msgs::Constraints constraint;
 	  
@@ -103,7 +153,7 @@ public:
 	  jconstraint.tolerance_above = jiggle;
 	  jconstraint.tolerance_below = jiggle;
 	  jconstraint.weight = 1;
-	  constraint.joint_constraints.push_back(jconstraint);
+	  //constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "left_arm_shoulder_lift_joint";
 	  jconstraint.position = -PI/2;
@@ -115,32 +165,13 @@ public:
 	  return constraint;
   }
   
-  void createGrabPoses(geometry_msgs::Pose &marker_pose){
-	  
-	  handle_l_ = marker_pose_;
-	  handle_r_ = marker_pose_;	
-	  
-	  handle_l_.position.x += 0;
-	  handle_l_.position.y += 0.2125;
-	  handle_l_.position.z += 0.51 + gripper_length;
-	  handle_l_.orientation.x = 0.0095722;
-	  handle_l_.orientation.y = -0.0108288;
-	  handle_l_.orientation.z = -0.706344;
-	  handle_l_.orientation.w = 0.707722;		
-	  
-	  handle_r_.position.x += 0;
-	  handle_r_.position.y -= 0.2125;
-	  handle_r_.position.z += 0.51 + gripper_length;
-	  handle_r_.orientation.x = 0;
-	  handle_r_.orientation.y = 0;
-	  handle_r_.orientation.z = 0.706678;
-	  handle_r_.orientation.w = 0.707535;	
- }
-  
   void generateIkSolutions(){  
 	  
 	  std::vector<double> joint_values_l;
 	  std::vector<double> joint_values_r;
+	  
+	  std::vector<std::string> joint_names_l;
+	  std::vector<std::string> joint_names_r;
 	  
 	  if(marker_changed_){
 		  
@@ -179,6 +210,7 @@ public:
 			  
 			  for(uint i=0; i<6;i++){
 					  joint_values_l.push_back(service_response.solution.joint_state.position[i]);  
+					  joint_names_l.push_back(service_response.solution.joint_state.name[i]);
 			  }
 			  
 			  joint_state_group_l->setVariableValues(joint_values_l);
@@ -189,6 +221,9 @@ public:
 			  
 			  ROS_INFO("IK Solution L: TRUE");
 			  result = true;
+			  
+			  tmp_pose.joint_names_l = joint_names_l;
+			  tmp_pose.joint_states_l = joint_values_l;
 
 		  } else {
 			  ROS_INFO("IK Solution L: FALSE");		  
@@ -216,15 +251,19 @@ public:
 			  
 			  for(uint i=6; i<12;i++){
 				  joint_values_r.push_back(service_response.solution.joint_state.position[i]);  
+				  joint_names_r.push_back(service_response.solution.joint_state.name[i]);
 			  }
 
-			  joint_state_group_r->setVariableValues(joint_values_r);
-
+			  joint_state_group_r->setVariableValues(joint_values_r); 
+			  
 			  moveit_msgs::DisplayRobotState msg_r;
 			  robot_state::robotStateToRobotStateMsg(*kinematic_state_r, msg_r.state);
 			  robot_state_publisher_r_.publish( msg_r );  
 
 			  ROS_INFO("IK Solution R: TRUE");
+			  
+			  tmp_pose.joint_names_r = joint_names_r;
+			  tmp_pose.joint_states_r = joint_values_r;
 
 		  } else {
 			  ROS_INFO("IK Solution R: FALSE");
@@ -234,14 +273,77 @@ public:
 	  }
   }
   
+  void simulateCartesianPath(){	  
+
+	    double visualizationtime = 5;
+	    
+	    move_group_interface::MoveGroup group_r("right_arm_group");
+	    move_group_interface::MoveGroup group_l("left_arm_group");
+	    
+	    moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
+	    moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
+	    
+	    //set start state to start_pose
+	    robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+	    robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+	    robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+	    robot_state::JointStateGroup* joint_state_group_r = kinematic_state->getJointStateGroup("right_arm_group");
+	    robot_state::JointStateGroup* joint_state_group_l = kinematic_state->getJointStateGroup("left_arm_group");
+	    
+	    joint_state_group_r->setVariableValues(start_pose_.joint_states_r); 
+	    joint_state_group_l->setVariableValues(start_pose_.joint_states_l);	    
+
+	    group_r.setWorkspace (0, 0, 0, 5, 5, 5);
+	    group_r.setStartState(*kinematic_state);
+	    group_r.setGoalOrientationTolerance(0.01);
+	    group_r.setPlanningTime(10.0);
+
+	    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
+	    group_l.setStartState(*kinematic_state);
+	    group_l.setGoalOrientationTolerance(0.01);
+	    group_l.setPlanningTime(10.0);
+	    
+	    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+	    waypoints_r.clear();
+	    waypoints_l.clear();
+	    
+	    waypoints_r.push_back(handle_r_);
+	    waypoints_l.push_back(handle_l_);
+	    
+	    
+	    double fraction_r = 0;
+	    double fraction_l = 0;
+	    uint attempts = 10;    
+	    //-------RIGHT-------------------------
+	    for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
+	      fraction_r = group_r.computeCartesianPath(waypoints_r,
+							0.01,  // eef_step
+							1000.0,   // jump_threshold
+							trajectory_r);
+	    }
+	    linear_plan_r.trajectory_ = trajectory_r;
+	    sleep(visualizationtime);
+
+	    //-------LEFT-------------------------
+	    for(uint i=0; fraction_l < 1.0 && i < attempts; i++){
+	      fraction_l = group_l.computeCartesianPath(waypoints_l,
+					   0.01,  // eef_step
+					   1000.0,   // jump_threshold
+					   trajectory_l);  
+	    }      
+	    linear_plan_l.trajectory_ = trajectory_l;
+	    sleep(visualizationtime);	       
+  }
+  
   void processFeedback(
 		  const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback )
   {
     /*ROS_INFO_STREAM( feedback->marker_name << " is now at "
         << feedback->pose.position.x << ", " << feedback->pose.position.y
-        << ", " << feedback->pose.position.z );
+        << ", " << feedback->pose.position.z );*/
     
-    std::cout << feedback->pose.orientation << std::endl;*/
+	std::cout << feedback->pose.position << std::endl;
+    std::cout << feedback->pose.orientation << std::endl;
     
     marker_pose_ = feedback->pose;
     createGrabPoses(marker_pose_);
@@ -271,14 +373,12 @@ public:
 	  box_marker.color.r = 0.5;
 	  box_marker.color.g = 0.5;
 	  box_marker.color.b = 0.5;
-	  box_marker.color.a = 1.0;
-	  
+	  box_marker.color.a = 1.0;	  
 	  
 	  // create a non-interactive control which contains the box
 	  visualization_msgs::InteractiveMarkerControl box_control;
 	  box_control.always_visible = true;
-	  box_control.markers.push_back( box_marker );
-	  
+	  box_control.markers.push_back( box_marker );	  
 
 	  // add the control to the interactive marker
 	  int_marker.controls.push_back( box_control );
@@ -327,6 +427,159 @@ public:
 	  // 'commit' changes and send to all clients
 	  server_->applyChanges();
   }
+  
+  //------------ Services -----------------------------------
+  bool setStartState(seneka_interactive::setStartState::Request &req,
+		  seneka_interactive::setStartState::Response &res)
+  {
+	  std::string requested_name = req.name;	  
+	  
+	  for(uint i=0; i < stored_poses.size(); i++){
+		  if(!stored_poses[i].name.compare(requested_name)){
+			  
+			  start_pose_ = stored_poses[i];
+			  
+			  res.name = stored_poses[i].name;
+			  res.joint_names_r = stored_poses[i].joint_names_r;
+			  res.joint_names_l = stored_poses[i].joint_names_l;
+			  res.joint_states_r = stored_poses[i].joint_states_r;
+			  res.joint_states_l = stored_poses[i].joint_states_l;			  
+			  return true;		
+		  }
+	  }
+	  return false;
+  }  
+  
+  bool createNewState(seneka_interactive::createNewState::Request &req,
+		  seneka_interactive::createNewState::Response &res)
+  {	  
+	  node_pose new_pose = tmp_pose;
+	  new_pose.name = req.name;	  
+	  
+	  res.name = new_pose.name;
+	  res.joint_names_r = new_pose.joint_names_r;
+	  res.joint_names_l = new_pose.joint_names_l;
+	  res.joint_states_r = new_pose.joint_states_r;
+	  res.joint_states_l = new_pose.joint_states_l;
+	  
+	  stored_poses.push_back(new_pose);
+	  
+	  return true;
+  }
+  
+  bool getStates(seneka_interactive::getStates::Request &req,
+		  seneka_interactive::getStates::Response &res)
+  {	  
+	  for(uint i = 0; i < stored_poses.size(); i++){
+		  res.states.push_back(stored_poses[i].name);		  
+	  }
+	   
+	  return true;
+  }
+  
+  
+  bool simulate(seneka_interactive::simulate::Request &req,
+		  seneka_interactive::simulate::Response &res)
+  {	  
+	  res.msg = "Simulating one iteration!";
+	  simulate_ = true;
+	  return true;
+  }
+  
+  bool printStatesToFile(seneka_interactive::printStatesToFile::Request &req,
+		  seneka_interactive::printStatesToFile::Response &res)
+  {	  
+	  std::ofstream outf;
+	  
+	  std::string cmd("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_interactive/common/");
+	  std::string name(req.filename.c_str());
+	  std::string ext(".txt");
+	  cmd = cmd + name + ext; 
+	  
+	  outf.open(cmd.c_str()); 
+	  //req.filename
+	  
+	  for(uint i=0; i < stored_poses.size();i++){
+		  
+		  outf << "Name: " << stored_poses[i].name << "\n";
+		  outf << "---right---" << "\n";
+		  
+		  for(uint j=0; j<stored_poses[i].joint_names_r.size(); j++)
+			  outf <<  stored_poses[i].joint_names_r[j] << ": [" << stored_poses[i].joint_states_r[j] << "]" << "\n";
+		  outf << "---left---" << "\n";
+		  for(uint j=0; j<stored_poses[i].joint_names_l.size(); j++)
+			  outf <<  stored_poses[i].joint_names_l[j] << ": [" << stored_poses[i].joint_states_l[j] << "]" << "\n";
+					  
+		  outf << "-------------------------------------------" << "\n";
+		  outf << "\n\n\n\n\n\n";			  	  
+	  }	  
+	  outf.close();
+	  
+	  res.msg = "All states written to file";
+	  
+	  return true;
+  }
+  //------------ Services --------END---------------------------
+
+  void createGrabPoses(geometry_msgs::Pose &marker_pose){
+	  
+	  handle_l_ = marker_pose_;
+	  handle_r_ = marker_pose_;	
+	  
+	  handle_l_.position.x += 0;
+	  handle_l_.position.y += 0.2125;
+	  handle_l_.position.z += 0.51 + gripper_length;
+	  handle_l_.orientation.x = 0.0095722;
+	  handle_l_.orientation.y = -0.0108288;
+	  handle_l_.orientation.z = -0.706344;
+	  handle_l_.orientation.w = 0.707722;		
+	  
+	  handle_r_.position.x += 0;
+	  handle_r_.position.y -= 0.2125;
+	  handle_r_.position.z += 0.51 + gripper_length;
+	  handle_r_.orientation.x = 0;
+	  handle_r_.orientation.y = 0;
+	  handle_r_.orientation.z = 0.706678;
+	  handle_r_.orientation.w = 0.707535;	
+ }
+  
+ void create_stored_poses(){
+	  
+	  node_pose pose;
+	  pose.name = "prepack";
+
+	  pose.joint_names_r.push_back("right_arm_shoulder_pan_joint");
+	  pose.joint_names_r.push_back("right_arm_shoulder_lift_joint");
+	  pose.joint_names_r.push_back("right_arm_elbow_joint");
+	  pose.joint_names_r.push_back("right_arm_wrist_1_joint");
+	  pose.joint_names_r.push_back("right_arm_wrist_2_joint");
+	  pose.joint_names_r.push_back("right_arm_wrist_3_joint");
+	  
+	  pose.joint_names_l.push_back("left_arm_shoulder_pan_joint");
+	  pose.joint_names_l.push_back("left_arm_shoulder_lift_joint");
+	  pose.joint_names_l.push_back("left_arm_elbow_joint");
+	  pose.joint_names_l.push_back("left_arm_wrist_1_joint");
+	  pose.joint_names_l.push_back("left_arm_wrist_2_joint");
+	  pose.joint_names_l.push_back("left_arm_wrist_3_joint");
+	  
+	  pose.joint_states_r.push_back(-1.04915);
+	  pose.joint_states_r.push_back(-1.60908);
+	  pose.joint_states_r.push_back(4.73713);
+	  pose.joint_states_r.push_back(-3.12726);
+	  pose.joint_states_r.push_back(-2.61798);
+	  pose.joint_states_r.push_back(2.94228);
+	  
+	  pose.joint_states_l.push_back(1.04728);
+	  pose.joint_states_l.push_back(-1.53308);
+	  pose.joint_states_l.push_back(-4.73616);
+	  pose.joint_states_l.push_back(-0.0179251);
+	  pose.joint_states_l.push_back(2.61733);
+	  pose.joint_states_l.push_back(-2.91619);
+	  
+	  stored_poses.push_back(pose);
+	  
+	  start_pose_ = pose;
+  }
 
 
   //main loop
@@ -339,7 +592,11 @@ public:
     ros::Rate loop_rate(1);
     while(ros::ok()){
     	
-      generateIkSolutions();	
+      generateIkSolutions();
+      if(simulate_){
+    	  simulateCartesianPath();
+    	  simulate_  = false;
+      }
       ROS_INFO("ALIVE");
       loop_rate.sleep();
     }

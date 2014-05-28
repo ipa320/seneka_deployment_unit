@@ -8,10 +8,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  actionlib_msgs
+  control_msgs
+  geometry_msgs 
   moveit_msgs
   interactive_markers
   moveit_core 
   moveit_ros_planning_interface
+  message_generation
 )
 
 find_package(OpenCV REQUIRED)
@@ -19,6 +23,22 @@ find_package(Eigen REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+## Generate services in the 'srv' folder
+add_service_files(
+   FILES
+   setStartState.srv
+   simulate.srv
+   createNewState.srv
+   getStates.srv
+   printStatesToFile.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  actionlib_msgs
+  control_msgs
+)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed

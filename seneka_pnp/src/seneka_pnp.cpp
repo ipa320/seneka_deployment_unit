@@ -25,9 +25,11 @@
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
+
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
 #include <moveit_msgs/GetPositionIK.h>
+#include <moveit_msgs/GetPositionFK.h>
 #include <moveit_msgs/MoveItErrorCodes.h>
 
 #include <moveit/robot_state/robot_state.h>
@@ -35,6 +37,8 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/joint_model_group.h>
+
+#include <moveit/robot_state/link_state.h>
 
 #include <gazebo_msgs/SetModelState.h>
 #include <gazebo_msgs/ModelState.h>
@@ -108,7 +112,7 @@ private:
   std::string currentState_;
   std::string transition_;
   ros::ServiceServer service_getstate_,service_settransition_,service_setstop_;
-  ros::ServiceClient service_client, service_gazebo, service_gazebo_get;
+  ros::ServiceClient service_client, service_gazebo, service_gazebo_get, service_computefk;
 
   move_group_interface::MoveGroup *group_r_;
   move_group_interface::MoveGroup *group_l_;
@@ -148,6 +152,7 @@ public:
 
     //services to call
     service_client = node_handle_.serviceClient<moveit_msgs::GetPositionIK> ("compute_ik");
+    service_computefk = node_handle_.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
     service_gazebo = node_handle_.serviceClient<gazebo_msgs::SetModelState> ("/gazebo/set_model_state");
     service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
 
@@ -370,8 +375,8 @@ public:
 
     moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
     
-    group_l->setNamedTarget("lpickup");
-    group_r->setNamedTarget("rpickup");
+    group_l->setNamedTarget("lpregrasp");
+    group_r->setNamedTarget("rpregrasp");
     
     if(!group_l->plan(lplan))
       return false;
@@ -487,43 +492,101 @@ public:
     
     bool ret = false;
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-
-    std::vector<double> group_variable_values;
-    std::vector<std::string> group_variable_names;
-    group_variable_values = group_l->getCurrentJointValues();
-    group_variable_names = group_l->getJoints();
-
-    if(group_variable_values.size() != 6 || group_variable_names.size() != 6){
-      ROS_ERROR("Number of joints must be 6");
-    }
     
-    //Gazebo Simulation -> Drive left arm out of initial collision pose
-    group_variable_values[0] = -1.0;
-    group_variable_values[1] = -1.0;
-    group_variable_values[2] = -1.0;
-    group_variable_values[3] = -1.0;
-    group_variable_values[4] = -1.0;
-    group_variable_values[5] = -1.0;
-    group_l->setJointValueTarget(group_variable_values);
+    moveit::planning_interface::MoveGroup::Plan lplan,rplan, mergedPlan;
 
+    group_r->setStartStateToCurrentState();      
+    group_l->setStartStateToCurrentState();
+    group_both->setStartStateToCurrentState();
 
-
-
-
-    moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
+    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+    geometry_msgs::Pose current_pose_r = group_r->getCurrentPose().pose;
+    geometry_msgs::Pose current_pose_l = group_l->getCurrentPose().pose;    
     
+    ROS_INFO("blabla");
     group_l->setNamedTarget("lprepack");
     group_r->setNamedTarget("rprepack");
     
-    if(!group_l->plan(lplan))
-      return false;
-      
-    if(!group_r->plan(rplan))
-      return false;
-
-    merged_plan = mergePlan(lplan,rplan);
-
-    group_both->asyncExecute(merged_plan);
+    //jumpit
+    robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
+    robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
+    robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
+    robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup("left_arm_group");  
+    robot_state::JointStateGroup* joint_state_group_r = kinematic_state_l->getJointStateGroup("right_arm_group");  
+    
+    /*const std::vector< robot_state::LinkState * > ls = kinematic_state_l->getLinkStateVector();
+    std::vector<std::string> link_name;
+    for(uint i = 0; i < ls.size();i++){
+    	link_name.push_back(ls[i]->getName());    	
+    }*/
+    
+    geometry_msgs::Pose pose_l,pose_r;
+    std::vector<double> joint_positions_l;
+    std::vector<double> joint_positions_r;
+    //l
+    joint_positions_l.push_back(1.04728);
+    joint_positions_l.push_back(-1.53308);
+    joint_positions_l.push_back(-4.73616);
+    joint_positions_l.push_back(-0.0179251);
+    joint_positions_l.push_back(2.61733);
+    joint_positions_l.push_back(-2.91619);
+    //r
+    joint_positions_r.push_back(-1.04915);
+    joint_positions_r.push_back(-1.60908);
+    joint_positions_r.push_back(4.73713);
+    joint_positions_r.push_back(-3.12726);
+    joint_positions_r.push_back(-2.61798);
+    joint_positions_r.push_back(2.94228);
+       
+    moveit_msgs::GetPositionFK::Request service_request;
+    moveit_msgs::GetPositionFK::Response service_response; 
+    sensor_msgs::JointState js;
+    
+    //------left-----------------------
+    js.name = joint_state_group_l->getJointNames();
+    js.position = joint_positions_l;
+    
+    service_request.header.frame_id = "world_dummy_link";
+    service_request.fk_link_names.push_back("left_arm_ee_link");
+    service_request.robot_state.joint_state = js;
+    
+    service_computefk.call(service_request, service_response);
+    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+    	for(uint i=0;i<service_response.pose_stamped.size();i++){
+    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
+    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
+    		pose_l = service_response.pose_stamped[i].pose;
+    	}
+    }   
+    
+    //-----right-----------------
+    js.name = joint_state_group_r->getJointNames();
+    js.position = joint_positions_r;
+        
+    service_request.header.frame_id = "world_dummy_link";
+    service_request.fk_link_names.push_back("right_arm_ee_link");
+    service_request.robot_state.joint_state = js;
+    
+    service_computefk.call(service_request, service_response);
+    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+    	for(uint i=0;i<service_response.pose_stamped.size();i++){
+    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
+    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
+    		pose_r = service_response.pose_stamped[i].pose;
+    	}
+    }  
+        
+    waypoints_l.clear();
+    waypoints_r.clear();
+    
+    //waypoints_l.push_back(current_pose_l);
+    waypoints_l.push_back(pose_l);
+    
+    //waypoints_r.push_back(current_pose_r);
+    waypoints_r.push_back(pose_r);
+    
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+    group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
 
     return ret;
@@ -782,221 +845,6 @@ public:
     ROS_INFO("SetModelState : %u", resp.success);
   }
 
-
-
-  //pick and place planner
-  void pnpPlanner(){
-
-    std::cout << "---------------<planning>-----------------------------" << std::endl;
- 
-    unsigned int used_handle_r = 2;//use the real handle id 1-6
-    unsigned int used_handle_l = 5;//use the real handle id 1-6
-    used_handle_r--;
-    used_handle_l--;
-    
-    move_group_interface::MoveGroup group_r("right_arm_group");
-    move_group_interface::MoveGroup group_l("left_arm_group");
-    move_group_interface::MoveGroup group_both("both_arms");
-
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-    
-    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-    moveit_msgs::DisplayTrajectory display_trajectory;;
-
-    moveit::planning_interface::MoveGroup::Plan mergedPlan;
-
-    group_r.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_r.setStartStateToCurrentState();
-    group_l.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_l.setStartStateToCurrentState();
-    group_both.setWorkspace (0, 0, 0, 5, 5, 5);
-    group_both.setStartStateToCurrentState();
-
-    group_r.setGoalOrientationTolerance(0.01);
-    group_r.setPlanningTime(10.0);
-    group_l.setGoalOrientationTolerance(0.01);
-    group_l.setPlanningTime(10.0);
-    group_both.setGoalOrientationTolerance(0.01);
-    group_both.setPlanningTime(10.0);
-
-    //The nonlinearplanner is not used right now
-
-    /*geometry_msgs::PoseStamped target_pose_r;
-    target_pose_r.header.frame_id = "/quanjo_body";
-
-    target_pose_r.pose.position.x = handholds_[used_handle_r].entry.translation.x;
-    target_pose_r.pose.position.y = handholds_[used_handle_r].entry.translation.y;
-    target_pose_r.pose.position.z = handholds_[used_handle_r].entry.translation.z;
-
-    target_pose_r.pose.orientation.w = handholds_[used_handle_r].entry.rotation.w;
-    target_pose_r.pose.orientation.x = handholds_[used_handle_r].entry.rotation.x;
-    target_pose_r.pose.orientation.y = handholds_[used_handle_r].entry.rotation.y;
-    target_pose_r.pose.orientation.z = handholds_[used_handle_r].entry.rotation.z;
-
-    group_r.setPoseTarget(target_pose_r); 
-
-
-    geometry_msgs::PoseStamped target_pose_l;
-    target_pose_l.header.frame_id = "/quanjo_body";
-
-    target_pose_l.pose.position.x = handholds_[used_handle_l].entry.translation.x;
-    target_pose_l.pose.position.y = handholds_[used_handle_l].entry.translation.y;
-    target_pose_l.pose.position.z = handholds_[used_handle_l].entry.translation.z;
-
-    target_pose_l.pose.orientation.w = handholds_[used_handle_l].entry.rotation.w;
-    target_pose_l.pose.orientation.x = handholds_[used_handle_l].entry.rotation.x;
-    target_pose_l.pose.orientation.y = handholds_[used_handle_l].entry.rotation.y;
-    target_pose_l.pose.orientation.z = handholds_[used_handle_l].entry.rotation.z;
-
-    group_l.setPoseTarget(target_pose_l);   
-
-    //------------------constraints------------------------
-    /*moveit_msgs::OrientationConstraint ocm;
-    ocm.link_name = "base_link";
-    ocm.header.frame_id = "/quanjo_body";
-    ocm.orientation.w = 1.0;
-    ocm.absolute_x_axis_tolerance = 1;
-    ocm.absolute_y_axis_tolerance = 1;
-    ocm.absolute_z_axis_tolerance = 3.14;
-    ocm.weight = 1.0;
-  
-    // Now, set it as the path constraint for the group.
-    moveit_msgs::Constraints test_constraints;
-    test_constraints.orientation_constraints.push_back(ocm);
-    group.setPathConstraints(test_constraints);*/
-    //----------------constraints------------------------
-
-    /*moveit::planning_interface::MoveGroup::Plan my_plan_r, my_plan_l;
-    //my_plan.trajectory_ = trajectory;
-    bool success_r = true;//group_r.plan(my_plan_r);
-    bool success_l = true;//group_l.plan(my_plan_l);
-
-    bool success = (success_r && success_l);
- 
-    ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
-    if(!success){
-      std::cout << "WARNING IM SENDING THE TRAJECTORY IN 10sec" << std::endl;
-      //sleep(10.0);
-      //group_r.execute(my_plan_r);
-      //eep(10.0);
-      //group_l.execute(my_plan_l);
-      //sleep(20.0);
-    }*/
-
-
-    //-------------------Cartesian Planner - Linear Movement through all points (grabbing the sensornode) ------------------------
-    if(true){
-
-      bool planexecution = false;
-
-      group_r.setStartStateToCurrentState();      
-      group_l.setStartStateToCurrentState();
-      group_both.setStartStateToCurrentState();
-
-      std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
-      geometry_msgs::Pose target_pose2_r = group_r.getCurrentPose().pose;
-      geometry_msgs::Pose target_pose2_l = group_l.getCurrentPose().pose;
-      
-      //------------------------Drive to entry point of pickup process-------------------------------------------------
-      waypoints_r.clear();
-      waypoints_l.clear();
-
-      target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
-      target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
-      target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
-      target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
-      target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
-      waypoints_r.push_back(target_pose2_r);
-
-      target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
-      target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
-      target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
-      target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
-      target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
-      target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
-      target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
-      waypoints_l.push_back(target_pose2_l);
-
-      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
-      if(planexecution){
-	group_both.execute(mergedPlan);
-	sleep(10.0);
-      }      
-
-      //------------------------PICK UP-----------------------------------------------------------------------------
-      waypoints_r.clear();
-      waypoints_l.clear();
-
-      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
-      waypoints_r.push_back(target_pose2_r);
-      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
-      waypoints_r.push_back(target_pose2_r);
-
-      target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
-      target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
-      target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
-      waypoints_l.push_back(target_pose2_l);
-      target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
-      target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
-      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
-      waypoints_l.push_back(target_pose2_l);
-      
-      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
-      if(planexecution){
-	group_both.execute(mergedPlan);
-	sleep(10.0);
-      }  
-
-      //------------------------TEACHED MOVEMENT--------------------------------------------------------------------
-      /*      ROS_INFO("----------PLANNING WITH TEACHED WAYPOINTS------------");
-      waypoints_r.clear();
-      waypoints_l.clear();      
-
-      for(unsigned int i = 0; i < teached_wayp_r.size();i++){
-	if(teached_wayp_r[i].size() == 7){
-	  target_pose2_r.position.x = teached_wayp_r[i][0];
-	  target_pose2_r.position.y = teached_wayp_r[i][1];
-	  target_pose2_r.position.z = teached_wayp_r[i][2];
-	  target_pose2_r.orientation.w = teached_wayp_r[i][3];
-	  target_pose2_r.orientation.x = teached_wayp_r[i][4];
-	  target_pose2_r.orientation.y = teached_wayp_r[i][5];
-	  target_pose2_r.orientation.z = teached_wayp_r[i][6];
-	  waypoints_r.push_back(target_pose2_r);
-	} else {
-	  ROS_WARN("Something is wrong with the teached waypoints! Right arm  waypoint %u denied",i+1);
-	}	
-      }
-      
-      for(unsigned int i = 0; i < teached_wayp_l.size();i++){
-	if(teached_wayp_l[i].size() == 7){
-	  target_pose2_l.position.x = teached_wayp_l[i][0];
-	  target_pose2_l.position.y = teached_wayp_l[i][1];
-	  target_pose2_l.position.z = teached_wayp_l[i][2];
-	  target_pose2_l.orientation.w = teached_wayp_l[i][3];
-	  target_pose2_l.orientation.x = teached_wayp_l[i][4];
-	  target_pose2_l.orientation.y = teached_wayp_l[i][5];
-	  target_pose2_l.orientation.z = teached_wayp_l[i][6];
-	  waypoints_l.push_back(target_pose2_l);
-	} else {
-	  ROS_WARN("Something is wrong with the teached waypoints! Right arm  waypoint %u denied",i+1);
-	}	
-      }
-
-      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
-      if(planexecution){
-	//group_both.execute(mergedPlan);
-	sleep(20.0);
-      }
-      */
-    }
-  } 
-
   move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l){
     
     double visualizationtime = 5;
@@ -1207,132 +1055,132 @@ public:
   //TRANSITSIONS: avoidCollisionState
   std::string stateMachine(std::string currentState)
   {
-    std::string transition = getTransition();
+	  std::string transition = getTransition();
 
-    //---------GAZEBO_HOME----------------------------------
-    if(currentState.compare("gazebo_home") == 0){
+	  //---------GAZEBO_HOME----------------------------------
+	  if(currentState.compare("gazebo_home") == 0){
 
-      //Transitions
-      if(transition.compare("toCollisionFree") == 0){
-	if(toCollisionFree(group_l_,group_r_,group_both_)){
-	  return "collision_free";
-	} else {
-	  return "unknown_state";
-	}
-      }      
-      return "gazebo_home" ;
-    }
+		  //Transitions
+		  if(transition.compare("toCollisionFree") == 0){
+			  if(toCollisionFree(group_l_,group_r_,group_both_)){
+				  return "collision_free";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }      
+		  return "gazebo_home" ;
+	  }
 
-    //------COLLISION_FREE----------------------------------
-    else if(currentState.compare("collision_free") == 0){
-      
-      //Transitions
-      if(transition.compare("toHome") == 0){
-	if(toHome(group_l_,group_r_,group_both_)){
-	  return "home";
-	} else {
-	  return "unknown_state";
-	}
-      }      
-      return "collision_free";
-    }
+	  //------COLLISION_FREE----------------------------------
+	  else if(currentState.compare("collision_free") == 0){
 
-    //------HOME-------------------------------------------
-    else if(currentState.compare("home") == 0){
+		  //Transitions
+		  if(transition.compare("toHome") == 0){
+			  if(toHome(group_l_,group_r_,group_both_)){
+				  return "home";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }      
+		  return "collision_free";
+	  }
 
-      //Transitions
-      if(transition.compare("toPreGrasp") == 0){
-	if(toPreGrasp(group_l_,group_r_,group_both_)){
-	  return "pregrasp";
-	} else {
-	  return "unknown_state";
-	}
-      }    
-      return "home";
-    }
+	  //------HOME-------------------------------------------
+	  else if(currentState.compare("home") == 0){
 
-    //------PREGRASP-------------------------------------------
-    else if(currentState.compare("pregrasp") == 0){
+		  //Transitions
+		  if(transition.compare("toPreGrasp") == 0){
+			  if(toPreGrasp(group_l_,group_r_,group_both_)){
+				  return "pregrasp";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }    
+		  return "home";
+	  }
 
-      //Transitions
-      if(transition.compare("toHome") == 0){
-	if(toHome(group_l_,group_r_,group_both_)){
-	  return "home";
-	} else {
-	  return "unknown_state";
-	}
-      }     
+	  //------PREGRASP-------------------------------------------
+	  else if(currentState.compare("pregrasp") == 0){
 
-      if(transition.compare("toPickedUp") == 0){
-	if(toPickedUp(group_l_,group_r_,group_both_)){
-	  return "pickedup";
-	} else {
-	  return "unknown_state";
-	}
-      } 
- 
-      return "pregrasp";
-    }
+		  //Transitions
+		  if(transition.compare("toHome") == 0){
+			  if(toHome(group_l_,group_r_,group_both_)){
+				  return "home";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }     
+
+		  if(transition.compare("toPickedUp") == 0){
+			  if(toPickedUp(group_l_,group_r_,group_both_)){
+				  return "pickedup";
+			  } else {
+				  return "unknown_state";
+			  }
+		  } 
+
+		  return "pregrasp";
+	  }
 
     //------PICKED_UP-------------------------------------------
     else if(currentState.compare("pickedup") == 0){
 
-      //Transitions
-      if(transition.compare("toHome") == 0){
-	if(toHome(group_l_,group_r_,group_both_)){
-	  return "home";
-	} else {
-	  return "unknown_state";
-	}
-      }    
-      if(transition.compare("toPrePack") == 0){
-	if(toPrePack(group_l_,group_r_,group_both_)){
-	  return "prepack";
-	} else {
-	  return "unknown_state";
-	}
-      } 
+    	//Transitions
+    	if(transition.compare("toHome") == 0){
+    		if(toHome(group_l_,group_r_,group_both_)){
+    			return "home";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}    
+    	if(transition.compare("toPrePack") == 0){
+    		if(toPrePack(group_l_,group_r_,group_both_)){
+    			return "prepack";
+    		} else {
+    			return "unknown_state";
+    		}
+    	} 
 
-      return "pickedup";
+    	return "pickedup";
     }
 
     //------PREPACK-------------------------------------------
     else if(currentState.compare("prepack") == 0){
 
       //Transitions
-      if(transition.compare("toHome") == 0){
-	if(toHome(group_l_,group_r_,group_both_)){
-	  return "home";
-	} else {
-	  return "unknown_state";
-	}
+    	if(transition.compare("toHome") == 0){
+    		if(toHome(group_l_,group_r_,group_both_)){
+    			return "home";
+    		} else {
+    			return "unknown_state";
+    		}
       }    
 
-      return "pickedup";
+    	return "prepack";
     }
 
-    
-    
+
+
     //------UNKNOWN_STATE-------------------------------------------
     else if(currentState.compare("unknown_state") == 0){
-      //Debug
-      if(transition.compare("setToGH") == 0){
-	return "gazebo_home";
-      }      
+    	//Debug
+    	if(transition.compare("setToGH") == 0){
+    		return "gazebo_home";
+    	}      
 
-      if(transition.compare("setToHome") == 0){
-	return "home";
-      } 
-      if(transition.compare("setToCF") == 0){
-	return "collision_free";
-      }
-      //Debug
-      
-      return "unknown_state";
+    	if(transition.compare("setToHome") == 0){
+    		return "home";
+    	} 
+    	if(transition.compare("setToCF") == 0){
+    		return "collision_free";
+    	}
+    	//Debug
+
+    	return "unknown_state";
     }
-    
+
     else{
-      return "unknown_state";
+    	return "unknown_state";
     }
 
     return "unknown_state";
