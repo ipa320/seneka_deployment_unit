@@ -89,10 +89,11 @@ tf::StampedTransform marker_tf_;
 //camera in quanjo system as vec7
 tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
 //double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
-double tmp[7] = { 1.05,0.015,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
+//double tmp[7] = { 1.05,0.015,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()}; on the front bar
+double tmp[7] = { 0.575,0.0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
 std::vector<double> camera7(&tmp[0], &tmp[0]+7);
 
-bool simulation_ = true;
+bool simulation_ = false;
 
 //------------------------------<Callbacks>----------------------------------------------------------
 //The sensorsondeCoordinateManager manages and publishes all coordinate transform for the sensorsonde
@@ -103,7 +104,7 @@ bool simulation_ = true;
 
 
 
-//Coordinate transformation for simulation in gazebo
+//Coordinate transformation for simulation in gazebo, Something is wrong with the trafo
 void getSensornodeStateGazebo(ros::NodeHandle& n){  
 
   sensornodeGlobalCoordinates();
