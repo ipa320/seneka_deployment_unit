@@ -16,8 +16,10 @@
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 
   <!-- driver -->
-  <node ns="right_arm_controller" name="ur_driver" pkg="ur_driver" type="driver.py" args="$(arg robot_ip_r)" output="screen" />
-  <node ns="left_arm_controller"  name="ur_driver" pkg="ur_driver" type="driver_l.py" args="$(arg robot_ip_l)" output="screen" />	
+  <param  name="/right_arm_controller/ur_driver/prefix" type="str" value="right_arm_"/>
+  <param  name="/left_arm_controller/ur_driver/prefix" type="str" value="left_arm_"/>
+  <node ns="/right_arm_controller" name="ur_driver" pkg="ur_driver" type="driver.py" args="$(arg robot_ip_r)" output="screen" />
+  <node ns="/left_arm_controller"  name="ur_driver" pkg="ur_driver" type="driver_l.py" args="$(arg robot_ip_l)" output="screen" />	
    
   <!-- TF Buffer Server -->
   <!--<node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server">
