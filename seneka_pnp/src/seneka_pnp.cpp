@@ -123,6 +123,7 @@ private:
   //tje = trajectory execution
   trajectory_execution_validation tje_validation_;  
   boost::mutex tje_lock_;
+  boost::mutex transition_lock_;
 
 public:
   //Constructor
@@ -162,121 +163,123 @@ public:
   }  
   
   bool getSensornodePose(){
-    
-    handholds_.clear();
-    
-    int ret = true;  
 
-    //sensornode pose
-    try{
-      listener.waitForTransform("/quanjo_body", "/sensornode" , ros::Time::now(), ros::Duration(0.2));
-      listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-      ret = false;
-    }
+	  tje_lock_.lock();
+	  handholds_.clear();
 
-    sensornode_.translation.x = transform.getOrigin().x();
-    sensornode_.translation.y = transform.getOrigin().y();
-    sensornode_.translation.z = transform.getOrigin().z();
+	  int ret = true;  
 
-    sensornode_.rotation.w = transform.getRotation().getW();
-    sensornode_.rotation.x = transform.getRotation().getX();
-    sensornode_.rotation.y = transform.getRotation().getY();
-    sensornode_.rotation.z = transform.getRotation().getZ();
+	  //sensornode pose
+	  try{
+		  listener.waitForTransform("/quanjo_body", "/sensornode" , ros::Time::now(), ros::Duration(0.2));
+		  listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0), transform);
+	  }
+	  catch (tf::TransformException ex){
+		  ROS_ERROR("%s",ex.what());
+		  ret = false;
+	  }
+
+	  sensornode_.translation.x = transform.getOrigin().x();
+	  sensornode_.translation.y = transform.getOrigin().y();
+	  sensornode_.translation.z = transform.getOrigin().z();
+
+	  sensornode_.rotation.w = transform.getRotation().getW();
+	  sensornode_.rotation.x = transform.getRotation().getX();
+	  sensornode_.rotation.y = transform.getRotation().getY();
+	  sensornode_.rotation.z = transform.getRotation().getZ();
 
 
-     //handholds and helper points
-     for(unsigned int i = 1; i < 7;i++){
-      
-      //get all tf transformations
-      char name[50];
+	  //handholds and helper points
+	  for(unsigned int i = 1; i < 7;i++){
 
-      sprintf(name,"handle%u",i);
-      try{
-	listener.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-	listener.lookupTransform("/quanjo_body", name, ros::Time(0), transform);
-      }
-      catch (tf::TransformException ex){
-	ROS_ERROR("%s",ex.what());
-	ret = false;
-      }
+		  //get all tf transformations
+		  char name[50];
 
-      sprintf(name,"grab_entry%u",i);
-      try{
-	listener_entry.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-	listener_entry.lookupTransform("/quanjo_body", name, ros::Time(0), transform_entry);
-      }
-      catch (tf::TransformException ex){
-	ROS_ERROR("%s",ex.what());
-	ret = false;
-      }
+		  sprintf(name,"handle%u",i);
+		  try{
+			  listener.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener.lookupTransform("/quanjo_body", name, ros::Time(0), transform);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  ret = false;
+		  }
 
-      sprintf(name,"trigger_%u_up",i);
-      try{
-	listener_up.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-	listener_up.lookupTransform("/quanjo_body", name, ros::Time(0), transform_up);
-      }
-      catch (tf::TransformException ex){
-	ROS_ERROR("%s",ex.what());
-	ret = false;
-      }
+		  sprintf(name,"grab_entry%u",i);
+		  try{
+			  listener_entry.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener_entry.lookupTransform("/quanjo_body", name, ros::Time(0), transform_entry);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  ret = false;
+		  }
 
-      sprintf(name,"trigger_%u_down",i);
-      try{
-	listener_down.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-	listener_down.lookupTransform("/quanjo_body", name, ros::Time(0), transform_down);
-      }
-      catch (tf::TransformException ex){
-	ROS_ERROR("%s",ex.what());
-	ret = false;
-      }
+		  sprintf(name,"trigger_%u_up",i);
+		  try{
+			  listener_up.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener_up.lookupTransform("/quanjo_body", name, ros::Time(0), transform_up);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  ret = false;
+		  }
 
-      handhold handh;
-      //handle
-      handh.handle.translation.x = transform.getOrigin().x();
-      handh.handle.translation.y = transform.getOrigin().y();
-      handh.handle.translation.z = transform.getOrigin().z();
+		  sprintf(name,"trigger_%u_down",i);
+		  try{
+			  listener_down.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener_down.lookupTransform("/quanjo_body", name, ros::Time(0), transform_down);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  ret = false;
+		  }
 
-      handh.handle.rotation.w = transform.getRotation().getW();
-      handh.handle.rotation.x = transform.getRotation().getX();
-      handh.handle.rotation.y = transform.getRotation().getY();
-      handh.handle.rotation.z = transform.getRotation().getZ();
+		  handhold handh;
+		  //handle
+		  handh.handle.translation.x = transform.getOrigin().x();
+		  handh.handle.translation.y = transform.getOrigin().y();
+		  handh.handle.translation.z = transform.getOrigin().z();
 
-      //entry
-      handh.entry.translation.x = transform_entry.getOrigin().x();
-      handh.entry.translation.y = transform_entry.getOrigin().y();
-      handh.entry.translation.z = transform_entry.getOrigin().z();
+		  handh.handle.rotation.w = transform.getRotation().getW();
+		  handh.handle.rotation.x = transform.getRotation().getX();
+		  handh.handle.rotation.y = transform.getRotation().getY();
+		  handh.handle.rotation.z = transform.getRotation().getZ();
 
-      handh.entry.rotation.w = transform_entry.getRotation().getW();
-      handh.entry.rotation.x = transform_entry.getRotation().getX();
-      handh.entry.rotation.y = transform_entry.getRotation().getY();
-      handh.entry.rotation.z = transform_entry.getRotation().getZ();
+		  //entry
+		  handh.entry.translation.x = transform_entry.getOrigin().x();
+		  handh.entry.translation.y = transform_entry.getOrigin().y();
+		  handh.entry.translation.z = transform_entry.getOrigin().z();
 
-      //up
-      handh.up.translation.x = transform_up.getOrigin().x();
-      handh.up.translation.y = transform_up.getOrigin().y();
-      handh.up.translation.z = transform_up.getOrigin().z();
+		  handh.entry.rotation.w = transform_entry.getRotation().getW();
+		  handh.entry.rotation.x = transform_entry.getRotation().getX();
+		  handh.entry.rotation.y = transform_entry.getRotation().getY();
+		  handh.entry.rotation.z = transform_entry.getRotation().getZ();
 
-      handh.up.rotation.w = transform_up.getRotation().getW();
-      handh.up.rotation.x = transform_up.getRotation().getX();
-      handh.up.rotation.y = transform_up.getRotation().getY();
-      handh.up.rotation.z = transform_up.getRotation().getZ();
+		  //up
+		  handh.up.translation.x = transform_up.getOrigin().x();
+		  handh.up.translation.y = transform_up.getOrigin().y();
+		  handh.up.translation.z = transform_up.getOrigin().z();
 
-      //down
-      handh.down.translation.x = transform_down.getOrigin().x();
-      handh.down.translation.y = transform_down.getOrigin().y();
-      handh.down.translation.z = transform_down.getOrigin().z();
+		  handh.up.rotation.w = transform_up.getRotation().getW();
+		  handh.up.rotation.x = transform_up.getRotation().getX();
+		  handh.up.rotation.y = transform_up.getRotation().getY();
+		  handh.up.rotation.z = transform_up.getRotation().getZ();
 
-      handh.down.rotation.w = transform_down.getRotation().getW();
-      handh.down.rotation.x = transform_down.getRotation().getX();
-      handh.down.rotation.y = transform_down.getRotation().getY();
-      handh.down.rotation.z = transform_down.getRotation().getZ();      
+		  //down
+		  handh.down.translation.x = transform_down.getOrigin().x();
+		  handh.down.translation.y = transform_down.getOrigin().y();
+		  handh.down.translation.z = transform_down.getOrigin().z();
 
-      handholds_.push_back(handh);
-    }
-    return ret;
+		  handh.down.rotation.w = transform_down.getRotation().getW();
+		  handh.down.rotation.x = transform_down.getRotation().getX();
+		  handh.down.rotation.y = transform_down.getRotation().getY();
+		  handh.down.rotation.z = transform_down.getRotation().getZ();      
+
+		  handholds_.push_back(handh);
+	  }
+	  tje_lock_.unlock();
+	  return ret;
   }
 
   bool inGrabPosition(){
@@ -284,6 +287,22 @@ public:
     //Check if the Sonde is in a valid grabbing position!!
 
     return true;
+  }
+  
+  bool multiplan(move_group_interface::MoveGroup* group, moveit::planning_interface::MoveGroup::Plan* plan){
+	  
+	  uint maxattempts = 20;
+	  uint attempt = 0;
+	  
+	  bool validplan = false;
+	  
+	  while(!validplan && attempt < maxattempts){
+		  
+		  validplan = group->plan(*plan);
+		  attempt++;
+	  }
+	  
+	  return validplan;	  
   }
     
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
@@ -300,35 +319,22 @@ public:
     moveit::planning_interface::MoveGroup::Plan myPlan;
 
     group_l->setNamedTarget("lhome");
-    group_r->setNamedTarget("rhome");
+    group_r->setNamedTarget("rhome");   
     
-    /*
-    if(!group_l->plan(lplan))
-      return false;
-      
-    if(!group_r->plan(rplan))
-      return false;
-
-    merged_plan = mergePlan(lplan,rplan);
-
-    group_both->asyncExecute(merged_plan);
-    ret = monitorArmMovement(true,true);*/
-    
-    //l
-    if(group_l->plan(myPlan)){
-      sleep(5.0);
-      group_l->asyncExecute(myPlan);
-      ret = monitorArmMovement(true,false);
+    if(multiplan(group_l,&myPlan)){
+    	sleep(5.0);
+    	group_l->asyncExecute(myPlan);
+    	ret = monitorArmMovement(true,false);
     }
-    
+
     //r
     if(ret){
-      ret = false;
-      if(group_r->plan(myPlan)){
-	sleep(5.0);
-	group_r->asyncExecute(myPlan);
-	ret = monitorArmMovement(false,true);
-      }
+    	ret = false;
+    	if(multiplan(group_r,&myPlan)){
+    		sleep(5.0);
+    		group_r->asyncExecute(myPlan);
+    		ret = monitorArmMovement(false,true);
+    	}
     }
 
     return ret;
@@ -395,7 +401,8 @@ public:
   bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
     bool ret = true;
-
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    
     unsigned int used_handle_r = 2;//use the real handle id 1-6
     unsigned int used_handle_l = 5;//use the real handle id 1-6
     used_handle_r--;
@@ -411,9 +418,11 @@ public:
     geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
 
+    ROS_INFO("handholds:%d", (int)handholds_.size());
     if(!getSensornodePose()){
       return false;
     }
+    ROS_INFO("handholds:%d", (int)handholds_.size());
       
     //------------------------Pickup Position/Orientation -------------------------------------------------
     waypoints_r.clear();
@@ -428,7 +437,9 @@ public:
     target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
     target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
     waypoints_r.push_back(target_pose2_r);
-
+    waypoints_r.push_back(target_pose2_r);
+    waypoints_r.push_back(target_pose2_r);
+    waypoints_r.push_back(target_pose2_r);
 
     target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
     target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
@@ -439,8 +450,11 @@ public:
     target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
     target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
     waypoints_l.push_back(target_pose2_l);
+    waypoints_l.push_back(target_pose2_l); 
+    waypoints_l.push_back(target_pose2_l);
+    waypoints_l.push_back(target_pose2_l);
 
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
     
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);  
@@ -480,7 +494,7 @@ public:
       target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
       waypoints_l.push_back(target_pose2_l);
       
-      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
       group_both->asyncExecute(mergedPlan);
       ret = monitorArmMovement(true,true);
     }
@@ -507,75 +521,26 @@ public:
     group_l->setNamedTarget("lprepack");
     group_r->setNamedTarget("rprepack");
     
-    //jumpit
-    robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
-    robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
-    robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
-    robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup("left_arm_group");  
-    robot_state::JointStateGroup* joint_state_group_r = kinematic_state_l->getJointStateGroup("right_arm_group");  
-    
-    /*const std::vector< robot_state::LinkState * > ls = kinematic_state_l->getLinkStateVector();
-    std::vector<std::string> link_name;
-    for(uint i = 0; i < ls.size();i++){
-    	link_name.push_back(ls[i]->getName());    	
-    }*/
-    
     geometry_msgs::Pose pose_l,pose_r;
     std::vector<double> joint_positions_l;
     std::vector<double> joint_positions_r;
+    //prepack-----------------------------------
     //l
-    joint_positions_l.push_back(1.04728);
-    joint_positions_l.push_back(-1.53308);
-    joint_positions_l.push_back(-4.73616);
-    joint_positions_l.push_back(-0.0179251);
-    joint_positions_l.push_back(2.61733);
-    joint_positions_l.push_back(-2.91619);
+	joint_positions_l.push_back(1.10002);
+	joint_positions_l.push_back(-1.41744);
+	joint_positions_l.push_back(-4.82702);
+	joint_positions_l.push_back(-0.0431126);
+	joint_positions_l.push_back(-3.61312);
+	joint_positions_l.push_back(3.36654);
     //r
-    joint_positions_r.push_back(-1.04915);
-    joint_positions_r.push_back(-1.60908);
-    joint_positions_r.push_back(4.73713);
-    joint_positions_r.push_back(-3.12726);
-    joint_positions_r.push_back(-2.61798);
-    joint_positions_r.push_back(2.94228);
-       
-    moveit_msgs::GetPositionFK::Request service_request;
-    moveit_msgs::GetPositionFK::Response service_response; 
-    sensor_msgs::JointState js;
-    
-    //------left-----------------------
-    js.name = joint_state_group_l->getJointNames();
-    js.position = joint_positions_l;
-    
-    service_request.header.frame_id = "world_dummy_link";
-    service_request.fk_link_names.push_back("left_arm_ee_link");
-    service_request.robot_state.joint_state = js;
-    
-    service_computefk.call(service_request, service_response);
-    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
-    	for(uint i=0;i<service_response.pose_stamped.size();i++){
-    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
-    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
-    		pose_l = service_response.pose_stamped[i].pose;
-    	}
-    }   
-    
-    //-----right-----------------
-    js.name = joint_state_group_r->getJointNames();
-    js.position = joint_positions_r;
-        
-    service_request.header.frame_id = "world_dummy_link";
-    service_request.fk_link_names.push_back("right_arm_ee_link");
-    service_request.robot_state.joint_state = js;
-    
-    service_computefk.call(service_request, service_response);
-    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
-    	for(uint i=0;i<service_response.pose_stamped.size();i++){
-    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
-    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
-    		pose_r = service_response.pose_stamped[i].pose;
-    	}
-    }  
-        
+    joint_positions_r.push_back(-1.10186);
+    joint_positions_r.push_back(-1.72479);
+    joint_positions_r.push_back(4.82816);
+    joint_positions_r.push_back(-3.10249);
+    joint_positions_r.push_back(-2.67068);
+    joint_positions_r.push_back(-3.34081);    
+    my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+     
     waypoints_l.clear();
     waypoints_r.clear();
     
@@ -585,9 +550,74 @@ public:
     //waypoints_r.push_back(current_pose_r);
     waypoints_r.push_back(pose_r);
     
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l);
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
+    //prepack---------------------------------------
+    //packed-------------------------------------------------
+    joint_positions_l.clear();
+    joint_positions_r.clear();
+    
+    joint_positions_l.push_back(-0.170856);
+    joint_positions_l.push_back(-2.37488);
+    joint_positions_l.push_back(-3.99752);
+    joint_positions_l.push_back(0.0871943);
+    joint_positions_l.push_back(-4.88399);
+    joint_positions_l.push_back(3.37079);
+    //r
+    joint_positions_r.push_back(0.169261);
+    joint_positions_r.push_back(-0.76683);
+    joint_positions_r.push_back(3.99794);
+    joint_positions_r.push_back(-3.23071);
+    joint_positions_r.push_back(-1.39957);
+    joint_positions_r.push_back(-3.34166);   
+    my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+     
+    waypoints_l.clear();
+    waypoints_r.clear();
+    
+    //waypoints_l.push_back(current_pose_l);
+    waypoints_l.push_back(pose_l);
+    
+    //waypoints_r.push_back(current_pose_r);
+    waypoints_r.push_back(pose_r);
+    
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
+    group_both->asyncExecute(mergedPlan);
+    ret = monitorArmMovement(true,true);
+    //packed--------------------------------------------
+    //deployed_front-------------------------------------------------
+    joint_positions_l.clear();
+    joint_positions_r.clear();
+    
+    joint_positions_l.push_back(0.164887);
+    joint_positions_l.push_back(-2.05895);
+    joint_positions_l.push_back(-3.62224);
+    joint_positions_l.push_back(-0.604017);
+    joint_positions_l.push_back(-4.54825);
+    joint_positions_l.push_back(3.37011);
+    //r
+    joint_positions_r.push_back(-0.166678);
+    joint_positions_r.push_back(-1.08266);
+    joint_positions_r.push_back(3.62272);
+    joint_positions_r.push_back(-2.53966);
+    joint_positions_r.push_back(-1.73551);
+    joint_positions_r.push_back(-3.34153);   
+    my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+     
+    waypoints_l.clear();
+    waypoints_r.clear();
+    
+    //waypoints_l.push_back(current_pose_l);
+    waypoints_l.push_back(pose_l);
+    
+    //waypoints_r.push_back(current_pose_r);
+    waypoints_r.push_back(pose_r);
+    
+    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
+    group_both->asyncExecute(mergedPlan);
+    ret = monitorArmMovement(true,true);
+    //deployed_front--------------------------------------------
 
     return ret;
   }
@@ -614,17 +644,67 @@ public:
 
     //both needed finished for single mode .. dual_flag for dual mode
     while(!tje_validation_.finished || (dual_mode && (tje_validation_.dual_flag < 2))){
-      ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
-      if(tje_validation_.success == false){//break while loop and stop execution when one arm controller fails
-	this->setStop();
-	break;
-      }
+    	ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+    	if(tje_validation_.success == false){//break while loop and stop execution when one arm controller fails
+    		this->setStop();
+    		break;
+    	}
     }
     subscr_l = ros::Subscriber();//ugly way to unsubscribe
     subscr_r = ros::Subscriber();//ugly way to unsubscribe
       
     return tje_validation_.success;
   }
+  
+  
+  //
+  void my_forwardkinematics(std::vector<double> &joint_positions_r, std::vector<double> &joint_positions_l, geometry_msgs::Pose *pose_l, geometry_msgs::Pose *pose_r){
+	  
+	    robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
+	    robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
+	    robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
+	    robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup("left_arm_group");  
+	    robot_state::JointStateGroup* joint_state_group_r = kinematic_state_l->getJointStateGroup("right_arm_group"); 
+	    
+	    moveit_msgs::GetPositionFK::Request service_request;
+	    moveit_msgs::GetPositionFK::Response service_response; 
+	    sensor_msgs::JointState js;
+	    
+	    //------left-----------------------
+	    js.name = joint_state_group_l->getJointNames();
+	    js.position = joint_positions_l;
+	    
+	    service_request.header.frame_id = "world_dummy_link";
+	    service_request.fk_link_names.push_back("left_arm_ee_link");
+	    service_request.robot_state.joint_state = js;
+	    
+	    service_computefk.call(service_request, service_response);
+	    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+	    	for(uint i=0;i<service_response.pose_stamped.size();i++){
+	    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
+	    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
+	    		*pose_l = service_response.pose_stamped[i].pose;
+	    	}
+	    }   
+	    
+	    //-----right-----------------
+	    js.name = joint_state_group_r->getJointNames();
+	    js.position = joint_positions_r;
+	        
+	    service_request.header.frame_id = "world_dummy_link";
+	    service_request.fk_link_names.push_back("right_arm_ee_link");
+	    service_request.robot_state.joint_state = js;
+	    
+	    service_computefk.call(service_request, service_response);
+	    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+	    	for(uint i=0;i<service_response.pose_stamped.size();i++){
+	    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
+	    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
+	    		*pose_r = service_response.pose_stamped[i].pose;
+	    	}
+	    }  
+  }
+  
   
   //workaround to check asynch trajectory execution
   //for simulation with gazebo use this topic /left_arm_controller/follow_joint_trajectory/result
@@ -651,6 +731,7 @@ public:
 
 
   bool workspace_sim(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
     tje_lock_.lock();
     ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;
@@ -845,9 +926,9 @@ public:
     ROS_INFO("SetModelState : %u", resp.success);
   }
 
-  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l){
+  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step){
     
-    double visualizationtime = 5;
+    double visualizationtime = 2;
 
     move_group_interface::MoveGroup group_r("right_arm_group");
     move_group_interface::MoveGroup group_l("left_arm_group");
@@ -867,13 +948,14 @@ public:
     
     double fraction_r = 0;
     double fraction_l = 0;
-    uint attempts = 10;
+    uint attempts = 100;
     //-------RIGHT-------------------------
     for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
       fraction_r = group_r.computeCartesianPath(waypoints_r,
-						0.01,  // eef_step
+    		  	  	  	eef_step,  // eef_step
 						1000.0,   // jump_threshold
 						trajectory_r);
+      ROS_INFO("fraction_r: %f",fraction_r);
     }
     linear_plan_r.trajectory_ = trajectory_r;
     sleep(visualizationtime);
@@ -881,94 +963,119 @@ public:
     //-------LEFT-------------------------
     for(uint i=0; fraction_l < 1.0 && i < attempts; i++){
       fraction_l = group_l.computeCartesianPath(waypoints_l,
-				   0.01,  // eef_step
+    		  	   eef_step,  // eef_step
 				   1000.0,   // jump_threshold
 				   trajectory_l);  
+      ROS_INFO("fraction_l :%f",fraction_l);
     }      
     linear_plan_l.trajectory_ = trajectory_l;
     sleep(visualizationtime);
-
+    
+    double spd = 0.1;
+    //moveit::planning_interface::MoveGroup::Plan scaled_plan_r = scaleTrajSpeed(linear_plan_r,spd);
+    //moveit::planning_interface::MoveGroup::Plan scaled_plan_l = scaleTrajSpeed(linear_plan_l,spd);
+    
+    //mergedPlan = mergePlan(scaled_plan_r,scaled_plan_l);
     mergedPlan = mergePlan(linear_plan_r,linear_plan_l);
 
     return mergedPlan;
+  }
+  
+  moveit::planning_interface::MoveGroup::Plan scaleTrajSpeed(moveit::planning_interface::MoveGroup::Plan plan, double factor){
+	  
+	  std::vector<trajectory_msgs::JointTrajectoryPoint> points = plan.trajectory_.joint_trajectory.points;
+	  
+	  for(uint i = 0; i < points.size();i++){
+		  
+		  for(uint j = 0; j < points[i].velocities.size();j++)
+			  	  points[i].velocities[j] = points[i].velocities[j] * factor;
+		  for(uint j = 0; j < points[i].accelerations.size();j++)
+			  	  points[i].velocities[j] = points[i].accelerations[j] * factor * factor;
+		  
+		  points[i].time_from_start = points[i].time_from_start * (1/factor);
+	  }
+	  
+	  plan.trajectory_.joint_trajectory.points = points;
+	  
+	  return plan;
   }
 
   //code from prace project, IPA: Benjamin Maidel
   move_group_interface::MoveGroup::Plan mergePlan(move_group_interface::MoveGroup::Plan plan1, move_group_interface::MoveGroup::Plan plan2)
   {
-    move_group_interface::MoveGroup::Plan mergedPlan;
-    mergedPlan = plan1;
-    mergedPlan.trajectory_.joint_trajectory.joint_names.insert(mergedPlan.trajectory_.joint_trajectory.joint_names.end(),
-							       plan2.trajectory_.joint_trajectory.joint_names.begin(),
-							       plan2.trajectory_.joint_trajectory.joint_names.end());
+	  move_group_interface::MoveGroup::Plan mergedPlan;
+	  mergedPlan = plan1;
+	  mergedPlan.trajectory_.joint_trajectory.joint_names.insert(mergedPlan.trajectory_.joint_trajectory.joint_names.end(),
+			  plan2.trajectory_.joint_trajectory.joint_names.begin(),
+			  plan2.trajectory_.joint_trajectory.joint_names.end());
 
-    size_t i;
+	  size_t i;
     for(i = 0; (i < mergedPlan.trajectory_.joint_trajectory.points.size())
-	  && (i < plan2.trajectory_.joint_trajectory.points.size()); i++){
+    && (i < plan2.trajectory_.joint_trajectory.points.size()); i++){
 
-      mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
-									     mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.end(),
-									     plan2.trajectory_.joint_trajectory.points[i].accelerations.begin(),
-									     plan2.trajectory_.joint_trajectory.points[i].accelerations.end());
+    	mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
+    			mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.end(),
+    			plan2.trajectory_.joint_trajectory.points[i].accelerations.begin(),
+    			plan2.trajectory_.joint_trajectory.points[i].accelerations.end());
 
-      mergedPlan.trajectory_.joint_trajectory.points[i].positions.insert(
-									 mergedPlan.trajectory_.joint_trajectory.points[i].positions.end(),
-									 plan2.trajectory_.joint_trajectory.points[i].positions.begin(),
-									 plan2.trajectory_.joint_trajectory.points[i].positions.end());
+    	mergedPlan.trajectory_.joint_trajectory.points[i].positions.insert(
+    			mergedPlan.trajectory_.joint_trajectory.points[i].positions.end(),
+    			plan2.trajectory_.joint_trajectory.points[i].positions.begin(),
+    			plan2.trajectory_.joint_trajectory.points[i].positions.end());
 
-      mergedPlan.trajectory_.joint_trajectory.points[i].velocities.insert(
-									  mergedPlan.trajectory_.joint_trajectory.points[i].velocities.end(),
-									  plan2.trajectory_.joint_trajectory.points[i].velocities.begin(),
-									  plan2.trajectory_.joint_trajectory.points[i].velocities.end());
+    	mergedPlan.trajectory_.joint_trajectory.points[i].velocities.insert(
+    			mergedPlan.trajectory_.joint_trajectory.points[i].velocities.end(),
+    			plan2.trajectory_.joint_trajectory.points[i].velocities.begin(),
+    			plan2.trajectory_.joint_trajectory.points[i].velocities.end());
     }
 
     if(plan1.trajectory_.joint_trajectory.points.size() > plan2.trajectory_.joint_trajectory.points.size()){
 
-      for(size_t j = i; j < plan1.trajectory_.joint_trajectory.points.size(); j++){
+    	for(size_t j = i; j < plan1.trajectory_.joint_trajectory.points.size(); j++){
 
-	mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.insert(
-									       mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.end(),
-									       plan2.trajectory_.joint_trajectory.points.back().accelerations.begin(),
-									       plan2.trajectory_.joint_trajectory.points.back().accelerations.end());
+    		mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.insert(
+    				mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.end(),
+    				plan2.trajectory_.joint_trajectory.points.back().accelerations.begin(),
+    				plan2.trajectory_.joint_trajectory.points.back().accelerations.end());
 
-	mergedPlan.trajectory_.joint_trajectory.points[j].positions.insert(
-									   mergedPlan.trajectory_.joint_trajectory.points[j].positions.end(),
-									   plan2.trajectory_.joint_trajectory.points.back().positions.begin(),
-									   plan2.trajectory_.joint_trajectory.points.back().positions.end());
+    		mergedPlan.trajectory_.joint_trajectory.points[j].positions.insert(
+    				mergedPlan.trajectory_.joint_trajectory.points[j].positions.end(),
+    				plan2.trajectory_.joint_trajectory.points.back().positions.begin(),
+    				plan2.trajectory_.joint_trajectory.points.back().positions.end());
 
-	mergedPlan.trajectory_.joint_trajectory.points[j].velocities.insert(
-									    mergedPlan.trajectory_.joint_trajectory.points[j].velocities.end(),
-									    plan2.trajectory_.joint_trajectory.points.back().velocities.begin(),
-									    plan2.trajectory_.joint_trajectory.points.back().velocities.end());
-      }
+    		mergedPlan.trajectory_.joint_trajectory.points[j].velocities.insert(
+    				mergedPlan.trajectory_.joint_trajectory.points[j].velocities.end(),
+    				plan2.trajectory_.joint_trajectory.points.back().velocities.begin(),
+    				plan2.trajectory_.joint_trajectory.points.back().velocities.end());
+    	}
     }
 
     if(plan1.trajectory_.joint_trajectory.points.size() < plan2.trajectory_.joint_trajectory.points.size()){
 
-      trajectory_msgs::JointTrajectoryPoint point;
-      for(size_t j = i; j < plan2.trajectory_.joint_trajectory.points.size(); j++){
+    	trajectory_msgs::JointTrajectoryPoint point;
+    	for(size_t j = i; j < plan2.trajectory_.joint_trajectory.points.size(); j++){
 
-	point  = mergedPlan.trajectory_.joint_trajectory.points.back();
+    		point  = mergedPlan.trajectory_.joint_trajectory.points.back();
 
-	point.accelerations.insert(
-				   point.accelerations.end(),
-				   plan2.trajectory_.joint_trajectory.points[j].accelerations.begin(),
-				   plan2.trajectory_.joint_trajectory.points[j].accelerations.end());
+    		point.accelerations.insert(
+    				point.accelerations.end(),
+    				plan2.trajectory_.joint_trajectory.points[j].accelerations.begin(),
+    				plan2.trajectory_.joint_trajectory.points[j].accelerations.end());
 
-	point.positions.insert(
-			       point.positions.end(),
-			       plan2.trajectory_.joint_trajectory.points[j].positions.begin(),
-			       plan2.trajectory_.joint_trajectory.points[j].positions.end());
+    		point.positions.insert(
+    				point.positions.end(),
+    				plan2.trajectory_.joint_trajectory.points[j].positions.begin(),
+    				plan2.trajectory_.joint_trajectory.points[j].positions.end());
 
-	point.velocities.insert(
-				point.velocities.end(),
-				plan2.trajectory_.joint_trajectory.points[j].velocities.begin(),
-				plan2.trajectory_.joint_trajectory.points[j].velocities.end());
-	    
-	point.time_from_start = plan2.trajectory_.joint_trajectory.points[j].time_from_start;
+    		point.velocities.insert(
+    				point.velocities.end(),
+    				plan2.trajectory_.joint_trajectory.points[j].velocities.begin(),
+    				plan2.trajectory_.joint_trajectory.points[j].velocities.end());
 
-	mergedPlan.trajectory_.joint_trajectory.points.push_back(point);
-      }
+    		point.time_from_start = plan2.trajectory_.joint_trajectory.points[j].time_from_start;
+
+    		mergedPlan.trajectory_.joint_trajectory.points.push_back(point);
+    	}
     }
 
     return mergedPlan;
@@ -976,48 +1083,48 @@ public:
 
   bool sensornodePosValid()
   {
-    if(!getSensornodePose()){
-      return false;
-    }
+	  if(!getSensornodePose()){
+		  return false;
+	  }
 
-    double x_lower_bound =  1.5;
-    double x_upper_bound =  1.7;
-    double y_lower_bound = -0.2;
-    double y_upper_bound =  0.2;
+	  double x_lower_bound =  1.3;
+	  double x_upper_bound =  1.7;
+	  double y_lower_bound = -0.2;
+	  double y_upper_bound =  0.2;
 
-   ROS_INFO("Sensornode pose is X:%f Y:%f", sensornode_.translation.x, sensornode_.translation.y);
-   ROS_INFO("Bounds X: %f and %f", x_lower_bound, x_upper_bound);
-   ROS_INFO("Bounds Y: %f and %f", y_lower_bound, y_upper_bound);
+	  ROS_INFO("Sensornode pose is X:%f Y:%f", sensornode_.translation.x, sensornode_.translation.y);
+	  ROS_INFO("Bounds X: %f and %f", x_lower_bound, x_upper_bound);
+	  ROS_INFO("Bounds Y: %f and %f", y_lower_bound, y_upper_bound);
 
-    if((x_lower_bound < sensornode_.translation.x && sensornode_.translation.x < x_upper_bound) &&
-	(y_lower_bound < sensornode_.translation.y && sensornode_.translation.y < y_upper_bound)){
-	 return true;	  
-       }   
+	  if((x_lower_bound < sensornode_.translation.x && sensornode_.translation.x < x_upper_bound) &&
+			  (y_lower_bound < sensornode_.translation.y && sensornode_.translation.y < y_upper_bound)){
+		  return true;	  
+	  }   
 
-    return false;
+	  return false;
   }
 
   void loadTeachedPoints(std::vector<std::vector<double> >* vec_r,std::vector<std::vector<double> >* vec_l){
-    
-    SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
-    std::vector<std::vector<double> > tmp;
 
-    ser->openArray("dual_arm_movement");
-    ser->readArray("dual_arm_movement",&tmp);
-    ser->closeArray();
-    ser->close();
+	  SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
+	  std::vector<std::vector<double> > tmp;
 
-    for(unsigned int i = 0; i < tmp.size(); i++){
-      
-      if((i%2)==0){
-	vec_r->push_back(tmp[i]);
-      } else {
-	vec_l->push_back(tmp[i]);
-      }
-    }
- 
-    delete ser;
-    
+	  ser->openArray("dual_arm_movement");
+	  ser->readArray("dual_arm_movement",&tmp);
+	  ser->closeArray();
+	  ser->close();
+
+	  for(unsigned int i = 0; i < tmp.size(); i++){
+
+		  if((i%2)==0){
+			  vec_r->push_back(tmp[i]);
+		  } else {
+			  vec_l->push_back(tmp[i]);
+		  }
+	  }
+
+	  delete ser;
+
   }	
   
   void loadMoveGroups()
@@ -1056,7 +1163,11 @@ public:
   std::string stateMachine(std::string currentState)
   {
 	  std::string transition = getTransition();
+      group_r_->setStartStateToCurrentState();      
+	  group_l_->setStartStateToCurrentState();
+	  group_both_->setStartStateToCurrentState();
 
+	  
 	  //---------GAZEBO_HOME----------------------------------
 	  if(currentState.compare("gazebo_home") == 0){
 
@@ -1195,21 +1306,21 @@ public:
   }
  
   bool setTransition(seneka_pnp::setTransition::Request &req,
-		     seneka_pnp::setTransition::Response &res)
+		  seneka_pnp::setTransition::Response &res)
   {
-    transition_ = req.transition;    
-    res.transition = transition_;
+	  std::string transition_tmp = req.transition; 
 
-    if(transition_.compare("toPickedUp") == 0){
-      if(!sensornodePosValid()){
-	transition_ = "";
-	res.transition = "Sensornode is not in a valid grab position";
-	return true;
-      }
-    }
-
- 
-    return true;
+	  if(transition_tmp.compare("toPickedUp") == 0){
+		  if(!sensornodePosValid()){
+			  res.transition = "Sensornode is not in a valid grab position";
+			  transition_ = "";
+			  return true;
+		  }	  	  
+	  }
+	  
+	  res.transition = transition_tmp;
+	  transition_ = transition_tmp;    
+	  return true;
   }
 
  bool setStop(seneka_pnp::setStop::Request &req,
@@ -1248,7 +1359,7 @@ public:
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
 
-    workspace_sim(group_l_,group_r_,group_both_);
+   // workspace_sim(group_l_,group_r_,group_both_);
 
 
     ros::Rate loop_rate(1);
@@ -1271,6 +1382,7 @@ public:
     }
   }
 };
+
 
 int main(int argc, char** argv)
 {

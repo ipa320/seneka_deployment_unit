@@ -1,0 +1,110 @@
+Name: prepack
+---right---
+right_arm_shoulder_pan_joint: [-1.04915]
+right_arm_shoulder_lift_joint: [-1.60908]
+right_arm_elbow_joint: [4.73713]
+right_arm_wrist_1_joint: [-3.12726]
+right_arm_wrist_2_joint: [-2.61798]
+right_arm_wrist_3_joint: [2.94228]
+---left---
+left_arm_shoulder_pan_joint: [1.04728]
+left_arm_shoulder_lift_joint: [-1.53308]
+left_arm_elbow_joint: [-4.73616]
+left_arm_wrist_1_joint: [-0.0179251]
+left_arm_wrist_2_joint: [2.61733]
+left_arm_wrist_3_joint: [-2.91619]
+ -----Pose-----
+position: 
+  x: 1
+  y: 0
+  z: 0
+orientation: 
+  x: 0
+  y: 0
+  z: 0
+  w: 0
+
+ -----handle_r-----
+position: 
+  x: 0
+  y: 0
+  z: 0
+orientation: 
+  x: 0
+  y: 0
+  z: 0
+  w: 0
+
+ -----handle_l-----
+position: 
+  x: 0
+  y: 0
+  z: 0
+orientation: 
+  x: 0
+  y: 0
+  z: 0
+  w: 0
+
+-------------------------------------------
+
+
+
+
+
+
+Name: newprepack
+---right---
+right_arm_shoulder_pan_joint: [-1.10186]
+right_arm_shoulder_lift_joint: [-1.72479]
+right_arm_elbow_joint: [4.82816]
+right_arm_wrist_1_joint: [-3.10249]
+right_arm_wrist_2_joint: [-2.67068]
+right_arm_wrist_3_joint: [-3.34081]
+---left---
+left_arm_shoulder_pan_joint: [1.10002]
+left_arm_shoulder_lift_joint: [-1.41744]
+left_arm_elbow_joint: [-4.82702]
+left_arm_wrist_1_joint: [-0.0431126]
+left_arm_wrist_2_joint: [-3.61312]
+left_arm_wrist_3_joint: [3.36654]
+ -----Pose-----
+position: 
+  x: 1.38785
+  y: 0
+  z: 0.549912
+orientation: 
+  x: 0
+  y: 0
+  z: 0
+  w: 1
+
+ -----handle_r-----
+position: 
+  x: 1.38785
+  y: -0.2125
+  z: 1.31991
+orientation: 
+  x: 0
+  y: 0
+  z: 0.706678
+  w: 0.707535
+
+ -----handle_l-----
+position: 
+  x: 1.38785
+  y: 0.2125
+  z: 1.31991
+orientation: 
+  x: 0.0095722
+  y: -0.0108288
+  z: -0.706344
+  w: 0.707722
+
+-------------------------------------------
+
+
+
+
+
+

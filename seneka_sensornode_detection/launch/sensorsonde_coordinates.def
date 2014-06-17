@@ -1,7 +1,7 @@
 <var name="fiducial1_ID">1</var>
 <var name="fiducial1_POSX">0</var>
 <var name="fiducial1_POSY">75.0</var>
-<var name="fiducial1_POSZ">170.0</var>
+<var name="fiducial1_POSZ">167.56</var>
 <var name="fiducial1_ROT1">0</var>
 <var name="fiducial1_ROT2">0</var>
 <var name="fiducial1_ROT3">0</var>
@@ -53,9 +53,9 @@
 <var name="handle1_pitch">1.57</var>
 <var name="handle1_yaw">0</var>
 
-<var name="handle2_x">178.31</var>
+<var name="handle2_x">183.17</var>
 <var name="handle2_y">350</var>
-<var name="handle2_z">113.78</var>
+<var name="handle2_z">105.76</var>
 <var name="handle2_roll">-1.57</var>
 <var name="handle2_pitch">2.617</var>
 <var name="handle2_yaw">0</var>
@@ -74,9 +74,9 @@
 <var name="handle4_pitch">-1.57</var>
 <var name="handle4_yaw">0</var>
 
-<var name="handle5_x">-178.31</var>
+<var name="handle5_x">-183.17</var>
 <var name="handle5_y">350</var>
-<var name="handle5_z">-113.78</var>
+<var name="handle5_z">-105.76</var>
 <var name="handle5_roll">-1.57</var>
 <var name="handle5_pitch">5.758</var>
 <var name="handle5_yaw">0</var>
@@ -88,13 +88,13 @@
 <var name="handle6_pitch">6.805</var>
 <var name="handle6_yaw">0</var>
 
-<var name="trigger_up_offset_x">0</var>
+<var name="trigger_up_offset_x">-8</var>
 <var name="trigger_up_offset_y">0</var>
 <var name="trigger_up_offset_z">100</var>
 
-<var name="trigger_down_offset_x">0</var>
+<var name="trigger_down_offset_x">-8</var>
 <var name="trigger_down_offset_y">0</var>
-<var name="trigger_down_offset_z">-100</var>
+<var name="trigger_down_offset_z">-130</var>
 
 <var name="grab_entry_x">-100</var>
 <var name="grab_entry_y">0</var>

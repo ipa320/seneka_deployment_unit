@@ -1,0 +1,44 @@
+Name: prepack
+---right---
+right_arm_shoulder_pan_joint: [-1.04915]
+right_arm_shoulder_lift_joint: [-1.60908]
+right_arm_elbow_joint: [4.73713]
+right_arm_wrist_1_joint: [-3.12726]
+right_arm_wrist_2_joint: [-2.61798]
+right_arm_wrist_3_joint: [2.94228]
+---left---
+left_arm_shoulder_pan_joint: [1.04728]
+left_arm_shoulder_lift_joint: [-1.53308]
+left_arm_elbow_joint: [-4.73616]
+left_arm_wrist_1_joint: [-0.0179251]
+left_arm_wrist_2_joint: [2.61733]
+left_arm_wrist_3_joint: [-2.91619]
+-------------------------------------------
+
+
+
+
+
+
+Name: packed
+---right---
+right_arm_shoulder_pan_joint: [-0.00863925]
+right_arm_shoulder_lift_joint: [5.4594]
+right_arm_elbow_joint: [-2.31366]
+right_arm_wrist_1_joint: [-3.14534]
+right_arm_wrist_2_joint: [4.70572]
+right_arm_wrist_3_joint: [-3.34159]
+---left---
+left_arm_shoulder_pan_joint: [0.10163]
+left_arm_shoulder_lift_joint: [-2.10544]
+left_arm_elbow_joint: [-3.61848]
+left_arm_wrist_1_joint: [2.58033]
+left_arm_wrist_2_joint: [4.6115]
+left_arm_wrist_3_joint: [0.228649]
+-------------------------------------------
+
+
+
+
+
+

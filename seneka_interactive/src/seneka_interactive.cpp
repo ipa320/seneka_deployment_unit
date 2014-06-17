@@ -46,6 +46,9 @@ const double PI = 3.14159265359;
 
 struct node_pose{
 	std::string name;
+	geometry_msgs::Pose pose;
+	geometry_msgs::Pose handle_r;
+	geometry_msgs::Pose handle_l;
 	std::vector<std::string> joint_names_r;
 	std::vector<std::string> joint_names_l;
 	std::vector<double> joint_states_r;
@@ -70,7 +73,7 @@ private:
   
   bool simulate_;
 
-  node_pose start_pose_, tmp_pose;
+  node_pose start_pose_, tmp_pose_;
   
 public:
   //Constructor
@@ -95,7 +98,7 @@ public:
 	service_getStates_ = node_handle_.advertiseService("seneka_interactive/getStates", &SenekaInteractive::getStates, this);
 	service_printStatesToFile_ = node_handle_.advertiseService("seneka_interactive/printStatesToFile", &SenekaInteractive::printStatesToFile, this);
 	
-	tmp_pose.name = "tmp_pose";
+	tmp_pose_.name = "tmp_pose";
 	
     marker_changed_ = false;
     simulate_ = false;
@@ -125,16 +128,16 @@ public:
 	  moveit_msgs::JointConstraint jconstraint;
 	  
 	  jconstraint.joint_name = "right_arm_shoulder_pan_joint";
-	  jconstraint.position = -PI/2;
-	  jconstraint.tolerance_above = jiggle;
-	  jconstraint.tolerance_below = jiggle;
+	  jconstraint.position = -1.04915;
+	  jconstraint.tolerance_above = PI/4;
+	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
-	  //constraint.joint_constraints.push_back(jconstraint);
+	  constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "right_arm_shoulder_lift_joint";
-	  jconstraint.position = -PI/2;
-	  jconstraint.tolerance_above = jiggle;
-	  jconstraint.tolerance_below = jiggle;
+	  jconstraint.position = -1.60908;
+	  jconstraint.tolerance_above = 0.6;
+	  jconstraint.tolerance_below = 0.6;
 	  jconstraint.weight = 1;
 	  constraint.joint_constraints.push_back(jconstraint);
 	  
@@ -149,16 +152,16 @@ public:
 	  
 	  moveit_msgs::JointConstraint jconstraint;	  
 	  jconstraint.joint_name = "left_arm_shoulder_pan_joint";
-	  jconstraint.position = PI/2;
-	  jconstraint.tolerance_above = jiggle;
-	  jconstraint.tolerance_below = jiggle;
+	  jconstraint.position = 1.04728;
+	  jconstraint.tolerance_above = PI/4;
+	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
-	  //constraint.joint_constraints.push_back(jconstraint);
+	  constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "left_arm_shoulder_lift_joint";
-	  jconstraint.position = -PI/2;
-	  jconstraint.tolerance_above = jiggle;
-	  jconstraint.tolerance_below = jiggle;
+	  jconstraint.position = -1.53308;
+	  jconstraint.tolerance_above = 0.6;
+	  jconstraint.tolerance_below = 0.6;
 	  jconstraint.weight = 1;
 	  constraint.joint_constraints.push_back(jconstraint);
 	  
@@ -205,10 +208,8 @@ public:
 			  
 			  for(uint i=0; i<6;i++){
 					  std::cout << service_response.solution.joint_state.name[i] << ": ";
-					  std::cout << service_response.solution.joint_state.position[i] << std::endl;					  
-			  }
-			  
-			  for(uint i=0; i<6;i++){
+					  std::cout << service_response.solution.joint_state.position[i] << std::endl;			
+					  
 					  joint_values_l.push_back(service_response.solution.joint_state.position[i]);  
 					  joint_names_l.push_back(service_response.solution.joint_state.name[i]);
 			  }
@@ -222,8 +223,8 @@ public:
 			  ROS_INFO("IK Solution L: TRUE");
 			  result = true;
 			  
-			  tmp_pose.joint_names_l = joint_names_l;
-			  tmp_pose.joint_states_l = joint_values_l;
+			  tmp_pose_.joint_names_l = joint_names_l;
+			  tmp_pose_.joint_states_l = joint_values_l;
 
 		  } else {
 			  ROS_INFO("IK Solution L: FALSE");		  
@@ -246,14 +247,12 @@ public:
 	
 			  for(uint i=6; i<12;i++){
 					  std::cout << service_response.solution.joint_state.name[i] << ": ";
-					  std::cout << service_response.solution.joint_state.position[i] << std::endl;					  
+					  std::cout << service_response.solution.joint_state.position[i] << std::endl;				
+					  
+					  joint_values_r.push_back(service_response.solution.joint_state.position[i]);  
+					  joint_names_r.push_back(service_response.solution.joint_state.name[i]);
 			  }
 			  
-			  for(uint i=6; i<12;i++){
-				  joint_values_r.push_back(service_response.solution.joint_state.position[i]);  
-				  joint_names_r.push_back(service_response.solution.joint_state.name[i]);
-			  }
-
 			  joint_state_group_r->setVariableValues(joint_values_r); 
 			  
 			  moveit_msgs::DisplayRobotState msg_r;
@@ -262,8 +261,8 @@ public:
 
 			  ROS_INFO("IK Solution R: TRUE");
 			  
-			  tmp_pose.joint_names_r = joint_names_r;
-			  tmp_pose.joint_states_r = joint_values_r;
+			  tmp_pose_.joint_names_r = joint_names_r;
+			  tmp_pose_.joint_states_r = joint_values_r;
 
 		  } else {
 			  ROS_INFO("IK Solution R: FALSE");
@@ -273,6 +272,7 @@ public:
 	  }
   }
   
+  //Simulates the planning with cartesian path between a start state and the actual handle positions of the sensorsonde
   void simulateCartesianPath(){	  
 
 	    double visualizationtime = 5;
@@ -333,6 +333,21 @@ public:
 	    }      
 	    linear_plan_l.trajectory_ = trajectory_l;
 	    sleep(visualizationtime);	       
+	  
+	    //set joint_state to the last state in computed trajectory
+	    uint trajectory_size = linear_plan_r.trajectory_.joint_trajectory.points.size();	
+		tmp_pose_.joint_names_r = linear_plan_r.trajectory_.joint_trajectory.joint_names;
+		tmp_pose_.joint_states_r = linear_plan_r.trajectory_.joint_trajectory.points[trajectory_size-1].positions;
+		joint_state_group_r->setVariableValues(tmp_pose_.joint_states_r);   
+	    
+	    trajectory_size = linear_plan_l.trajectory_.joint_trajectory.points.size();	
+		tmp_pose_.joint_names_l = linear_plan_l.trajectory_.joint_trajectory.joint_names;
+		tmp_pose_.joint_states_l = linear_plan_l.trajectory_.joint_trajectory.points[trajectory_size-1].positions;
+		joint_state_group_l->setVariableValues(tmp_pose_.joint_states_l); 
+	    
+	    moveit_msgs::DisplayRobotState msg_r;
+	    robot_state::robotStateToRobotStateMsg(*kinematic_state, msg_r.state);
+	    robot_state_publisher_r_.publish( msg_r ); 
   }
   
   void processFeedback(
@@ -342,8 +357,8 @@ public:
         << feedback->pose.position.x << ", " << feedback->pose.position.y
         << ", " << feedback->pose.position.z );*/
     
-	std::cout << feedback->pose.position << std::endl;
-    std::cout << feedback->pose.orientation << std::endl;
+   //std::cout << feedback->pose.position << std::endl;
+   //std::cout << feedback->pose.orientation << std::endl;
     
     marker_pose_ = feedback->pose;
     createGrabPoses(marker_pose_);
@@ -362,14 +377,17 @@ public:
 	  int_marker.name = "my_marker";
 	  int_marker.description = "Simple 1-DOF Control";
 	  int_marker.pose.position.x = 2;	  
-	  int_marker.scale = 0.5;
+	  int_marker.scale = 1;
 
 	  // create a grey box marker
 	  visualization_msgs::Marker box_marker;
 	  box_marker.type = visualization_msgs::Marker::CUBE;
-	  box_marker.scale.x = 0.2;
-	  box_marker.scale.y = 0.2;
-	  box_marker.scale.z = 0.2;
+	  box_marker.pose.position.x = 0;
+	  box_marker.pose.position.y = 0;
+	  box_marker.pose.position.z = 0.26;
+	  box_marker.scale.x = 0.34;
+	  box_marker.scale.y = 0.34;
+	  box_marker.scale.z = 0.52;
 	  box_marker.color.r = 0.5;
 	  box_marker.color.g = 0.5;
 	  box_marker.color.b = 0.5;
@@ -377,7 +395,7 @@ public:
 	  
 	  // create a non-interactive control which contains the box
 	  visualization_msgs::InteractiveMarkerControl box_control;
-	  box_control.always_visible = true;
+	  box_control.always_visible = false;
 	  box_control.markers.push_back( box_marker );	  
 
 	  // add the control to the interactive marker
@@ -437,6 +455,7 @@ public:
 	  for(uint i=0; i < stored_poses.size(); i++){
 		  if(!stored_poses[i].name.compare(requested_name)){
 			  
+			  visualization_msgs::InteractiveMarker marker;
 			  start_pose_ = stored_poses[i];
 			  
 			  res.name = stored_poses[i].name;
@@ -444,6 +463,11 @@ public:
 			  res.joint_names_l = stored_poses[i].joint_names_l;
 			  res.joint_states_r = stored_poses[i].joint_states_r;
 			  res.joint_states_l = stored_poses[i].joint_states_l;			  
+			  
+			  server_->get("my_marker", marker);
+			  marker.pose = stored_poses[i].pose;
+			  server_->insert(marker);
+			  server_->applyChanges();
 			  return true;		
 		  }
 	  }
@@ -453,8 +477,11 @@ public:
   bool createNewState(seneka_interactive::createNewState::Request &req,
 		  seneka_interactive::createNewState::Response &res)
   {	  
-	  node_pose new_pose = tmp_pose;
+	  node_pose new_pose = tmp_pose_;
 	  new_pose.name = req.name;	  
+	  new_pose.pose = marker_pose_;
+	  new_pose.handle_r = handle_r_;
+	  new_pose.handle_l = handle_l_;
 	  
 	  res.name = new_pose.name;
 	  res.joint_names_r = new_pose.joint_names_r;
@@ -509,7 +536,27 @@ public:
 		  outf << "---left---" << "\n";
 		  for(uint j=0; j<stored_poses[i].joint_names_l.size(); j++)
 			  outf <<  stored_poses[i].joint_names_l[j] << ": [" << stored_poses[i].joint_states_l[j] << "]" << "\n";
-					  
+		  
+		  outf << " -----Pose-----\n";	  
+		  outf <<  stored_poses[i].pose << "\n";
+		  
+		  outf << " -----handle_r-----\n";	  
+		  outf <<  stored_poses[i].handle_r << "\n";
+		  
+		  outf << " -----handle_l-----\n";	  
+		  outf <<  stored_poses[i].handle_l << "\n";
+		  
+		  outf << " -----programmatical-----\n";
+		  for(uint j=0; j<stored_poses[i].joint_names_r.size(); j++)
+			  outf <<  "pose.joint_states_r.push_back"<< "(" << stored_poses[i].joint_states_r[j] << ");" << "\n";
+		  for(uint j=0; j<stored_poses[i].joint_names_l.size(); j++)
+			  outf <<  "pose.joint_states_l.push_back"<< "(" << stored_poses[i].joint_states_l[j] << ");" << "\n";
+		  outf << "\n";
+		  for(uint j=0; j<stored_poses[i].joint_names_r.size(); j++)
+			  outf <<  "joint_positions_r.push_back"<< "(" << stored_poses[i].joint_states_r[j] << ");" << "\n";
+		  for(uint j=0; j<stored_poses[i].joint_names_l.size(); j++)
+			  outf <<  "joint_positions_l.push_back"<< "(" << stored_poses[i].joint_states_l[j] << ");" << "\n";
+		  
 		  outf << "-------------------------------------------" << "\n";
 		  outf << "\n\n\n\n\n\n";			  	  
 	  }	  
@@ -521,6 +568,7 @@ public:
   }
   //------------ Services --------END---------------------------
 
+  //computes the poses of the handles in reference to the marker position
   void createGrabPoses(geometry_msgs::Pose &marker_pose){
 	  
 	  handle_l_ = marker_pose_;
@@ -562,19 +610,23 @@ public:
 	  pose.joint_names_l.push_back("left_arm_wrist_2_joint");
 	  pose.joint_names_l.push_back("left_arm_wrist_3_joint");
 	  
-	  pose.joint_states_r.push_back(-1.04915);
-	  pose.joint_states_r.push_back(-1.60908);
-	  pose.joint_states_r.push_back(4.73713);
-	  pose.joint_states_r.push_back(-3.12726);
-	  pose.joint_states_r.push_back(-2.61798);
-	  pose.joint_states_r.push_back(2.94228);
+	  pose.joint_states_r.push_back(-1.10186);
+	  pose.joint_states_r.push_back(-1.72479);
+	  pose.joint_states_r.push_back(4.82816);
+	  pose.joint_states_r.push_back(-3.10249);
+	  pose.joint_states_r.push_back(-2.67068);
+	  pose.joint_states_r.push_back(-3.34081);
 	  
-	  pose.joint_states_l.push_back(1.04728);
-	  pose.joint_states_l.push_back(-1.53308);
-	  pose.joint_states_l.push_back(-4.73616);
-	  pose.joint_states_l.push_back(-0.0179251);
-	  pose.joint_states_l.push_back(2.61733);
-	  pose.joint_states_l.push_back(-2.91619);
+	  pose.joint_states_l.push_back(1.10002);
+	  pose.joint_states_l.push_back(-1.41744);
+	  pose.joint_states_l.push_back(-4.82702);
+	  pose.joint_states_l.push_back(-0.0431126);
+	  pose.joint_states_l.push_back(-3.61312);
+	  pose.joint_states_l.push_back(3.36654);
+	  
+	  pose.pose.position.x = 1.38785;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.549912;
 	  
 	  stored_poses.push_back(pose);
 	  
@@ -597,7 +649,7 @@ public:
     	  simulateCartesianPath();
     	  simulate_  = false;
       }
-      ROS_INFO("ALIVE");
+      //ROS_INFO("ALIVE");
       loop_rate.sleep();
     }
   }
