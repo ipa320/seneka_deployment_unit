@@ -92,6 +92,8 @@ private:
   ros::NodeHandle node_handle_;
   std::vector<handhold> handholds_;
   pose3d sensornode_;
+  
+  bool trajexec;
 
   ros::Subscriber subscr_;
   
@@ -145,6 +147,9 @@ public:
     tje_validation_.finished = false;
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
+    
+    //Allows trajectory execution.. !!!Be patient with this!!!
+    trajexec = true;
 
     outf_.open("/home/matthias/data.txt"); 
 
@@ -323,7 +328,8 @@ public:
     
     if(multiplan(group_l,&myPlan)){
     	sleep(5.0);
-    	group_l->asyncExecute(myPlan);
+    	if(trajexec)
+    		group_l->asyncExecute(myPlan);
     	ret = monitorArmMovement(true,false);
     }
 
@@ -332,7 +338,8 @@ public:
     	ret = false;
     	if(multiplan(group_r,&myPlan)){
     		sleep(5.0);
-    		group_r->asyncExecute(myPlan);
+    		if(trajexec)
+    			group_r->asyncExecute(myPlan);
     		ret = monitorArmMovement(false,true);
     	}
     }
@@ -365,7 +372,8 @@ public:
 
     if(group_l->plan(myPlan)){
       sleep(5.0);
-      group_l->asyncExecute(myPlan); 
+      if(trajexec)
+    	  group_l->asyncExecute(myPlan); 
       ret = monitorArmMovement(true,false);
     }
 
@@ -392,7 +400,8 @@ public:
 
     merged_plan = mergePlan(lplan,rplan);
 
-    group_both->asyncExecute(merged_plan);
+    if(trajexec)
+    	group_both->asyncExecute(merged_plan);
     ret = monitorArmMovement(true,true);
 
     return ret;
@@ -456,7 +465,8 @@ public:
 
     mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
     
-    group_both->asyncExecute(mergedPlan);
+    if(trajexec)
+    	group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);  
 
 
@@ -495,7 +505,8 @@ public:
       waypoints_l.push_back(target_pose2_l);
       
       mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
-      group_both->asyncExecute(mergedPlan);
+      if(trajexec)
+    	  group_both->asyncExecute(mergedPlan);
       ret = monitorArmMovement(true,true);
     }
 
@@ -551,9 +562,11 @@ public:
     waypoints_r.push_back(pose_r);
     
     mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
-    group_both->asyncExecute(mergedPlan);
+    if(trajexec)
+    	group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //prepack---------------------------------------
+    
     //packed-------------------------------------------------
     joint_positions_l.clear();
     joint_positions_r.clear();
@@ -583,9 +596,11 @@ public:
     waypoints_r.push_back(pose_r);
     
     mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
-    group_both->asyncExecute(mergedPlan);
+    if(trajexec)
+    	group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //packed--------------------------------------------
+    
     //deployed_front-------------------------------------------------
     joint_positions_l.clear();
     joint_positions_r.clear();
@@ -615,7 +630,8 @@ public:
     waypoints_r.push_back(pose_r);
     
     mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
-    group_both->asyncExecute(mergedPlan);
+    if(trajexec)
+    	group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //deployed_front--------------------------------------------
 
