@@ -348,7 +348,7 @@ public:
   }
 
   //TRANSITION:avoidCollisionState
-  //Moves the arm to a collision free state
+  //Moves the arm to a collision free state(in general only for gazebo)
   bool toCollisionFree(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
     bool ret = false;
@@ -894,6 +894,7 @@ public:
     return true;
   }
 
+  //helper for simulation
   bool setSensornodeState(double x, double y)
   {
     gazebo_msgs::ModelState state;
@@ -1140,7 +1141,6 @@ public:
 	  }
 
 	  delete ser;
-
   }	
   
   void loadMoveGroups()
@@ -1385,16 +1385,6 @@ public:
       ROS_INFO("Current state: %s",currentState_.c_str());
       //workspace_sim();
       loop_rate.sleep();
-
-      /*bool valid_detection =  getSensornodePose();
-      if(inGrabPosition() && valid_detection){
-	ROS_INFO("IN POSITION");
-	//pnpPlanner();
-	planToHomeState();
-      } else {
-	ROS_INFO("No valid position");
-      }*/
-      //ros::spinOnce();
     }
   }
 };
