@@ -44,6 +44,8 @@
 #include <gazebo_msgs/ModelState.h>
 #include <gazebo_msgs/GetModelState.h> 
 
+#include <geometry_msgs/Wrench.h>
+
 #include "seneka_pnp/getState.h"
 #include "seneka_pnp/setTransition.h"
 #include "seneka_pnp/setStop.h"
@@ -93,6 +95,8 @@ private:
   std::vector<handhold> handholds_;
   pose3d sensornode_;
   
+  bool extforceflag_;
+  
   bool trajexec;
 
   ros::Subscriber subscr_;
@@ -126,6 +130,7 @@ private:
   trajectory_execution_validation tje_validation_;  
   boost::mutex tje_lock_;
   boost::mutex transition_lock_;
+  boost::mutex extforce_lock_;
 
 public:
   //Constructor
@@ -147,6 +152,10 @@ public:
     tje_validation_.finished = false;
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
+    
+    extforce_lock_.lock();
+    extforceflag_ = false;
+    extforce_lock_.unlock();
     
     //Allows trajectory execution.. !!!Be patient with this!!!
     trajexec = true;
@@ -330,7 +339,7 @@ public:
     	sleep(5.0);
     	if(trajexec)
     		group_l->asyncExecute(myPlan);
-    	ret = monitorArmMovement(true,false);
+    	ret = monitorArmMovement(true,false,true);
     }
 
     //r
@@ -340,7 +349,7 @@ public:
     		sleep(5.0);
     		if(trajexec)
     			group_r->asyncExecute(myPlan);
-    		ret = monitorArmMovement(false,true);
+    		ret = monitorArmMovement(false,true,true);
     	}
     }
 
@@ -392,17 +401,19 @@ public:
     group_l->setNamedTarget("lpregrasp");
     group_r->setNamedTarget("rpregrasp");
     
-    if(!group_l->plan(lplan))
+    if(!multiplan(group_l,&lplan))
       return false;
       
-    if(!group_r->plan(rplan))
+    if(!multiplan(group_r,&rplan))
       return false;
+    
+    sleep(10);
 
     merged_plan = mergePlan(lplan,rplan);
 
     if(trajexec)
     	group_both->asyncExecute(merged_plan);
-    ret = monitorArmMovement(true,true);
+    ret = monitorArmMovement(true,true,true);
 
     return ret;
   }
@@ -504,10 +515,19 @@ public:
       target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
       waypoints_l.push_back(target_pose2_l);
       
+      bool extforceflag = false;
       mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
       if(trajexec)
     	  group_both->asyncExecute(mergedPlan);
-      ret = monitorArmMovement(true,true);
+      ret = monitorArmMovement(true,true,true,&extforceflag);
+      
+      //check for external force and replan
+      if(!ret && extforceflag){
+    	  mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
+          if(trajexec)
+        	  group_both->asyncExecute(mergedPlan);
+          ret = monitorArmMovement(true,true);
+      }      
     }
 
     return ret;    
@@ -638,36 +658,101 @@ public:
     return ret;
   }
 
-
-  bool monitorArmMovement(bool left,bool right){
-
-    ros::Subscriber subscr_l,subscr_r;
+  //HERE  
+  bool extForceDetection(const geometry_msgs::Wrench::ConstPtr& msg){
+	  
+	  double force_z = std::sqrt(msg->force.z * msg->force.z);
+	  
+	  //force in N, torque in Nm
+	  if(force_z > 40){
+		  extforce_lock_.lock();
+		  extforceflag_ = true;
+		  extforce_lock_.unlock();
+	  }
+	  return true;
+  }
+  
+  void wrenchCBL(const geometry_msgs::Wrench::ConstPtr& msg){
+	  //ROS_INFO("LEFT ARM FORCE z:%f",msg->force.z);
+	  extForceDetection(msg);
+  }
+  
+  void wrenchCBR(const geometry_msgs::Wrench::ConstPtr& msg){
+	  //ROS_INFO("RIGHT ARM FORCE z:%f",msg->force.z);
+	  extForceDetection(msg);
+  }
+  
+  
+  
+  /* monitorArmMovement
+   * 
+   * This is the core function to monitor trajectory execution
+   * 
+   * @param left enable monitoring for left arm
+   * @param right enable monitoring for right arm
+   * @param extforce enables checking for a external force
+   * */
+  bool monitorArmMovement(bool left,bool right, bool extforce=false, bool* extforceflag=new bool()){
+	  
+    ros::Subscriber subscr_result_l,subscr_result_r, subscr_force_l, subscr_force_r;
     bool dual_mode = false;
+    
+    *extforceflag = false;
+    
+    //check that at least one arm is set
+    if(!(left || right))
+    	return false;
 
     if(left && right)
-      dual_mode = true;
+    	dual_mode = true;
 
     tje_lock_.lock();
     tje_validation_.dual_flag = 0;
     tje_validation_.finished = false;
     tje_validation_.success = true;//muste be true
     tje_lock_.unlock();
-   
-    if(left)
-      subscr_l = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
-    if(right)
-      subscr_r = node_handle_.subscribe("/right_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);     
-
+    
+    extforce_lock_.lock();
+    extforceflag_ = false;
+    extforce_lock_.unlock();
+    
+    if(left){
+    	subscr_result_l = node_handle_.subscribe("/left_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);  
+    	if(extforce)
+    		subscr_force_l = node_handle_.subscribe("/left_arm_controller/ur_driver/wrench", 1, &SenekaPickAndPlace::wrenchCBL, this);
+    }
+    if(right){
+    	subscr_result_r = node_handle_.subscribe("/right_arm_controller/follow_joint_trajectory/result", 1, &SenekaPickAndPlace::trajectoryStatus, this);
+    	if(extforce)
+        	subscr_force_r = node_handle_.subscribe("/right_arm_controller/ur_driver/wrench", 1, &SenekaPickAndPlace::wrenchCBR, this);
+    }
+    	
     //both needed finished for single mode .. dual_flag for dual mode
     while(!tje_validation_.finished || (dual_mode && (tje_validation_.dual_flag < 2))){
-    	ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
-    	if(tje_validation_.success == false){//break while loop and stop execution when one arm controller fails
+   		ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+   		if(tje_validation_.success == false){//break while loop and stop execution when one arm controller fails
     		this->setStop();
     		break;
     	}
+    	if(extforce){
+    		extforce_lock_.lock();
+    		if(extforceflag_){
+    			*extforceflag = true;
+        		this->setStop();
+        		break;
+    		}
+    		extforce_lock_.unlock();
+     	}
     }
-    subscr_l = ros::Subscriber();//ugly way to unsubscribe
-    subscr_r = ros::Subscriber();//ugly way to unsubscribe
+    
+    //To avoid memory leak
+    if(!extforce)
+    	delete extforceflag;
+    
+    subscr_result_l = ros::Subscriber();//ugly way to unsubscribe
+    subscr_result_r = ros::Subscriber();//ugly way to unsubscribe
+    subscr_force_l = ros::Subscriber();//ugly way to unsubscribe
+    subscr_force_r = ros::Subscriber();//ugly way to unsubscribe
       
     return tje_validation_.success;
   }
@@ -724,6 +809,7 @@ public:
   
   //workaround to check asynch trajectory execution
   //for simulation with gazebo use this topic /left_arm_controller/follow_joint_trajectory/result
+  //Only called once.. after trajectory exec finshed
   //TODO: add error handling (http://mirror.umd.edu/roswiki/doc/diamondback/api/control_msgs/html/msg/FollowJointTrajectoryActionResult.html)
   void trajectoryStatus(const control_msgs::FollowJointTrajectoryActionResult::ConstPtr& msg){
 
@@ -735,12 +821,13 @@ public:
 
     tje_lock_.lock();
     tje_validation_.dual_flag = tje_validation_.dual_flag + 1;
-    if(status == actionlib_msgs::GoalStatus::SUCCEEDED || status == actionlib_msgs::GoalStatus::ABORTED){
+    // -> gazebo sends aborted all the time || status == actionlib_msgs::GoalStatus::ABORTED
+    if(status == actionlib_msgs::GoalStatus::SUCCEEDED){
       tje_validation_.success = true;
     } else {
       tje_validation_.success = false;
     }
-    
+
     tje_validation_.finished = true;
     tje_lock_.unlock();    
   }
