@@ -90,7 +90,7 @@ tf::StampedTransform marker_tf_;
 tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
 //double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
 //double tmp[7] = { 1.05,0.015,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()}; on the front bar
-double tmp[7] = { 0.575,0.0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
+double tmp[7] = { 0.55,0.0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
 std::vector<double> camera7(&tmp[0], &tmp[0]+7);
 
 bool simulation_ = false;

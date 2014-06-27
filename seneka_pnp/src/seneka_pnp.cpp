@@ -45,6 +45,7 @@
 #include <gazebo_msgs/GetModelState.h> 
 
 #include <geometry_msgs/Wrench.h>
+#include <ur_driver/URSetPayload.h>
 
 #include "seneka_pnp/getState.h"
 #include "seneka_pnp/setTransition.h"
@@ -515,14 +516,54 @@ public:
       target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
       waypoints_l.push_back(target_pose2_l);
       
-      bool extforceflag = false;
       mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
       if(trajexec)
     	  group_both->asyncExecute(mergedPlan);
-      ret = monitorArmMovement(true,true,true,&extforceflag);
+      ret = monitorArmMovement(true,true,true);
       
-      //check for external force and replan
+      extforce_lock_.lock();
+      bool extforceflag = extforceflag_;
+      extforce_lock_.unlock();
+      ROS_INFO("ret:%d     extforceflag:%d",ret,extforceflag);
+      //check for external force and replan..
       if(!ret && extforceflag){
+    	  
+    	  ROS_INFO("11111111111111111111");
+    	  
+          waypoints_r.clear();
+          waypoints_l.clear();
+          
+          target_pose2_r = group_r->getCurrentPose().pose;
+          target_pose2_l = group_l->getCurrentPose().pose;
+          
+          target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
+          target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
+          target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+          waypoints_r.push_back(target_pose2_r);
+          
+          target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
+          target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
+          target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
+          waypoints_l.push_back(target_pose2_l);          
+          
+
+          //set the payload through service call
+          ros::ServiceClient client_r = node_handle_.serviceClient<ur_driver::URSetPayload>("/right_arm_controller/ur_driver/setPayload");
+          ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
+          ur_driver::URSetPayload srv_r, srv_l;
+          
+          srv_r.request.payload = 9;
+          srv_l.request.payload = 9;
+          
+          ROS_INFO("22222222222222");
+          
+          if (!client_r.call(srv_r))
+        	 return false;
+          if (!client_l.call(srv_l))
+        	 return false;
+          
+          ROS_INFO("33333333");
+    	  
     	  mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
           if(trajexec)
         	  group_both->asyncExecute(mergedPlan);
@@ -533,6 +574,8 @@ public:
     return ret;    
   }
 
+  //bool smoothSetPayload
+  
   bool toPrePack(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
     bool ret = false;
@@ -692,13 +735,11 @@ public:
    * @param right enable monitoring for right arm
    * @param extforce enables checking for a external force
    * */
-  bool monitorArmMovement(bool left,bool right, bool extforce=false, bool* extforceflag=new bool()){
+  bool monitorArmMovement(bool left,bool right, bool extforce=false){
 	  
     ros::Subscriber subscr_result_l,subscr_result_r, subscr_force_l, subscr_force_r;
     bool dual_mode = false;
-    
-    *extforceflag = false;
-    
+        
     //check that at least one arm is set
     if(!(left || right))
     	return false;
@@ -736,19 +777,15 @@ public:
     	}
     	if(extforce){
     		extforce_lock_.lock();
-    		if(extforceflag_){
-    			*extforceflag = true;
+    		bool extforceflag = extforceflag_;
+    		extforce_lock_.unlock();
+    		if(extforceflag){
         		this->setStop();
         		break;
     		}
-    		extforce_lock_.unlock();
      	}
     }
-    
-    //To avoid memory leak
-    if(!extforce)
-    	delete extforceflag;
-    
+        
     subscr_result_l = ros::Subscriber();//ugly way to unsubscribe
     subscr_result_r = ros::Subscriber();//ugly way to unsubscribe
     subscr_force_l = ros::Subscriber();//ugly way to unsubscribe
