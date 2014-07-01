@@ -171,6 +171,9 @@ public:
     service_computefk = node_handle_.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
     service_gazebo = node_handle_.serviceClient<gazebo_msgs::SetModelState> ("/gazebo/set_model_state");
     service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
+    
+    //set initial payload
+    //smoothSetPayload(0);
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
@@ -408,7 +411,7 @@ public:
     if(!multiplan(group_r,&rplan))
       return false;
     
-    sleep(10);
+    //sleep(10);
 
     merged_plan = mergePlan(lplan,rplan);
 
@@ -516,20 +519,19 @@ public:
       target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
       waypoints_l.push_back(target_pose2_l);
       
-      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
+      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.007);
       if(trajexec)
     	  group_both->asyncExecute(mergedPlan);
-      ret = monitorArmMovement(true,true,true);
+      ret = monitorArmMovement(true,true,true);//stop on external force
       
       extforce_lock_.lock();
       bool extforceflag = extforceflag_;
       extforce_lock_.unlock();
-      ROS_INFO("ret:%d     extforceflag:%d",ret,extforceflag);
+      //ROS_INFO("ret:%d     extforceflag:%d",ret,extforceflag);
+      
       //check for external force and replan..
       if(!ret && extforceflag){
-    	  
-    	  ROS_INFO("11111111111111111111");
-    	  
+    	      	  
           waypoints_r.clear();
           waypoints_l.clear();
           
@@ -552,29 +554,42 @@ public:
           ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
           ur_driver::URSetPayload srv_r, srv_l;
           
-          srv_r.request.payload = 9;
-          srv_l.request.payload = 9;
-          
-          ROS_INFO("22222222222222");
-          
+          srv_r.request.payload = 13;
+          srv_l.request.payload = 13;
+                  
           if (!client_r.call(srv_r))
         	 return false;
           if (!client_l.call(srv_l))
         	 return false;
-          
-          ROS_INFO("33333333");
-    	  
-    	  mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
+              	  
+    	  mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
           if(trajexec)
         	  group_both->asyncExecute(mergedPlan);
           ret = monitorArmMovement(true,true);
-      }      
+      }   
+      ROS_INFO("ret:%d     extforceflag:%d",ret,extforceflag);
     }
 
     return ret;    
   }
 
-  //bool smoothSetPayload
+  bool smoothSetPayload(double payload){
+	  
+      //set the payload through service call
+      ros::ServiceClient client_r = node_handle_.serviceClient<ur_driver::URSetPayload>("/right_arm_controller/ur_driver/setPayload");
+      ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
+      ur_driver::URSetPayload srv_r, srv_l;
+      
+      srv_r.request.payload = payload;
+      srv_l.request.payload = payload;
+            
+      if (!client_r.call(srv_r))
+    	 return false;
+      if (!client_l.call(srv_l))
+    	 return false;
+      
+      return true;
+  }
   
   bool toPrePack(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
@@ -591,7 +606,6 @@ public:
     geometry_msgs::Pose current_pose_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose current_pose_l = group_l->getCurrentPose().pose;    
     
-    ROS_INFO("blabla");
     group_l->setNamedTarget("lprepack");
     group_r->setNamedTarget("rprepack");
     
@@ -1069,7 +1083,7 @@ public:
 
   move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step){
     
-    double visualizationtime = 2;
+    double visualizationtime = 0;
 
     move_group_interface::MoveGroup group_r("right_arm_group");
     move_group_interface::MoveGroup group_l("left_arm_group");
