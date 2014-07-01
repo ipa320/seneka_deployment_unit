@@ -128,7 +128,7 @@ public:
 	  moveit_msgs::JointConstraint jconstraint;
 	  
 	  jconstraint.joint_name = "right_arm_shoulder_pan_joint";
-	  jconstraint.position = -1.04915;
+	  jconstraint.position = 1.04915;
 	  jconstraint.tolerance_above = PI/4;
 	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
@@ -139,7 +139,7 @@ public:
 	  jconstraint.tolerance_above = 0.6;
 	  jconstraint.tolerance_below = 0.6;
 	  jconstraint.weight = 1;
-	  constraint.joint_constraints.push_back(jconstraint);
+	  //constraint.joint_constraints.push_back(jconstraint);
 	  
 	  return constraint;
   }
@@ -152,7 +152,7 @@ public:
 	  
 	  moveit_msgs::JointConstraint jconstraint;	  
 	  jconstraint.joint_name = "left_arm_shoulder_pan_joint";
-	  jconstraint.position = 1.04728;
+	  jconstraint.position = -1.04728;
 	  jconstraint.tolerance_above = PI/4;
 	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
@@ -163,7 +163,7 @@ public:
 	  jconstraint.tolerance_above = 0.6;
 	  jconstraint.tolerance_below = 0.6;
 	  jconstraint.weight = 1;
-	  constraint.joint_constraints.push_back(jconstraint);
+	  //constraint.joint_constraints.push_back(jconstraint);
 	  
 	  return constraint;
   }
@@ -384,10 +384,10 @@ public:
 	  box_marker.type = visualization_msgs::Marker::CUBE;
 	  box_marker.pose.position.x = 0;
 	  box_marker.pose.position.y = 0;
-	  box_marker.pose.position.z = 0.26;
+	  box_marker.pose.position.z = 0.35;
 	  box_marker.scale.x = 0.34;
 	  box_marker.scale.y = 0.34;
-	  box_marker.scale.z = 0.52;
+	  box_marker.scale.z = 0.70;
 	  box_marker.color.r = 0.5;
 	  box_marker.color.g = 0.5;
 	  box_marker.color.b = 0.5;
@@ -576,7 +576,7 @@ public:
 	  
 	  handle_l_.position.x += 0;
 	  handle_l_.position.y += 0.2125;
-	  handle_l_.position.z += 0.51 + gripper_length;
+	  handle_l_.position.z += 0.70 + gripper_length;
 	  handle_l_.orientation.x = 0.0095722;
 	  handle_l_.orientation.y = -0.0108288;
 	  handle_l_.orientation.z = -0.706344;
@@ -584,7 +584,7 @@ public:
 	  
 	  handle_r_.position.x += 0;
 	  handle_r_.position.y -= 0.2125;
-	  handle_r_.position.z += 0.51 + gripper_length;
+	  handle_r_.position.z += 0.70 + gripper_length;
 	  handle_r_.orientation.x = 0;
 	  handle_r_.orientation.y = 0;
 	  handle_r_.orientation.z = 0.706678;
@@ -610,7 +610,7 @@ public:
 	  pose.joint_names_l.push_back("left_arm_wrist_2_joint");
 	  pose.joint_names_l.push_back("left_arm_wrist_3_joint");
 	  
-	  pose.joint_states_r.push_back(-1.10186);
+	  /*pose.joint_states_r.push_back(-1.10186);
 	  pose.joint_states_r.push_back(-1.72479);
 	  pose.joint_states_r.push_back(4.82816);
 	  pose.joint_states_r.push_back(-3.10249);
@@ -622,8 +622,23 @@ public:
 	  pose.joint_states_l.push_back(-4.82702);
 	  pose.joint_states_l.push_back(-0.0431126);
 	  pose.joint_states_l.push_back(-3.61312);
-	  pose.joint_states_l.push_back(3.36654);
+	  pose.joint_states_l.push_back(3.36654);*/
 	  
+	  pose.joint_states_r.push_back(-1.06634);
+	  pose.joint_states_r.push_back(-1.71427);
+	  pose.joint_states_r.push_back(5.24562);
+	  pose.joint_states_r.push_back(-3.53052);
+	  pose.joint_states_r.push_back(-2.63517);
+	  pose.joint_states_r.push_back(-3.34087);
+	  
+	  pose.joint_states_l.push_back(1.06438);
+	  pose.joint_states_l.push_back(-1.42809);
+	  pose.joint_states_l.push_back(-5.2443);
+	  pose.joint_states_l.push_back(0.3851);
+	  pose.joint_states_l.push_back(-3.64876);
+	  pose.joint_states_l.push_back(3.36686);
+	  
+	  	  
 	  pose.pose.position.x = 1.38785;
 	  pose.pose.position.y = 0;
 	  pose.pose.position.z = 0.549912;
