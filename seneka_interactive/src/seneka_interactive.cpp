@@ -132,7 +132,7 @@ public:
 	  jconstraint.tolerance_above = PI/4;
 	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
-	  constraint.joint_constraints.push_back(jconstraint);
+	  //constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "right_arm_shoulder_lift_joint";
 	  jconstraint.position = -1.60908;
@@ -156,7 +156,7 @@ public:
 	  jconstraint.tolerance_above = PI/4;
 	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
-	  constraint.joint_constraints.push_back(jconstraint);
+	  //constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "left_arm_shoulder_lift_joint";
 	  jconstraint.position = -1.53308;
@@ -196,7 +196,7 @@ public:
 		  //left arm
 		  service_request.ik_request.group_name = "left_arm_group";
 		  service_request.ik_request.pose_stamped.pose = target_pose_l;    
-		  service_request.ik_request.constraints = leftArmConstraints();
+		  //service_request.ik_request.constraints = leftArmConstraints();
 		  service_client.call(service_request, service_response);
 
 		  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
@@ -234,7 +234,7 @@ public:
 		  service_request.ik_request.group_name = "right_arm_group"; 
 		  service_request.ik_request.pose_stamped.pose = target_pose_r;    
 		  //if(result)
-			  service_request.ik_request.constraints = transformJointStates(joint_values_l);
+			  //service_request.ik_request.constraints = transformJointStates(joint_values_l);
 		  service_client.call(service_request, service_response);		  
 
 		  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
@@ -270,6 +270,75 @@ public:
 
 		  marker_changed_ = false;		  
 	  }
+  }
+  
+  void simpolateCartesianPath(){
+
+	  double visualizationtime = 5;
+
+	  move_group_interface::MoveGroup group_r("right_arm_group");
+	  move_group_interface::MoveGroup group_l("left_arm_group");	
+	  move_group_interface::MoveGroup group_both("both_arms");	    
+	  
+	  moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
+	  moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, two_arm_plan, mergedPlan;
+ 
+	  //set start state to start_pose
+	  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+	  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+	  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+	  robot_state::JointStateGroup* joint_state_group_r = kinematic_state->getJointStateGroup("right_arm_group");
+	  robot_state::JointStateGroup* joint_state_group_l = kinematic_state->getJointStateGroup("left_arm_group");
+
+	  joint_state_group_r->setVariableValues(start_pose_.joint_states_r); 
+	  joint_state_group_l->setVariableValues(start_pose_.joint_states_l);	    
+
+//	  group_r.setWorkspace (0, 0, 0, 5, 5, 5);
+//	  group_r.setStartState(*kinematic_state);
+//	  group_r.setGoalOrientationTolerance(0.01);
+//	  group_r.setPlanningTime(10.0);
+//
+//	  group_l.setWorkspace (0, 0, 0, 5, 5, 5);
+//	  group_l.setStartState(*kinematic_state);
+//	  group_l.setGoalOrientationTolerance(0.01);
+//	  group_l.setPlanningTime(10.0);
+	  
+	  //group_both.setWorkspace (0, 0, 0, 5, 5, 5);
+	  group_both.setStartState(*kinematic_state);
+	  //group_both.setGoalOrientationTolerance(0.01);
+	  //group_both.setGoalPositionTolerance(5);
+	  group_both.setPlanningTime(60.0);
+
+//	  std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+//	  waypoints_r.clear();
+//	  waypoints_l.clear();
+//
+//	  waypoints_r.push_back(handle_r_);
+//	  waypoints_l.push_back(handle_l_);
+//
+//	  double fraction_r = 0;
+//	  double fraction_l = 0;
+//	  uint attempts = 10;    
+//	  //-------RIGHT-------------------------
+//	  for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
+//		  fraction_r = group_r.computeCartesianPath(waypoints_r,
+//				  0.01,  // eef_step
+//				  1000.0,   // jump_threshold
+//				  trajectory_r);
+//	  }
+//	  linear_plan_r.trajectory_ = trajectory_r;
+//	  sleep(visualizationtime);	  
+	  
+	  
+	  group_both.setPoseTarget(handle_r_, "right_arm_ee_link");
+	  group_both.setPoseTarget(handle_l_, "left_arm_ee_link");
+	  
+	  group_both.plan(two_arm_plan);
+	  
+	  sleep(visualizationtime);
+	  
+	  //delete joint_state_group_r;
+	  //delete joint_state_group_l;	    
   }
   
   //Simulates the planning with cartesian path between a start state and the actual handle positions of the sensorsonde
@@ -446,6 +515,21 @@ public:
 	  server_->applyChanges();
   }
   
+  moveit_msgs::DisplayRobotState DisplayRobotStateFromJointStates(const char *group, std::vector<double> joint_values){
+	  
+	  robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
+	  robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
+	  robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
+	  robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup(group);
+	  
+      joint_state_group_l->setVariableValues(joint_values);
+	  
+	  moveit_msgs::DisplayRobotState msg;
+	  robot_state::robotStateToRobotStateMsg(*kinematic_state_l, msg.state);
+	  //robot_state_publisher_l_.publish( msg ); 
+	  return msg;  
+  }
+  
   //------------ Services -----------------------------------
   bool setStartState(seneka_interactive::setStartState::Request &req,
 		  seneka_interactive::setStartState::Response &res)
@@ -468,6 +552,10 @@ public:
 			  marker.pose = stored_poses[i].pose;
 			  server_->insert(marker);
 			  server_->applyChanges();
+			  
+			  robot_state_publisher_r_.publish( DisplayRobotStateFromJointStates("right_arm_group", stored_poses[i].joint_states_r) );
+			  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", stored_poses[i].joint_states_l) );			  
+			  
 			  return true;		
 		  }
 	  }
@@ -610,7 +698,9 @@ public:
 	  pose.joint_names_l.push_back("left_arm_wrist_2_joint");
 	  pose.joint_names_l.push_back("left_arm_wrist_3_joint");
 	  
-	  /*pose.joint_states_r.push_back(-1.10186);
+	  
+	  //prepack front
+	  pose.joint_states_r.push_back(-1.10186);
 	  pose.joint_states_r.push_back(-1.72479);
 	  pose.joint_states_r.push_back(4.82816);
 	  pose.joint_states_r.push_back(-3.10249);
@@ -622,21 +712,22 @@ public:
 	  pose.joint_states_l.push_back(-4.82702);
 	  pose.joint_states_l.push_back(-0.0431126);
 	  pose.joint_states_l.push_back(-3.61312);
-	  pose.joint_states_l.push_back(3.36654);*/
+	  pose.joint_states_l.push_back(3.36654);
 	  
-	  pose.joint_states_r.push_back(-1.06634);
-	  pose.joint_states_r.push_back(-1.71427);
-	  pose.joint_states_r.push_back(5.24562);
-	  pose.joint_states_r.push_back(-3.53052);
-	  pose.joint_states_r.push_back(-2.63517);
-	  pose.joint_states_r.push_back(-3.34087);
+	  //
+	  /*pose.joint_states_r.push_back(1.55605);
+	  pose.joint_states_r.push_back(-1.43362);
+	  pose.joint_states_r.push_back(-5.15157);
+	  pose.joint_states_r.push_back(0.333291);
+	  pose.joint_states_r.push_back(-0.0127843);
+	  pose.joint_states_r.push_back(2.9103);
 	  
-	  pose.joint_states_l.push_back(1.06438);
-	  pose.joint_states_l.push_back(-1.42809);
-	  pose.joint_states_l.push_back(-5.2443);
-	  pose.joint_states_l.push_back(0.3851);
-	  pose.joint_states_l.push_back(-3.64876);
-	  pose.joint_states_l.push_back(3.36686);
+	  pose.joint_states_l.push_back(-1.55801);
+	  pose.joint_states_l.push_back(-1.73358);
+	  pose.joint_states_l.push_back(-1.1049);
+	  pose.joint_states_l.push_back(2.67448);
+	  pose.joint_states_l.push_back(0.012207);
+	  pose.joint_states_l.push_back(3.53443);*/
 	  
 	  	  
 	  pose.pose.position.x = 1.38785;
@@ -661,7 +752,7 @@ public:
     	
       generateIkSolutions();
       if(simulate_){
-    	  simulateCartesianPath();
+    	  simpolateCartesianPath();
     	  simulate_  = false;
       }
       //ROS_INFO("ALIVE");
