@@ -37,7 +37,7 @@
 #include "seneka_interactive/createNewState.h"
 #include "seneka_interactive/getStates.h"
 #include "seneka_interactive/printStatesToFile.h"
-
+#include "seneka_interactive/toggleArmFreeze.h"
 
 #include <boost/bind.hpp>
 
@@ -61,7 +61,7 @@ class SenekaInteractive
 private:
   ros::NodeHandle node_handle_;
   
-  ros::ServiceServer service_setStartState_, service_simulate_, service_createNewState_, service_getStates_, service_printStatesToFile_;
+  ros::ServiceServer service_setStartState_, service_setGoalState_, service_simulate_, service_createNewState_, service_getStates_, service_printStatesToFile_, service_toggleArmFreeze_;
   
   ros::Publisher robot_state_publisher_l_, robot_state_publisher_r_;
   interactive_markers::InteractiveMarkerServer* server_;
@@ -72,8 +72,10 @@ private:
   std::vector<node_pose> stored_poses; 
   
   bool simulate_;
+  
+  bool freeze_ik_left_, freeze_ik_right_;
 
-  node_pose start_pose_, tmp_pose_;
+  node_pose start_pose_, tmp_pose_, goal_pose_;
   
 public:
   //Constructor
@@ -93,12 +95,17 @@ public:
 	robot_state_publisher_r_ = node_handle_.advertise<moveit_msgs::DisplayRobotState>( "robot_state_r", 1 );
 	
 	service_setStartState_ = node_handle_.advertiseService("seneka_interactive/setStartState", &SenekaInteractive::setStartState, this);
+	service_setGoalState_ = node_handle_.advertiseService("seneka_interactive/setGoalState", &SenekaInteractive::setStartState, this);
 	service_simulate_ = node_handle_.advertiseService("seneka_interactive/simulate", &SenekaInteractive::simulate, this);
 	service_createNewState_ = node_handle_.advertiseService("seneka_interactive/createNewState", &SenekaInteractive::createNewState, this);
 	service_getStates_ = node_handle_.advertiseService("seneka_interactive/getStates", &SenekaInteractive::getStates, this);
 	service_printStatesToFile_ = node_handle_.advertiseService("seneka_interactive/printStatesToFile", &SenekaInteractive::printStatesToFile, this);
+	service_toggleArmFreeze_ = node_handle_.advertiseService("seneka_interactive/toggleArmFreeze", &SenekaInteractive::toggleArmFreeze, this);
 	
 	tmp_pose_.name = "tmp_pose";
+	
+	freeze_ik_right_ = false;
+	freeze_ik_left_ = false;
 	
     marker_changed_ = false;
     simulate_ = false;
@@ -132,10 +139,10 @@ public:
 	  jconstraint.tolerance_above = PI/4;
 	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
-	  //constraint.joint_constraints.push_back(jconstraint);
+	  constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "right_arm_shoulder_lift_joint";
-	  jconstraint.position = -1.60908;
+	  jconstraint.position = 0;
 	  jconstraint.tolerance_above = 0.6;
 	  jconstraint.tolerance_below = 0.6;
 	  jconstraint.weight = 1;
@@ -156,10 +163,10 @@ public:
 	  jconstraint.tolerance_above = PI/4;
 	  jconstraint.tolerance_below = PI/4;
 	  jconstraint.weight = 1;
-	  //constraint.joint_constraints.push_back(jconstraint);
+	  constraint.joint_constraints.push_back(jconstraint);
 	  
 	  jconstraint.joint_name = "left_arm_shoulder_lift_joint";
-	  jconstraint.position = -1.53308;
+	  jconstraint.position = 1.09;
 	  jconstraint.tolerance_above = 0.6;
 	  jconstraint.tolerance_below = 0.6;
 	  jconstraint.weight = 1;
@@ -193,79 +200,84 @@ public:
 		  service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link"; 
 		  service_request.ik_request.avoid_collisions = false;
 
-		  //left arm
-		  service_request.ik_request.group_name = "left_arm_group";
-		  service_request.ik_request.pose_stamped.pose = target_pose_l;    
-		  //service_request.ik_request.constraints = leftArmConstraints();
-		  service_client.call(service_request, service_response);
+		  //freezes ik generation when necessary
+		  if(!freeze_ik_left_){
+			  //left arm
+			  service_request.ik_request.group_name = "left_arm_group";
+			  service_request.ik_request.pose_stamped.pose = target_pose_l;    
+			  service_request.ik_request.constraints = leftArmConstraints();
+			  service_client.call(service_request, service_response);
 
-		  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
-			  
-			  robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
-			  robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
-			  robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
-			  robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup("left_arm_group");
-			  
-			  for(uint i=0; i<6;i++){
+			  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+
+				  robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
+				  robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
+				  robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
+				  robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup("left_arm_group");
+
+				  for(uint i=0; i<6;i++){
 					  std::cout << service_response.solution.joint_state.name[i] << ": ";
 					  std::cout << service_response.solution.joint_state.position[i] << std::endl;			
-					  
+
 					  joint_values_l.push_back(service_response.solution.joint_state.position[i]);  
 					  joint_names_l.push_back(service_response.solution.joint_state.name[i]);
-			  }
-			  
-			  joint_state_group_l->setVariableValues(joint_values_l);
-			  
-			  moveit_msgs::DisplayRobotState msg_l;
-			  robot_state::robotStateToRobotStateMsg(*kinematic_state_l, msg_l.state);
-			  robot_state_publisher_l_.publish( msg_l );  
-			  
-			  ROS_INFO("IK Solution L: TRUE");
-			  result = true;
-			  
-			  tmp_pose_.joint_names_l = joint_names_l;
-			  tmp_pose_.joint_states_l = joint_values_l;
+				  }
 
-		  } else {
-			  ROS_INFO("IK Solution L: FALSE");		  
+				  joint_state_group_l->setVariableValues(joint_values_l);
+
+				  moveit_msgs::DisplayRobotState msg_l;
+				  robot_state::robotStateToRobotStateMsg(*kinematic_state_l, msg_l.state);
+				  robot_state_publisher_l_.publish( msg_l );  
+
+				  ROS_INFO("IK Solution L: TRUE");
+				  result = true;
+
+				  tmp_pose_.joint_names_l = joint_names_l;
+				  tmp_pose_.joint_states_l = joint_values_l;
+
+			  } else {
+				  ROS_INFO("IK Solution L: FALSE");		  
+			  }
 		  }
 
+		  //freezes ik generation when necessary
+		  if(!freeze_ik_right_){
+			  service_request.ik_request.group_name = "right_arm_group"; 
+			  service_request.ik_request.pose_stamped.pose = target_pose_r;    
+			  //if(result)
+			  service_request.ik_request.constraints = transformJointStates(joint_values_l);
+			  service_client.call(service_request, service_response);		  
 
-		  service_request.ik_request.group_name = "right_arm_group"; 
-		  service_request.ik_request.pose_stamped.pose = target_pose_r;    
-		  //if(result)
-			  //service_request.ik_request.constraints = transformJointStates(joint_values_l);
-		  service_client.call(service_request, service_response);		  
+			  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
 
-		  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+				  /* Load the robot model */
+				  robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
+				  robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
+				  robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
+				  robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
 
-			  /* Load the robot model */
-			  robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
-			  robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
-			  robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
-			  robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
-	
-			  for(uint i=6; i<12;i++){
+				  for(uint i=6; i<12;i++){
 					  std::cout << service_response.solution.joint_state.name[i] << ": ";
 					  std::cout << service_response.solution.joint_state.position[i] << std::endl;				
-					  
+
 					  joint_values_r.push_back(service_response.solution.joint_state.position[i]);  
 					  joint_names_r.push_back(service_response.solution.joint_state.name[i]);
+				  }
+
+				  joint_state_group_r->setVariableValues(joint_values_r); 
+
+				  moveit_msgs::DisplayRobotState msg_r;
+				  robot_state::robotStateToRobotStateMsg(*kinematic_state_r, msg_r.state);
+				  robot_state_publisher_r_.publish( msg_r );  
+
+				  ROS_INFO("IK Solution R: TRUE");
+
+				  tmp_pose_.joint_names_r = joint_names_r;
+				  tmp_pose_.joint_states_r = joint_values_r;
+
+			  } else {
+				  ROS_INFO("IK Solution R: FALSE");
 			  }
-			  
-			  joint_state_group_r->setVariableValues(joint_values_r); 
-			  
-			  moveit_msgs::DisplayRobotState msg_r;
-			  robot_state::robotStateToRobotStateMsg(*kinematic_state_r, msg_r.state);
-			  robot_state_publisher_r_.publish( msg_r );  
-
-			  ROS_INFO("IK Solution R: TRUE");
-			  
-			  tmp_pose_.joint_names_r = joint_names_r;
-			  tmp_pose_.joint_states_r = joint_values_r;
-
-		  } else {
-			  ROS_INFO("IK Solution R: FALSE");
 		  }
 
 		  marker_changed_ = false;		  
@@ -307,7 +319,7 @@ public:
 	  group_both.setStartState(*kinematic_state);
 	  //group_both.setGoalOrientationTolerance(0.01);
 	  //group_both.setGoalPositionTolerance(5);
-	  group_both.setPlanningTime(60.0);
+	  group_both.setPlanningTime(15.0);
 
 //	  std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
 //	  waypoints_r.clear();
@@ -329,14 +341,37 @@ public:
 //	  linear_plan_r.trajectory_ = trajectory_r;
 //	  sleep(visualizationtime);	  
 	  
-	  
-	  group_both.setPoseTarget(handle_r_, "right_arm_ee_link");
-	  group_both.setPoseTarget(handle_l_, "left_arm_ee_link");
-	  
-	  group_both.plan(two_arm_plan);
-	  
-	  sleep(visualizationtime);
-	  
+	  std::vector<double> joints_combined;
+	  for(uint i=0; i < goal_pose_.joint_states_l.size(); i++){
+		  joints_combined.push_back(goal_pose_.joint_states_l[i]);
+	  }
+	  for(uint i=0; i < goal_pose_.joint_states_r.size(); i++){
+	  		  joints_combined.push_back(goal_pose_.joint_states_r[i]);
+	  }
+	  group_both.setJointValueTarget(joints_combined);
+	  //group_both.setPoseTarget(handle_r_, "right_arm_ee_link");
+	  //group_both.setPoseTarget(handle_l_, "left_arm_ee_link");
+	  	  
+	  if(group_both.plan(two_arm_plan)){
+		  
+		  //visualize target state and store in tmp_pose_
+		  uint trajectory_size = two_arm_plan.trajectory_.joint_trajectory.points.size();	  
+		  std::vector<double> left, right;
+		  for(uint i = 0; i < two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size-1].positions.size()-6; i++){	
+			  left.push_back(two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size-1].positions[i]);
+		  }
+		  for(uint i = 6; i < two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size-1].positions.size(); i++){	
+			  right.push_back(two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size-1].positions[i]);
+		  }		  
+		  
+		  tmp_pose_.joint_states_r = right;
+		  tmp_pose_.joint_states_l = left;
+		  
+		  robot_state_publisher_r_.publish( DisplayRobotStateFromJointStates("right_arm_group", tmp_pose_.joint_states_r) );
+		  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", tmp_pose_.joint_states_l) );
+	  	  
+		  sleep(visualizationtime);
+	  }
 	  //delete joint_state_group_r;
 	  //delete joint_state_group_l;	    
   }
@@ -562,6 +597,32 @@ public:
 	  return false;
   }  
   
+  bool setGoalState(seneka_interactive::setStartState::Request &req,
+		  seneka_interactive::setStartState::Response &res)
+  {
+	  std::string requested_name = req.name;	  
+	  
+	  for(uint i=0; i < stored_poses.size(); i++){
+		  if(!stored_poses[i].name.compare(requested_name)){
+			  
+			  visualization_msgs::InteractiveMarker marker;
+			  goal_pose_ = stored_poses[i];
+			  
+			  server_->get("my_marker", marker);
+			  marker.pose = stored_poses[i].pose;
+			  server_->insert(marker);
+			  server_->applyChanges();
+			  
+			  robot_state_publisher_r_.publish( DisplayRobotStateFromJointStates("right_arm_group", stored_poses[i].joint_states_r) );
+			  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", stored_poses[i].joint_states_l) );
+			  			  
+			  return true;
+		  }
+	  }
+	  
+	  return false;
+  }
+  
   bool createNewState(seneka_interactive::createNewState::Request &req,
 		  seneka_interactive::createNewState::Response &res)
   {	  
@@ -598,6 +659,23 @@ public:
   {	  
 	  res.msg = "Simulating one iteration!";
 	  simulate_ = true;
+	  return true;
+  }
+  
+  bool toggleArmFreeze(seneka_interactive::toggleArmFreeze::Request &req,
+		  seneka_interactive::toggleArmFreeze::Response &res)
+  {
+	  if(!req.toggle.compare("right")){
+		  freeze_ik_right_ = !freeze_ik_right_;
+	  }
+	  
+	  if(!req.toggle.compare("left")){
+		  freeze_ik_left_ = !freeze_ik_left_;
+	  }
+	  
+	  res.right = freeze_ik_right_;
+	  res.left = freeze_ik_left_;
+	  
 	  return true;
   }
   
@@ -700,7 +778,7 @@ public:
 	  
 	  
 	  //prepack front
-	  pose.joint_states_r.push_back(-1.10186);
+	  /*pose.joint_states_r.push_back(-1.10186);
 	  pose.joint_states_r.push_back(-1.72479);
 	  pose.joint_states_r.push_back(4.82816);
 	  pose.joint_states_r.push_back(-3.10249);
@@ -712,7 +790,7 @@ public:
 	  pose.joint_states_l.push_back(-4.82702);
 	  pose.joint_states_l.push_back(-0.0431126);
 	  pose.joint_states_l.push_back(-3.61312);
-	  pose.joint_states_l.push_back(3.36654);
+	  pose.joint_states_l.push_back(3.36654);*/
 	  
 	  //
 	  /*pose.joint_states_r.push_back(1.55605);
@@ -727,14 +805,106 @@ public:
 	  pose.joint_states_l.push_back(-1.1049);
 	  pose.joint_states_l.push_back(2.67448);
 	  pose.joint_states_l.push_back(0.012207);
-	  pose.joint_states_l.push_back(3.53443);*/
+	  pose.joint_states_l.push_back(3.53443);
 	  
 	  	  
 	  pose.pose.position.x = 1.38785;
 	  pose.pose.position.y = 0;
-	  pose.pose.position.z = 0.549912;
+	  pose.pose.position.z = 0.549912;*/
 	  
+	  //prepack-rear
+	  pose.joint_states_r.clear();
+	  pose.joint_states_l.clear();
+	  pose.name = "prepack-rear";
+	  
+	  pose.joint_states_r.push_back(1.55604);
+	  pose.joint_states_r.push_back(-0.348553);
+	  pose.joint_states_r.push_back(5.15616);
+	  pose.joint_states_r.push_back(-4.77644);
+	  pose.joint_states_r.push_back(-0.0127962);
+	  pose.joint_states_r.push_back(2.91043);
+	  pose.joint_states_l.push_back(-1.558);
+	  pose.joint_states_l.push_back(3.48908);
+	  pose.joint_states_l.push_back(-5.18181);
+	  pose.joint_states_l.push_back(1.52883);
+	  pose.joint_states_l.push_back(0.012214);
+	  pose.joint_states_l.push_back(-2.74885);
+	  
+	  pose.pose.position.x = 1.38785;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.559795;
 	  stored_poses.push_back(pose);
+	  
+	  //prepack-rear-h1
+	  pose.joint_states_r.clear();
+	  pose.joint_states_l.clear();
+	  pose.name = "pack-rear-h1";
+	  
+	  pose.joint_states_r.push_back(1.51768);
+	  pose.joint_states_r.push_back(-0.792404);
+	  pose.joint_states_r.push_back(5.02429);
+	  pose.joint_states_r.push_back(-4.21655);
+	  pose.joint_states_r.push_back(-0.0516187);
+	  pose.joint_states_r.push_back(2.92604);
+	  pose.joint_states_l.push_back(-1.52077);
+	  pose.joint_states_l.push_back(3.9333);
+	  pose.joint_states_l.push_back(-5.02462);
+	  pose.joint_states_l.push_back(1.07018);
+	  pose.joint_states_l.push_back(0.0496036);
+	  pose.joint_states_l.push_back(-2.89095);
+	  
+	  pose.pose.position.x = 0.973123;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.811787;
+	  stored_poses.push_back(pose);
+	  
+	  //prepack-rear-h2
+	  pose.joint_states_r.clear();
+	  pose.joint_states_l.clear();
+	  pose.name = "pack-rear-h2";
+	  
+	  pose.joint_states_r.push_back(1.58951);
+	  pose.joint_states_r.push_back(-1.51218);
+	  pose.joint_states_r.push_back(5.20194);
+	  pose.joint_states_r.push_back(-3.71925);
+	  pose.joint_states_r.push_back(0.0202044);
+	  pose.joint_states_r.push_back(2.9709);
+	  pose.joint_states_l.push_back(-1.59046);
+	  pose.joint_states_l.push_back(4.66994);
+	  pose.joint_states_l.push_back(-5.21461);
+	  pose.joint_states_l.push_back(0.667489);
+	  pose.joint_states_l.push_back(-0.0195688);
+	  pose.joint_states_l.push_back(-3.03647);
+
+	  pose.pose.position.x = 0.354644;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.902303;
+	  stored_poses.push_back(pose);
+	  
+	  
+	  //prepack-rear-h3
+	  pose.joint_states_r.clear();
+	  pose.joint_states_l.clear();
+	  pose.name = "pack-rear-h3";
+	  
+	  pose.joint_states_r.push_back(1.58919);
+	  pose.joint_states_r.push_back(-1.39114);
+	  pose.joint_states_r.push_back(4.40265);
+	  pose.joint_states_r.push_back(-3.0531);
+	  pose.joint_states_r.push_back(0.0194905);
+	  pose.joint_states_r.push_back(2.98281);
+	  pose.joint_states_l.push_back(-1.59022);
+	  pose.joint_states_l.push_back(4.54632);
+	  pose.joint_states_l.push_back(-4.41247);
+	  pose.joint_states_l.push_back(-0.0259836);
+	  pose.joint_states_l.push_back(-0.0208756);
+	  pose.joint_states_l.push_back(-3.02098);
+
+	  pose.pose.position.x = 0.274976;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.529597;
+	  stored_poses.push_back(pose);	  
+	  
 	  
 	  start_pose_ = pose;
   }

@@ -31,6 +31,7 @@ add_service_files(
    createNewState.srv
    getStates.srv
    printStatesToFile.srv
+   toggleArmFreeze.srv
 )
 
 generate_messages(
