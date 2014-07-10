@@ -27,11 +27,14 @@ find_package(Eigen REQUIRED)
 add_service_files(
    FILES
    setStartState.srv
+   setGoalState.srv
    simulate.srv
    createNewState.srv
    getStates.srv
    printStatesToFile.srv
    toggleArmFreeze.srv
+   setJointState.srv
+   getJointStates.srv
 )
 
 generate_messages(

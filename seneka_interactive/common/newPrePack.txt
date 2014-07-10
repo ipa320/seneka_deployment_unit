@@ -1,18 +1,18 @@
 Name: prepack
 ---right---
-right_arm_shoulder_pan_joint: [-1.10186]
-right_arm_shoulder_lift_joint: [-1.72479]
-right_arm_elbow_joint: [4.82816]
-right_arm_wrist_1_joint: [-3.10249]
-right_arm_wrist_2_joint: [-2.67068]
-right_arm_wrist_3_joint: [-3.34081]
+right_arm_shoulder_pan_joint: [1.55605]
+right_arm_shoulder_lift_joint: [-1.43362]
+right_arm_elbow_joint: [-5.15157]
+right_arm_wrist_1_joint: [0.333291]
+right_arm_wrist_2_joint: [-0.0127843]
+right_arm_wrist_3_joint: [2.9103]
 ---left---
-left_arm_shoulder_pan_joint: [1.10002]
-left_arm_shoulder_lift_joint: [-1.41744]
-left_arm_elbow_joint: [-4.82702]
-left_arm_wrist_1_joint: [-0.0431126]
-left_arm_wrist_2_joint: [-3.61312]
-left_arm_wrist_3_joint: [3.36654]
+left_arm_shoulder_pan_joint: [-1.55801]
+left_arm_shoulder_lift_joint: [-1.73358]
+left_arm_elbow_joint: [-1.1049]
+left_arm_wrist_1_joint: [2.67448]
+left_arm_wrist_2_joint: [0.012207]
+left_arm_wrist_3_joint: [3.53443]
  -----Pose-----
 position: 
   x: 1.38785
@@ -47,31 +47,31 @@ orientation:
   w: 0
 
  -----programmatical-----
-pose.joint_states_r.push_back(-1.10186);
-pose.joint_states_r.push_back(-1.72479);
-pose.joint_states_r.push_back(4.82816);
-pose.joint_states_r.push_back(-3.10249);
-pose.joint_states_r.push_back(-2.67068);
-pose.joint_states_r.push_back(-3.34081);
-pose.joint_states_l.push_back(1.10002);
-pose.joint_states_l.push_back(-1.41744);
-pose.joint_states_l.push_back(-4.82702);
-pose.joint_states_l.push_back(-0.0431126);
-pose.joint_states_l.push_back(-3.61312);
-pose.joint_states_l.push_back(3.36654);
+pose.joint_states_r.push_back(1.55605);
+pose.joint_states_r.push_back(-1.43362);
+pose.joint_states_r.push_back(-5.15157);
+pose.joint_states_r.push_back(0.333291);
+pose.joint_states_r.push_back(-0.0127843);
+pose.joint_states_r.push_back(2.9103);
+pose.joint_states_l.push_back(-1.55801);
+pose.joint_states_l.push_back(-1.73358);
+pose.joint_states_l.push_back(-1.1049);
+pose.joint_states_l.push_back(2.67448);
+pose.joint_states_l.push_back(0.012207);
+pose.joint_states_l.push_back(3.53443);
 
-joint_positions_r.push_back(-1.10186);
-joint_positions_r.push_back(-1.72479);
-joint_positions_r.push_back(4.82816);
-joint_positions_r.push_back(-3.10249);
-joint_positions_r.push_back(-2.67068);
-joint_positions_r.push_back(-3.34081);
-joint_positions_l.push_back(1.10002);
-joint_positions_l.push_back(-1.41744);
-joint_positions_l.push_back(-4.82702);
-joint_positions_l.push_back(-0.0431126);
-joint_positions_l.push_back(-3.61312);
-joint_positions_l.push_back(3.36654);
+joint_positions_r.push_back(1.55605);
+joint_positions_r.push_back(-1.43362);
+joint_positions_r.push_back(-5.15157);
+joint_positions_r.push_back(0.333291);
+joint_positions_r.push_back(-0.0127843);
+joint_positions_r.push_back(2.9103);
+joint_positions_l.push_back(-1.55801);
+joint_positions_l.push_back(-1.73358);
+joint_positions_l.push_back(-1.1049);
+joint_positions_l.push_back(2.67448);
+joint_positions_l.push_back(0.012207);
+joint_positions_l.push_back(3.53443);
 -------------------------------------------
 
 
@@ -79,26 +79,26 @@ joint_positions_l.push_back(3.36654);
 
 
 
-Name: newprepack
+Name: newPrePack
 ---right---
-right_arm_shoulder_pan_joint: [-1.05111]
-right_arm_shoulder_lift_joint: [-1.6481]
-right_arm_elbow_joint: [5.13849]
-right_arm_wrist_1_joint: [-3.4896]
-right_arm_wrist_2_joint: [3.66325]
-right_arm_wrist_3_joint: [-3.3409]
+right_arm_shoulder_pan_joint: [1.55604]
+right_arm_shoulder_lift_joint: [-0.348553]
+right_arm_elbow_joint: [5.15616]
+right_arm_wrist_1_joint: [-4.77644]
+right_arm_wrist_2_joint: [-0.0127962]
+right_arm_wrist_3_joint: [2.91043]
 ---left---
-left_arm_shoulder_pan_joint: [1.03034]
-left_arm_shoulder_lift_joint: [-1.48846]
-left_arm_elbow_joint: [-5.14357]
-left_arm_wrist_1_joint: [0.344973]
-left_arm_wrist_2_joint: [2.60038]
-left_arm_wrist_3_joint: [-2.91606]
+left_arm_shoulder_pan_joint: [-1.558]
+left_arm_shoulder_lift_joint: [3.48908]
+left_arm_elbow_joint: [-5.18181]
+left_arm_wrist_1_joint: [1.52883]
+left_arm_wrist_2_joint: [0.012214]
+left_arm_wrist_3_joint: [-2.74885]
  -----Pose-----
 position: 
-  x: 1.35498
-  y: -0.00639564
-  z: 0.593992
+  x: 1.38785
+  y: 0
+  z: 0.559795
 orientation: 
   x: 0
   y: 0
@@ -107,9 +107,9 @@ orientation:
 
  -----handle_r-----
 position: 
-  x: 1.35498
-  y: -0.218896
-  z: 1.55399
+  x: 1.38785
+  y: -0.2125
+  z: 1.5198
 orientation: 
   x: 0
   y: 0
@@ -118,9 +118,9 @@ orientation:
 
  -----handle_l-----
 position: 
-  x: 1.35498
-  y: 0.206104
-  z: 1.55399
+  x: 1.38785
+  y: 0.2125
+  z: 1.5198
 orientation: 
   x: 0.0095722
   y: -0.0108288
@@ -128,31 +128,31 @@ orientation:
   w: 0.707722
 
  -----programmatical-----
-pose.joint_states_r.push_back(-1.05111);
-pose.joint_states_r.push_back(-1.6481);
-pose.joint_states_r.push_back(5.13849);
-pose.joint_states_r.push_back(-3.4896);
-pose.joint_states_r.push_back(3.66325);
-pose.joint_states_r.push_back(-3.3409);
-pose.joint_states_l.push_back(1.03034);
-pose.joint_states_l.push_back(-1.48846);
-pose.joint_states_l.push_back(-5.14357);
-pose.joint_states_l.push_back(0.344973);
-pose.joint_states_l.push_back(2.60038);
-pose.joint_states_l.push_back(-2.91606);
+pose.joint_states_r.push_back(1.55604);
+pose.joint_states_r.push_back(-0.348553);
+pose.joint_states_r.push_back(5.15616);
+pose.joint_states_r.push_back(-4.77644);
+pose.joint_states_r.push_back(-0.0127962);
+pose.joint_states_r.push_back(2.91043);
+pose.joint_states_l.push_back(-1.558);
+pose.joint_states_l.push_back(3.48908);
+pose.joint_states_l.push_back(-5.18181);
+pose.joint_states_l.push_back(1.52883);
+pose.joint_states_l.push_back(0.012214);
+pose.joint_states_l.push_back(-2.74885);
 
-joint_positions_r.push_back(-1.05111);
-joint_positions_r.push_back(-1.6481);
-joint_positions_r.push_back(5.13849);
-joint_positions_r.push_back(-3.4896);
-joint_positions_r.push_back(3.66325);
-joint_positions_r.push_back(-3.3409);
-joint_positions_l.push_back(1.03034);
-joint_positions_l.push_back(-1.48846);
-joint_positions_l.push_back(-5.14357);
-joint_positions_l.push_back(0.344973);
-joint_positions_l.push_back(2.60038);
-joint_positions_l.push_back(-2.91606);
+joint_positions_r.push_back(1.55604);
+joint_positions_r.push_back(-0.348553);
+joint_positions_r.push_back(5.15616);
+joint_positions_r.push_back(-4.77644);
+joint_positions_r.push_back(-0.0127962);
+joint_positions_r.push_back(2.91043);
+joint_positions_l.push_back(-1.558);
+joint_positions_l.push_back(3.48908);
+joint_positions_l.push_back(-5.18181);
+joint_positions_l.push_back(1.52883);
+joint_positions_l.push_back(0.012214);
+joint_positions_l.push_back(-2.74885);
 -------------------------------------------
 
 

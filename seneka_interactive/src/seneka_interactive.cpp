@@ -33,11 +33,14 @@
 
 //services
 #include "seneka_interactive/setStartState.h"
+#include "seneka_interactive/setGoalState.h"
 #include "seneka_interactive/simulate.h"
 #include "seneka_interactive/createNewState.h"
 #include "seneka_interactive/getStates.h"
 #include "seneka_interactive/printStatesToFile.h"
 #include "seneka_interactive/toggleArmFreeze.h"
+#include "seneka_interactive/setJointState.h"
+#include "seneka_interactive/getJointStates.h"
 
 #include <boost/bind.hpp>
 
@@ -62,6 +65,7 @@ private:
   ros::NodeHandle node_handle_;
   
   ros::ServiceServer service_setStartState_, service_setGoalState_, service_simulate_, service_createNewState_, service_getStates_, service_printStatesToFile_, service_toggleArmFreeze_;
+  ros::ServiceServer service_setJointState_, service_getJointStates_;
   
   ros::Publisher robot_state_publisher_l_, robot_state_publisher_r_;
   interactive_markers::InteractiveMarkerServer* server_;
@@ -95,12 +99,14 @@ public:
 	robot_state_publisher_r_ = node_handle_.advertise<moveit_msgs::DisplayRobotState>( "robot_state_r", 1 );
 	
 	service_setStartState_ = node_handle_.advertiseService("seneka_interactive/setStartState", &SenekaInteractive::setStartState, this);
-	service_setGoalState_ = node_handle_.advertiseService("seneka_interactive/setGoalState", &SenekaInteractive::setStartState, this);
+	service_setGoalState_ = node_handle_.advertiseService("seneka_interactive/setGoalState", &SenekaInteractive::setGoalState, this);
 	service_simulate_ = node_handle_.advertiseService("seneka_interactive/simulate", &SenekaInteractive::simulate, this);
 	service_createNewState_ = node_handle_.advertiseService("seneka_interactive/createNewState", &SenekaInteractive::createNewState, this);
 	service_getStates_ = node_handle_.advertiseService("seneka_interactive/getStates", &SenekaInteractive::getStates, this);
 	service_printStatesToFile_ = node_handle_.advertiseService("seneka_interactive/printStatesToFile", &SenekaInteractive::printStatesToFile, this);
 	service_toggleArmFreeze_ = node_handle_.advertiseService("seneka_interactive/toggleArmFreeze", &SenekaInteractive::toggleArmFreeze, this);
+	service_setJointState_ = node_handle_.advertiseService("seneka_interactive/setJointState", &SenekaInteractive::setJointState, this);
+	service_getJointStates_ = node_handle_.advertiseService("seneka_interactive/getJointStates", &SenekaInteractive::getJointStates, this);
 	
 	tmp_pose_.name = "tmp_pose";
 	
@@ -576,6 +582,7 @@ public:
 			  
 			  visualization_msgs::InteractiveMarker marker;
 			  start_pose_ = stored_poses[i];
+			  tmp_pose_ = stored_poses[i];
 			  
 			  res.name = stored_poses[i].name;
 			  res.joint_names_r = stored_poses[i].joint_names_r;
@@ -597,8 +604,8 @@ public:
 	  return false;
   }  
   
-  bool setGoalState(seneka_interactive::setStartState::Request &req,
-		  seneka_interactive::setStartState::Response &res)
+  bool setGoalState(seneka_interactive::setGoalState::Request &req,
+		  seneka_interactive::setGoalState::Response &res)
   {
 	  std::string requested_name = req.name;	  
 	  
@@ -606,7 +613,10 @@ public:
 		  if(!stored_poses[i].name.compare(requested_name)){
 			  
 			  visualization_msgs::InteractiveMarker marker;
+			  tmp_pose_ = stored_poses[i];
 			  goal_pose_ = stored_poses[i];
+			  
+			  res.name = stored_poses[i].name;
 			  
 			  server_->get("my_marker", marker);
 			  marker.pose = stored_poses[i].pose;
@@ -621,6 +631,71 @@ public:
 	  }
 	  
 	  return false;
+  }
+  
+  bool setJointState(seneka_interactive::setJointState::Request &req,
+		  seneka_interactive::setJointState::Response &res)
+  {
+	  node_pose new_pose = tmp_pose_;
+	  new_pose.name = "tmp_pose";
+	  
+	  std::string group = req.group;
+	  uint joint = req.joint;
+	  double value = req.value;
+	  
+	  res.success = false;	  
+	  
+	  if(!group.compare("r")){
+		  
+		  if(joint < new_pose.joint_states_r.size()){
+			  new_pose.joint_states_r[joint] = value;
+		  } else {
+			  return false;
+		  }
+	  } 
+	  else if(!group.compare("l")){
+		  
+		  if(joint < new_pose.joint_states_l.size()){
+			  new_pose.joint_states_l[joint] = value;
+		  } else {
+			  return false;
+		  }
+	  }
+	  else {
+		  return false;
+	  }
+	  
+	  robot_state_publisher_r_.publish( DisplayRobotStateFromJointStates("right_arm_group", new_pose.joint_states_r) );
+	  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", new_pose.joint_states_l) );
+
+	  tmp_pose_ = new_pose; 
+	    
+	  res.success = true;
+	  return res.success;
+  }
+  
+  bool getJointStates(seneka_interactive::getJointStates::Request &req,
+  		  seneka_interactive::getJointStates::Response &res)
+  {
+	  node_pose new_pose = tmp_pose_;
+	  std::string group = req.group;
+	  res.success = false;
+	  
+	  if(!group.compare("r")){
+		  res.name = "right_arm_joints";
+		  res.jointstates = new_pose.joint_states_r;
+		  res.success = true;
+	  } 
+	  else if(!group.compare("l")){
+		  res.name = "left_arm_joints";
+		  res.jointstates = new_pose.joint_states_l;
+		  res.success = true;
+	  } 
+	  else {
+		  return false;
+	  }
+	  
+	  return res.success;	  
   }
   
   bool createNewState(seneka_interactive::createNewState::Request &req,
@@ -817,15 +892,17 @@ public:
 	  pose.joint_states_l.clear();
 	  pose.name = "prepack-rear";
 	  
+	  //5.15616
+	  //-5.18181
 	  pose.joint_states_r.push_back(1.55604);
 	  pose.joint_states_r.push_back(-0.348553);
-	  pose.joint_states_r.push_back(5.15616);
+	  pose.joint_states_r.push_back(-1.12702);
 	  pose.joint_states_r.push_back(-4.77644);
 	  pose.joint_states_r.push_back(-0.0127962);
 	  pose.joint_states_r.push_back(2.91043);
 	  pose.joint_states_l.push_back(-1.558);
 	  pose.joint_states_l.push_back(3.48908);
-	  pose.joint_states_l.push_back(-5.18181);
+	  pose.joint_states_l.push_back(1.12702);
 	  pose.joint_states_l.push_back(1.52883);
 	  pose.joint_states_l.push_back(0.012214);
 	  pose.joint_states_l.push_back(-2.74885);
