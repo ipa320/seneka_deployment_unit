@@ -286,8 +286,36 @@ public:
 			  }
 		  }
 
+		  smartJointValues();
 		  marker_changed_ = false;		  
 	  }
+  }
+  
+  void smartJointValues(){
+	  
+	  for(uint i=0; i < tmp_pose_.joint_states_r.size(); i++){
+		  tmp_pose_.joint_states_r[i] = createSmartJointValue(tmp_pose_.joint_states_r[i]);
+	  }
+	  
+	  for(uint i=0; i < tmp_pose_.joint_states_l.size(); i++){
+		  tmp_pose_.joint_states_l[i] = createSmartJointValue(tmp_pose_.joint_states_l[i]);
+	  }
+	  
+  }
+  
+  double createSmartJointValue(double jointvalue){
+	  
+	  if(jointvalue > PI){
+		  jointvalue -= 2*PI;		  
+	  }
+	  else if(jointvalue < -PI){
+		  jointvalue += 2*PI;
+	  }
+	  else{
+		  //joint value already in shape
+	  }
+	  
+	  return jointvalue;
   }
   
   void simpolateCartesianPath(){
@@ -377,9 +405,7 @@ public:
 		  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", tmp_pose_.joint_states_l) );
 	  	  
 		  sleep(visualizationtime);
-	  }
-	  //delete joint_state_group_r;
-	  //delete joint_state_group_l;	    
+	  }	    
   }
   
   //Simulates the planning with cartesian path between a start state and the actual handle positions of the sensorsonde
@@ -617,6 +643,10 @@ public:
 			  goal_pose_ = stored_poses[i];
 			  
 			  res.name = stored_poses[i].name;
+			  res.joint_names_r = stored_poses[i].joint_names_r;
+			  res.joint_names_l = stored_poses[i].joint_names_l;
+			  res.joint_states_r = stored_poses[i].joint_states_r;
+			  res.joint_states_l = stored_poses[i].joint_states_l;
 			  
 			  server_->get("my_marker", marker);
 			  marker.pose = stored_poses[i].pose;
@@ -649,6 +679,7 @@ public:
 		  
 		  if(joint < new_pose.joint_states_r.size()){
 			  new_pose.joint_states_r[joint] = value;
+			  res.jointstates = new_pose.joint_states_r;
 		  } else {
 			  return false;
 		  }
@@ -657,6 +688,7 @@ public:
 		  
 		  if(joint < new_pose.joint_states_l.size()){
 			  new_pose.joint_states_l[joint] = value;
+			  res.jointstates = new_pose.joint_states_l;
 		  } else {
 			  return false;
 		  }
@@ -669,7 +701,8 @@ public:
 	  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", new_pose.joint_states_l) );
 
 	  tmp_pose_ = new_pose; 
-	    
+	  smartJointValues();
+	  
 	  res.success = true;
 	  return res.success;
   }
@@ -892,16 +925,14 @@ public:
 	  pose.joint_states_l.clear();
 	  pose.name = "prepack-rear";
 	  
-	  //5.15616
-	  //-5.18181
 	  pose.joint_states_r.push_back(1.55604);
 	  pose.joint_states_r.push_back(-0.348553);
 	  pose.joint_states_r.push_back(-1.12702);
-	  pose.joint_states_r.push_back(-4.77644);
+	  pose.joint_states_r.push_back(1.50556);
 	  pose.joint_states_r.push_back(-0.0127962);
 	  pose.joint_states_r.push_back(2.91043);
 	  pose.joint_states_l.push_back(-1.558);
-	  pose.joint_states_l.push_back(3.48908);
+	  pose.joint_states_l.push_back(-2.79);
 	  pose.joint_states_l.push_back(1.12702);
 	  pose.joint_states_l.push_back(1.52883);
 	  pose.joint_states_l.push_back(0.012214);
@@ -912,76 +943,53 @@ public:
 	  pose.pose.position.z = 0.559795;
 	  stored_poses.push_back(pose);
 	  
-	  //prepack-rear-h1
+	  //packed-rear-h1
 	  pose.joint_states_r.clear();
 	  pose.joint_states_l.clear();
-	  pose.name = "pack-rear-h1";
+	  pose.name = "packed-rear-h1";
 	  
-	  pose.joint_states_r.push_back(1.51768);
-	  pose.joint_states_r.push_back(-0.792404);
-	  pose.joint_states_r.push_back(5.02429);
-	  pose.joint_states_r.push_back(-4.21655);
-	  pose.joint_states_r.push_back(-0.0516187);
-	  pose.joint_states_r.push_back(2.92604);
-	  pose.joint_states_l.push_back(-1.52077);
-	  pose.joint_states_l.push_back(3.9333);
-	  pose.joint_states_l.push_back(-5.02462);
-	  pose.joint_states_l.push_back(1.07018);
-	  pose.joint_states_l.push_back(0.0496036);
-	  pose.joint_states_l.push_back(-2.89095);
+	  pose.joint_states_r.push_back(1.60587);
+	  pose.joint_states_r.push_back(-1.01243);
+	  pose.joint_states_r.push_back(-1.98466);
+	  pose.joint_states_r.push_back(2.98633);
+	  pose.joint_states_r.push_back(0.0370389);
+	  pose.joint_states_r.push_back(2.95235);
+	  pose.joint_states_l.push_back(-1.60649);
+	  pose.joint_states_l.push_back(-2.11752);
+	  pose.joint_states_l.push_back(1.97315);
+	  pose.joint_states_l.push_back(0.199017);
+	  pose.joint_states_l.push_back(-0.0364981);
+	  pose.joint_states_l.push_back(-2.96735);
 	  
-	  pose.pose.position.x = 0.973123;
+	  pose.pose.position.x = 0.495247;
 	  pose.pose.position.y = 0;
-	  pose.pose.position.z = 0.811787;
+	  pose.pose.position.z = 0.563951;
+	  stored_poses.push_back(pose);  
+	  
+	  
+	  //packed-rear
+	  pose.joint_states_r.clear();
+	  pose.joint_states_l.clear();
+	  pose.name = "packed-rear";
+	  
+	  pose.joint_states_r.push_back(1.58806);
+	  pose.joint_states_r.push_back(-1.43113);
+	  pose.joint_states_r.push_back(-1.80313);
+	  pose.joint_states_r.push_back(3.21233);
+	  pose.joint_states_r.push_back(0.019241);
+	  pose.joint_states_r.push_back(2.96233);
+	  pose.joint_states_l.push_back(-1.58925);
+	  pose.joint_states_l.push_back(-1.69424);
+	  pose.joint_states_l.push_back(1.79061);
+	  pose.joint_states_l.push_back(0.00715636);
+	  pose.joint_states_l.push_back(-0.0193046);
+	  pose.joint_states_l.push_back(-3.01626);
+	  
+	  pose.pose.position.x = 0.251843;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.559808;
 	  stored_poses.push_back(pose);
-	  
-	  //prepack-rear-h2
-	  pose.joint_states_r.clear();
-	  pose.joint_states_l.clear();
-	  pose.name = "pack-rear-h2";
-	  
-	  pose.joint_states_r.push_back(1.58951);
-	  pose.joint_states_r.push_back(-1.51218);
-	  pose.joint_states_r.push_back(5.20194);
-	  pose.joint_states_r.push_back(-3.71925);
-	  pose.joint_states_r.push_back(0.0202044);
-	  pose.joint_states_r.push_back(2.9709);
-	  pose.joint_states_l.push_back(-1.59046);
-	  pose.joint_states_l.push_back(4.66994);
-	  pose.joint_states_l.push_back(-5.21461);
-	  pose.joint_states_l.push_back(0.667489);
-	  pose.joint_states_l.push_back(-0.0195688);
-	  pose.joint_states_l.push_back(-3.03647);
 
-	  pose.pose.position.x = 0.354644;
-	  pose.pose.position.y = 0;
-	  pose.pose.position.z = 0.902303;
-	  stored_poses.push_back(pose);
-	  
-	  
-	  //prepack-rear-h3
-	  pose.joint_states_r.clear();
-	  pose.joint_states_l.clear();
-	  pose.name = "pack-rear-h3";
-	  
-	  pose.joint_states_r.push_back(1.58919);
-	  pose.joint_states_r.push_back(-1.39114);
-	  pose.joint_states_r.push_back(4.40265);
-	  pose.joint_states_r.push_back(-3.0531);
-	  pose.joint_states_r.push_back(0.0194905);
-	  pose.joint_states_r.push_back(2.98281);
-	  pose.joint_states_l.push_back(-1.59022);
-	  pose.joint_states_l.push_back(4.54632);
-	  pose.joint_states_l.push_back(-4.41247);
-	  pose.joint_states_l.push_back(-0.0259836);
-	  pose.joint_states_l.push_back(-0.0208756);
-	  pose.joint_states_l.push_back(-3.02098);
-
-	  pose.pose.position.x = 0.274976;
-	  pose.pose.position.y = 0;
-	  pose.pose.position.z = 0.529597;
-	  stored_poses.push_back(pose);	  
-	  
 	  
 	  start_pose_ = pose;
   }
