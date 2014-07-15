@@ -1,0 +1,6 @@
+string group
+uint32 joint
+float64 value
+------------------------
+float64[] jointstates
+bool success

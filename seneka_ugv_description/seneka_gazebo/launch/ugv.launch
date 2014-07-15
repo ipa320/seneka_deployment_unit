@@ -23,13 +23,13 @@
   <rosparam file="$(find seneka_ugv_description)/seneka_gazebo/controller/ugv_controller.yaml" command="load"/>
 
  <node name="arm_controller_spawner" pkg="pr2_controller_manager" type="spawner" args="left_arm_controller right_arm_controller" />
-	
+
   <group ns="left_arm_controller">
-	<node name="left_arm_joint_trajectory_action_node" pkg="joint_trajectory_action" type="joint_trajectory_action" />
+<node name="left_arm_joint_trajectory_action_node" pkg="joint_trajectory_action" type="joint_trajectory_action" />
   </group>
 
   <group ns="right_arm_controller">
-	<node name="right_arm_joint_trajectory_action_node" pkg="joint_trajectory_action" type="joint_trajectory_action" />
+<node name="right_arm_joint_trajectory_action_node" pkg="joint_trajectory_action" type="joint_trajectory_action" />
   </group>
-	
+
 </launch>
