@@ -397,6 +397,38 @@ public:
 
     return ret;
   }
+  
+  bool toPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+	  bool ret = false;
+
+	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+	  moveit_msgs::DisplayTrajectory display_trajectory;
+
+	  moveit::planning_interface::MoveGroup::Plan lplan, rplan, merged_plan;
+	  moveit::planning_interface::MoveGroup::Plan myPlan;
+
+	  group_l->setNamedTarget("lpregrasp-rear");
+	  group_r->setNamedTarget("rpregrasp-rear");  
+
+	  if(multiplan(group_l,&myPlan)){
+		  sleep(5.0);
+		  group_l->asyncExecute(myPlan);
+		  ret = monitorArmMovement(true,false);
+	  }
+
+	  //r
+	  if(ret){
+		  ret = false;
+		  if(multiplan(group_r,&myPlan)){
+			  sleep(5.0);
+			  group_r->asyncExecute(myPlan);
+			  ret = monitorArmMovement(false,true);
+		  }
+	  }
+
+	  return ret;
+  }
 
   bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
@@ -1207,6 +1239,13 @@ public:
 				  return "unknown_state";
 			  }
 		  }    
+		  if(transition.compare("toPreGraspRear") == 0){
+			  if(toPreGraspRear(group_l_,group_r_,group_both_)){
+				  return "pregrasp-rear";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }  
 		  return "home";
 	  }
 
@@ -1231,6 +1270,11 @@ public:
 		  } 
 
 		  return "pregrasp";
+	  }
+	  
+	  //------PREGRASP-------------------------------------------
+	  else if(currentState.compare("pregrasp-rear") == 0){
+		  return "pregrasp-rear";
 	  }
 
     //------PICKED_UP-------------------------------------------
