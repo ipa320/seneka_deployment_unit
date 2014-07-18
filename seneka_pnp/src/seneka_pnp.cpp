@@ -17,6 +17,7 @@
 #include <tf/transform_listener.h>
 
 #include <SerializeIO.h>
+#include <seneka_pnp_tools.h>
 
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_msgs/DisplayRobotState.h>
@@ -54,7 +55,6 @@
 #include "control_msgs/FollowJointTrajectoryActionResult.h"
 
 #include <boost/thread/mutex.hpp>
-
 
 class SenekaPickAndPlace
 {
