@@ -30,7 +30,6 @@
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
 #include <moveit_msgs/GetPositionIK.h>
-#include <moveit_msgs/GetPositionFK.h>
 #include <moveit_msgs/MoveItErrorCodes.h>
 #include <moveit_msgs/JointConstraint.h>
 
@@ -116,7 +115,7 @@ private:
   std::string currentState_;
   std::string transition_;
   ros::ServiceServer service_getstate_,service_settransition_,service_setstop_;
-  ros::ServiceClient service_client, service_gazebo, service_gazebo_get, service_computefk;
+  ros::ServiceClient service_client, service_gazebo, service_gazebo_get;
 
   move_group_interface::MoveGroup *group_r_;
   move_group_interface::MoveGroup *group_l_;
@@ -157,7 +156,6 @@ public:
 
     //services to call
     service_client = node_handle_.serviceClient<moveit_msgs::GetPositionIK> ("compute_ik");
-    service_computefk = node_handle_.serviceClient<moveit_msgs::GetPositionFK> ("compute_fk");
     service_gazebo = node_handle_.serviceClient<gazebo_msgs::SetModelState> ("/gazebo/set_model_state");
     service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
 
@@ -710,7 +708,7 @@ public:
     joint_positions_r.push_back(-3.10249);
     joint_positions_r.push_back(-2.67068);
     joint_positions_r.push_back(-3.34081);    
-    my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+    seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
      
     waypoints_l.clear();
     waypoints_r.clear();
@@ -742,7 +740,7 @@ public:
     joint_positions_r.push_back(-3.23071);
     joint_positions_r.push_back(-1.39957);
     joint_positions_r.push_back(-3.34166);   
-    my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+    seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
      
     waypoints_l.clear();
     waypoints_r.clear();
@@ -774,7 +772,7 @@ public:
     joint_positions_r.push_back(-2.53966);
     joint_positions_r.push_back(-1.73551);
     joint_positions_r.push_back(-3.34153);   
-    my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+    seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
      
     waypoints_l.clear();
     waypoints_r.clear();
@@ -858,7 +856,7 @@ public:
 //	  joint_positions_l.push_back(0.012214);
 //	  joint_positions_l.push_back(-2.74885);
 //
-//	  my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+//	  seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
 //	  group_both->setPoseTarget(pose_l, "left_arm_ee_link");
 //	  group_both->setPoseTarget(pose_r, "right_arm_ee_link");	  
 	  
@@ -956,53 +954,6 @@ public:
   }
   
   
-  //
-  void my_forwardkinematics(std::vector<double> &joint_positions_r, std::vector<double> &joint_positions_l, geometry_msgs::Pose *pose_l, geometry_msgs::Pose *pose_r){
-	  
-	    robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
-	    robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
-	    robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
-	    robot_state::JointStateGroup* joint_state_group_l = kinematic_state_l->getJointStateGroup("left_arm_group");  
-	    robot_state::JointStateGroup* joint_state_group_r = kinematic_state_l->getJointStateGroup("right_arm_group"); 
-	    
-	    moveit_msgs::GetPositionFK::Request service_request;
-	    moveit_msgs::GetPositionFK::Response service_response; 
-	    sensor_msgs::JointState js;
-	    
-	    //------left-----------------------
-	    js.name = joint_state_group_l->getJointNames();
-	    js.position = joint_positions_l;
-	    
-	    service_request.header.frame_id = "world_dummy_link";
-	    service_request.fk_link_names.push_back("left_arm_ee_link");
-	    service_request.robot_state.joint_state = js;
-	    
-	    service_computefk.call(service_request, service_response);
-	    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
-	    	for(uint i=0;i<service_response.pose_stamped.size();i++){
-	    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
-	    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
-	    		*pose_l = service_response.pose_stamped[i].pose;
-	    	}
-	    }   
-	    
-	    //-----right-----------------
-	    js.name = joint_state_group_r->getJointNames();
-	    js.position = joint_positions_r;
-	        
-	    service_request.header.frame_id = "world_dummy_link";
-	    service_request.fk_link_names.push_back("right_arm_ee_link");
-	    service_request.robot_state.joint_state = js;
-	    
-	    service_computefk.call(service_request, service_response);
-	    if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
-	    	for(uint i=0;i<service_response.pose_stamped.size();i++){
-	    		std::cout << service_response.pose_stamped[i].pose.position << std::endl;
-	    		std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
-	    		*pose_r = service_response.pose_stamped[i].pose;
-	    	}
-	    }  
-  }
   
   
   //workaround to check asynch trajectory execution
