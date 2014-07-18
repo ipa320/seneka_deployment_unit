@@ -1078,5 +1078,159 @@ int main(int argc, char** argv)
 }
 
 
+/*
+//Only Here that its not lost!!! Bur i don't think this will be used again
+//  std::ofstream outf_;
+//  outf_.open("/home/matthias/data.txt"); 
+ 
+bool workspace_sim(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+    tje_lock_.lock();
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    moveit_msgs::DisplayTrajectory display_trajectory;
+
+    moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
+    moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
+
+    unsigned int used_handle_r = 2;//use the real handle id 1-6
+    unsigned int used_handle_l = 5;//use the real handle id 1-6
+    used_handle_r--;
+    used_handle_l--;
+
+    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+    
+    for(double x = 1.5 ; x <= 1.8 ; x = x + 0.5){
+      for(double y = -0.5 ; y <= 0.5 ; y = y + 0.5){	  
+
+	group_r->setStartStateToCurrentState();      
+	group_l->setStartStateToCurrentState();
+	group_both->setStartStateToCurrentState();
+
+	waypoints_r.clear();
+	waypoints_l.clear();
+
+	setSensornodeState(x,y);
+
+	if(!getSensornodePose()){
+	  return false;
+	}
+
+	geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
+	geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+
+	target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
+	target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
+	target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+	waypoints_r.push_back(target_pose2_r);
+	target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
+	target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
+	target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
+	target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;   
+	waypoints_r.push_back(target_pose2_r);
+	target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
+	target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
+	target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
+	waypoints_r.push_back(target_pose2_r);
+	target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
+	target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
+	target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+	waypoints_r.push_back(target_pose2_r);
+
+	target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
+	target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
+	target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+	waypoints_l.push_back(target_pose2_l);
+	target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
+	target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
+	target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
+	target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+	waypoints_l.push_back(target_pose2_l);
+	target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
+	target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
+	target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
+	waypoints_l.push_back(target_pose2_l);
+	target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
+	target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
+	target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z;
+	waypoints_l.push_back(target_pose2_l);
+
+
+	//-----
+	outf_ << x << " " << y << " ";
+
+	double fraction_r = group_r->computeCartesianPath(waypoints_r,
+				     0.01,  // eef_step
+				     1000.0,   // jump_threshold
+				     trajectory_r);
+
+	double fraction_l = group_l->computeCartesianPath(waypoints_l,
+							  0.01,  // eef_step
+							  1000.0,   // jump_threshold
+							  trajectory_l);
+	
+	//group_r->setPoseTarget(target_pose2_r);
+	//bool plan = group_r->plan(linear_plan_r);
+
+	ROS_INFO("FRACTION: %f", fraction_r);
+	//if(!plan){
+	if(fraction_r < 1.0 || fraction_l < 1.0){
+	   outf_ << "x";
+	} else {
+	  outf_ << 1;
+	}
+	
+	//-----
+	//-----
+	/*bool result = false;
+	moveit_msgs::GetPositionIK::Request service_request;
+	moveit_msgs::GetPositionIK::Response service_response; 
+
+	service_request.ik_request.attempts = 10;
+	service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link"; 
+ 	service_request.ik_request.avoid_collisions = true;
+
+	//left arm
+	service_request.ik_request.group_name = "left_arm_group";
+	service_request.ik_request.pose_stamped.pose = target_pose2_l;    
+	service_client.call(service_request, service_response);
+	
+	if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+	  result = true;
+	} 
+
+	//right arm
+	if(result){
+	  service_request.ik_request.group_name = "right_arm_group"; 
+	  service_request.ik_request.pose_stamped.pose = target_pose2_r;    
+	  service_client.call(service_request, service_response);
+
+	  if(service_response.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS){
+	    result = true;
+	  } else {
+	    result = false;
+	  }
+	}
+
+	outf_ << x << " " << y << " ";
+
+	//result
+	if(result){
+	  outf_ << 1;
+	} else {
+	  outf_ << "x";
+	}*//*
+	
+	outf_  << '\n';	
+	//-----
+
+      }
+      outf_ << '\n';
+    }
+    outf_.close();
+    tje_lock_.unlock(); 
+    return true;
+  }*/
+
+
 
 

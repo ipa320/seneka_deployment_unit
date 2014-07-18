@@ -11,9 +11,10 @@
 #include <ros/ros.h>
 #include <moveit_msgs/GetPositionFK.h>
 
+#include <moveit/move_group_interface/move_group.h>
+
 #include <moveit/robot_state/robot_state.h>
 #include <moveit/robot_state/joint_state_group.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/joint_model_group.h>
 
@@ -70,6 +71,121 @@ namespace seneka_pnp_tools{
 		}  
 	}
 
+	bool multiplan(move_group_interface::MoveGroup* group, moveit::planning_interface::MoveGroup::Plan* plan){
+
+		uint maxattempts = 20;
+		uint attempt = 0;
+
+		bool validplan = false;
+
+		while(!validplan && attempt < maxattempts){
+
+			validplan = group->plan(*plan);
+			attempt++;
+		}
+
+		return validplan;	  
+	}
+	
+	//code from prace project, IPA: Benjamin Maidel
+	move_group_interface::MoveGroup::Plan mergePlan(move_group_interface::MoveGroup::Plan plan1, move_group_interface::MoveGroup::Plan plan2)
+	{
+		move_group_interface::MoveGroup::Plan mergedPlan;
+		mergedPlan = plan1;
+		mergedPlan.trajectory_.joint_trajectory.joint_names.insert(mergedPlan.trajectory_.joint_trajectory.joint_names.end(),
+				plan2.trajectory_.joint_trajectory.joint_names.begin(),
+				plan2.trajectory_.joint_trajectory.joint_names.end());
+
+		size_t i;
+		for(i = 0; (i < mergedPlan.trajectory_.joint_trajectory.points.size())
+		&& (i < plan2.trajectory_.joint_trajectory.points.size()); i++){
+
+			mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
+					mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.end(),
+					plan2.trajectory_.joint_trajectory.points[i].accelerations.begin(),
+					plan2.trajectory_.joint_trajectory.points[i].accelerations.end());
+
+			mergedPlan.trajectory_.joint_trajectory.points[i].positions.insert(
+					mergedPlan.trajectory_.joint_trajectory.points[i].positions.end(),
+					plan2.trajectory_.joint_trajectory.points[i].positions.begin(),
+					plan2.trajectory_.joint_trajectory.points[i].positions.end());
+
+			mergedPlan.trajectory_.joint_trajectory.points[i].velocities.insert(
+					mergedPlan.trajectory_.joint_trajectory.points[i].velocities.end(),
+					plan2.trajectory_.joint_trajectory.points[i].velocities.begin(),
+					plan2.trajectory_.joint_trajectory.points[i].velocities.end());
+		}
+
+		if(plan1.trajectory_.joint_trajectory.points.size() > plan2.trajectory_.joint_trajectory.points.size()){
+
+			for(size_t j = i; j < plan1.trajectory_.joint_trajectory.points.size(); j++){
+
+				mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.insert(
+						mergedPlan.trajectory_.joint_trajectory.points[j].accelerations.end(),
+						plan2.trajectory_.joint_trajectory.points.back().accelerations.begin(),
+						plan2.trajectory_.joint_trajectory.points.back().accelerations.end());
+
+				mergedPlan.trajectory_.joint_trajectory.points[j].positions.insert(
+						mergedPlan.trajectory_.joint_trajectory.points[j].positions.end(),
+						plan2.trajectory_.joint_trajectory.points.back().positions.begin(),
+						plan2.trajectory_.joint_trajectory.points.back().positions.end());
+
+				mergedPlan.trajectory_.joint_trajectory.points[j].velocities.insert(
+						mergedPlan.trajectory_.joint_trajectory.points[j].velocities.end(),
+						plan2.trajectory_.joint_trajectory.points.back().velocities.begin(),
+						plan2.trajectory_.joint_trajectory.points.back().velocities.end());
+			}
+		}
+
+		if(plan1.trajectory_.joint_trajectory.points.size() < plan2.trajectory_.joint_trajectory.points.size()){
+
+			trajectory_msgs::JointTrajectoryPoint point;
+			for(size_t j = i; j < plan2.trajectory_.joint_trajectory.points.size(); j++){
+
+				point  = mergedPlan.trajectory_.joint_trajectory.points.back();
+
+				point.accelerations.insert(
+						point.accelerations.end(),
+						plan2.trajectory_.joint_trajectory.points[j].accelerations.begin(),
+						plan2.trajectory_.joint_trajectory.points[j].accelerations.end());
+
+				point.positions.insert(
+						point.positions.end(),
+						plan2.trajectory_.joint_trajectory.points[j].positions.begin(),
+						plan2.trajectory_.joint_trajectory.points[j].positions.end());
+
+				point.velocities.insert(
+						point.velocities.end(),
+						plan2.trajectory_.joint_trajectory.points[j].velocities.begin(),
+						plan2.trajectory_.joint_trajectory.points[j].velocities.end());
+
+				point.time_from_start = plan2.trajectory_.joint_trajectory.points[j].time_from_start;
+
+				mergedPlan.trajectory_.joint_trajectory.points.push_back(point);
+			}
+		}
+
+		return mergedPlan;
+	}
+
+	moveit::planning_interface::MoveGroup::Plan scaleTrajSpeed(moveit::planning_interface::MoveGroup::Plan plan, double factor){
+
+		std::vector<trajectory_msgs::JointTrajectoryPoint> points = plan.trajectory_.joint_trajectory.points;
+
+		for(uint i = 0; i < points.size();i++){
+
+			for(uint j = 0; j < points[i].velocities.size();j++)
+				points[i].velocities[j] = points[i].velocities[j] * factor;
+			for(uint j = 0; j < points[i].accelerations.size();j++)
+				points[i].velocities[j] = points[i].accelerations[j] * factor * factor;
+
+			points[i].time_from_start = points[i].time_from_start * (1/factor);
+		}
+
+		plan.trajectory_.joint_trajectory.points = points;
+
+		return plan;
+	  }
 
 }
 
