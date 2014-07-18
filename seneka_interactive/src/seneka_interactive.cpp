@@ -920,6 +920,29 @@ public:
 	  pose.pose.position.y = 0;
 	  pose.pose.position.z = 0.549912;*/
 	  
+	  //pregrasp-rear-close
+	  pose.joint_states_r.clear();
+	  pose.joint_states_l.clear();
+	  pose.name = "pregrasp-rear-close";
+	  
+	  pose.joint_states_r.push_back(1.1);
+	  pose.joint_states_r.push_back(-1);
+	  pose.joint_states_r.push_back(2);
+	  pose.joint_states_r.push_back(-1.1);
+	  pose.joint_states_r.push_back(-0.0127962);
+	  pose.joint_states_r.push_back(3.05);
+	  pose.joint_states_l.push_back(-1.1);
+	  pose.joint_states_l.push_back(-2);
+	  pose.joint_states_l.push_back(-2);
+	  pose.joint_states_l.push_back(-2.2);
+	  pose.joint_states_l.push_back(0.012214);
+	  pose.joint_states_l.push_back(3.141);
+	  
+	  pose.pose.position.x = 3;
+	  pose.pose.position.y = 0;
+	  pose.pose.position.z = 0.559795;
+	  stored_poses.push_back(pose);
+	  
 	  
 	  //pregrasp-rear
 	  pose.joint_states_r.clear();

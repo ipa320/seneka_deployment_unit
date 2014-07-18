@@ -31,6 +31,8 @@
 #include <moveit_msgs/GetPositionIK.h>
 #include <moveit_msgs/GetPositionFK.h>
 #include <moveit_msgs/MoveItErrorCodes.h>
+#include <moveit_msgs/JointConstraint.h>
+
 
 #include <moveit/robot_state/robot_state.h>
 #include <moveit/robot_state/joint_state_group.h>
@@ -87,6 +89,8 @@ struct trajectory_execution_validation{
   bool finished;
   bool success;
 };
+
+
   
 private:
   ros::NodeHandle node_handle_;
@@ -430,6 +434,141 @@ public:
 	  return ret;
   }
 
+  bool toPickedUpRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	    bool ret = true;
+	    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+	    
+	    unsigned int used_handle_r = 2;//use the real handle id 1-6
+	    unsigned int used_handle_l = 5;//use the real handle id 1-6
+	    used_handle_r--;
+	    used_handle_l--;
+
+	    moveit::planning_interface::MoveGroup::Plan myPlan, mergedPlan;
+
+	    group_r->setStartStateToCurrentState();      
+	    group_l->setStartStateToCurrentState();
+	    group_both->setStartStateToCurrentState();
+
+	    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+	    geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
+	    geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+
+	    ROS_INFO("handholds:%d", (int)handholds_.size());
+	    if(!getSensornodePose()){
+	      return false;
+	    }
+	    ROS_INFO("handholds:%d", (int)handholds_.size());
+
+	    //set start state to start_pose
+	    robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+	    robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+	    robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+	    robot_state::JointStateGroup* joint_state_group_r = kinematic_state->getJointStateGroup("right_arm_group");
+	    robot_state::JointStateGroup* joint_state_group_l = kinematic_state->getJointStateGroup("left_arm_group");
+	    
+	    std::vector<double> joint_values_r,joint_values_l;
+	    joint_state_group_r->getVariableValues(joint_values_r);
+	    joint_state_group_l->getVariableValues(joint_values_l);
+		  
+	    moveit_msgs::Constraints constraint_l, constraint_r;	  
+	    moveit_msgs::JointConstraint joint_constraint_l, joint_constraint_r;
+	    joint_constraint_l.joint_name = "left_arm_wrist_1_joint";
+	    joint_constraint_l.position = joint_values_l[3];
+	    joint_constraint_l.tolerance_above = M_PI/4;
+	    joint_constraint_l.tolerance_below = M_PI/4;
+	    joint_constraint_l.joint_name = "left_arm_wrist_3_joint";
+	    joint_constraint_l.position = joint_values_l[5];
+	    joint_constraint_l.tolerance_above = M_PI/8;
+	    joint_constraint_l.tolerance_below = M_PI/8;
+	    joint_constraint_r.joint_name = "right_arm_wrist_1_joint";
+	    joint_constraint_r.position = joint_values_r[3];
+	    joint_constraint_r.tolerance_above = M_PI/4;
+	    joint_constraint_r.tolerance_below = M_PI/4;
+	    joint_constraint_r.joint_name = "right_arm_wrist_3_joint";
+	    joint_constraint_r.position = joint_values_r[5];
+	    joint_constraint_r.tolerance_above = M_PI/8;
+	    joint_constraint_r.tolerance_below = M_PI/8;		  
+
+	    constraint_r.joint_constraints.push_back(joint_constraint_r);
+		constraint_l.joint_constraints.push_back(joint_constraint_l);
+		
+		group_r->setPathConstraints(constraint_r);
+		group_l->setPathConstraints(constraint_l);	      
+	    //------------------------Pickup Position/Orientation -------------------------------------------------
+	    waypoints_r.clear();
+	    waypoints_l.clear();
+
+	    target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
+	    target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
+	    target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+	    waypoints_r.push_back(target_pose2_r);
+	    target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
+	    target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
+	    target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
+	    target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+	    waypoints_r.push_back(target_pose2_r);
+
+	    target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
+	    target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
+	    target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+	    waypoints_r.push_back(target_pose2_r);
+	    target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
+	    target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
+	    target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
+	    target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+	    waypoints_l.push_back(target_pose2_l);
+
+	    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
+	    
+	    group_both->asyncExecute(mergedPlan);
+	    ret = monitorArmMovement(true,true);  
+	   	    
+	    //------------------------PICK UP-----------------------------------------------------------------------------
+	    if(ret){
+	      waypoints_r.clear();
+	      waypoints_l.clear();
+
+	      target_pose2_r = group_r->getCurrentPose().pose;
+	      target_pose2_l = group_l->getCurrentPose().pose;
+
+	      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
+	      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
+	      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
+	      target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
+	      target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
+	      target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
+	      target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+	      waypoints_r.push_back(target_pose2_r);
+	      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
+	      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
+	      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+	      waypoints_r.push_back(target_pose2_r);
+
+	      target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
+	      target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
+	      target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
+	      target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
+	      target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
+	      target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
+	      target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+	      waypoints_l.push_back(target_pose2_l);
+	      target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
+	      target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
+	      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
+	      waypoints_l.push_back(target_pose2_l);
+	      
+	      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
+	      group_both->asyncExecute(mergedPlan);
+	      ret = monitorArmMovement(true,true);
+	    }
+	  
+	    group_r->clearPathConstraints();
+	    group_l->clearPathConstraints();
+	    
+	    return ret;
+  }
+  
   bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
     bool ret = true;
@@ -652,6 +791,134 @@ public:
     //deployed_front--------------------------------------------
 
     return ret;
+  }
+  
+  bool toPrePackRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  bool ret = false;
+
+	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+	  moveit_msgs::DisplayTrajectory display_trajectory;
+
+	  moveit::planning_interface::MoveGroup::Plan myPlan;
+
+	  moveit_msgs::Constraints constraint;	  
+	  moveit_msgs::JointConstraint joint_constraint;
+	  joint_constraint.joint_name = "left_arm_shoulder_pan_joint";
+	  joint_constraint.position = -1.55;
+	  joint_constraint.tolerance_above = M_PI/4;
+	  joint_constraint.tolerance_below = M_PI/4;
+	  joint_constraint.joint_name = "right_arm_shoulder_pan_joint";
+	  joint_constraint.position = 1.55;
+	  joint_constraint.tolerance_above = M_PI/4;
+	  joint_constraint.tolerance_below = M_PI/4;
+//	  joint_constraint.joint_name = "left_arm_wrist_1_joint";
+//	  joint_constraint.position = -1.52;
+//	  joint_constraint.tolerance_above = M_PI/4;
+//	  joint_constraint.tolerance_below = M_PI/4;
+//	  joint_constraint.joint_name = "right_arm_wrist_1_joint";
+//	  joint_constraint.position = joint_state_group_r[3];
+//	  joint_constraint.tolerance_above = M_PI/4;
+//	  joint_constraint.tolerance_below = M_PI/4;		  
+			    
+	  constraint.joint_constraints.push_back(joint_constraint);
+	  //group_both->setPathConstraints(constraint);
+	  	  	   
+	  //joint Value Target
+	  std::vector<double> joints_combined;
+	  joints_combined.push_back(-1.558);//l----
+	  joints_combined.push_back(-2.79);
+	  joints_combined.push_back(1.12702);
+	  joints_combined.push_back(-4.762);
+	  joints_combined.push_back(0.012214);
+	  joints_combined.push_back(3.532);
+	  joints_combined.push_back(1.55604);//r----
+	  joints_combined.push_back(-0.348553);
+	  joints_combined.push_back(-1.12702);
+	  joints_combined.push_back(1.50556);
+	  joints_combined.push_back(-0.0127962);
+	  joints_combined.push_back(-3.372);  
+	  group_both->setJointValueTarget(joints_combined);
+	  
+	  //set pose Target from joints	  
+//	  geometry_msgs::Pose pose_l,pose_r;
+//	  std::vector<double> joint_positions_l;
+//	  std::vector<double> joint_positions_r;
+		  
+//	  joint_positions_r.push_back(1.55604);
+//	  joint_positions_r.push_back(-0.348553);
+//	  joint_positions_r.push_back(-1.12702);
+//	  joint_positions_r.push_back(1.50556);
+//	  joint_positions_r.push_back(-0.0127962);
+//	  joint_positions_r.push_back(2.91043);
+//	  joint_positions_l.push_back(-1.558);
+//	  joint_positions_l.push_back(-2.79);
+//	  joint_positions_l.push_back(1.12702);
+//	  joint_positions_l.push_back(1.52883);
+//	  joint_positions_l.push_back(0.012214);
+//	  joint_positions_l.push_back(-2.74885);
+//
+//	  my_forwardkinematics(joint_positions_r, joint_positions_l, &pose_l, &pose_r);
+//	  group_both->setPoseTarget(pose_l, "left_arm_ee_link");
+//	  group_both->setPoseTarget(pose_r, "right_arm_ee_link");	  
+	  
+	  if(multiplan(group_both,&myPlan)){
+		  sleep(5.0);
+		  group_both->asyncExecute(myPlan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  
+	  if(ret){
+		  
+		  joints_combined.clear();
+
+		  joints_combined.push_back(-1.60649);//l
+		  joints_combined.push_back(-2.11752);
+		  joints_combined.push_back(1.97315);
+		  joints_combined.push_back(-6.082);
+		  joints_combined.push_back(-0.0364981);
+		  joints_combined.push_back(3.315);
+		  joints_combined.push_back(1.60587);//r
+		  joints_combined.push_back(-1.01243);
+		  joints_combined.push_back(-1.98466);
+		  joints_combined.push_back(2.98633);
+		  joints_combined.push_back(0.0370389);
+		  joints_combined.push_back(-3.32);
+		  group_both->setJointValueTarget(joints_combined);
+		  
+		  if(multiplan(group_both,&myPlan)){
+			  sleep(5.0);
+			  group_both->asyncExecute(myPlan);
+			  ret = monitorArmMovement(true,true);
+		  }		  
+	  }
+	  
+	  if(ret){
+		  
+		  joints_combined.clear();
+		  
+		  joints_combined.push_back(-1.58925);//l
+		  joints_combined.push_back(-1.69424);
+		  joints_combined.push_back(1.79061);
+		  joints_combined.push_back(-6.082);
+		  joints_combined.push_back(-0.0193046);
+		  joints_combined.push_back(3.26574);
+		  joints_combined.push_back(1.58806);//r
+		  joints_combined.push_back(-1.43113);
+		  joints_combined.push_back(-1.80313);
+		  joints_combined.push_back(3.21233);
+		  joints_combined.push_back(0.019241);
+		  joints_combined.push_back(-3.319);
+		  group_both->setJointValueTarget(joints_combined);
+		  
+		  if(multiplan(group_both,&myPlan)){
+			  sleep(5.0);
+			  group_both->asyncExecute(myPlan);
+			  ret = monitorArmMovement(true,true);
+		  }		  
+	  }
+	  
+	  return ret;
   }
 
 
@@ -958,7 +1225,7 @@ public:
     ROS_INFO("SetModelState : %u", resp.success);
   }
 
-  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step){
+  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 1000.0){
     
     double visualizationtime = 2;
 
@@ -985,7 +1252,7 @@ public:
     for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
       fraction_r = group_r.computeCartesianPath(waypoints_r,
     		  	  	  	eef_step,  // eef_step
-						1000.0,   // jump_threshold
+    		  	  	  	jump_threshold,   // jump_threshold
 						trajectory_r);
       ROS_INFO("fraction_r: %f",fraction_r);
     }
@@ -996,7 +1263,7 @@ public:
     for(uint i=0; fraction_l < 1.0 && i < attempts; i++){
       fraction_l = group_l.computeCartesianPath(waypoints_l,
     		  	   eef_step,  // eef_step
-				   1000.0,   // jump_threshold
+    		  	   jump_threshold,   // jump_threshold
 				   trajectory_l);  
       ROS_INFO("fraction_l :%f",fraction_l);
     }      
@@ -1272,8 +1539,17 @@ public:
 		  return "pregrasp";
 	  }
 	  
-	  //------PREGRASP-------------------------------------------
+	  //------PREGRASP-REAR-------------------------------------------
 	  else if(currentState.compare("pregrasp-rear") == 0){
+		  
+		  if(transition.compare("toPickedUpRear") == 0){
+			  if(toPickedUpRear(group_l_,group_r_,group_both_)){
+				  return "pickedup-rear";
+			  } else {
+				  return "unknown_state";
+			  }
+		  } 
+		  
 		  return "pregrasp-rear";
 	  }
 
@@ -1298,6 +1574,34 @@ public:
 
     	return "pickedup";
     }
+	  
+	  //------PICKED_UP_REAR-------------------------------------------
+    else if(currentState.compare("pickedup-rear") == 0){
+
+    	//Transitions
+    	if(transition.compare("toHome") == 0){
+    		if(toHome(group_l_,group_r_,group_both_)){
+    			return "home";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}    
+    	if(transition.compare("toPreGraspRear") == 0){
+    		if(toPreGraspRear(group_l_,group_r_,group_both_)){
+    			return "pregrasp-rear";
+    		} else {
+    			return "unknown_state";
+    		}
+    	} 
+    	if(transition.compare("toPrePackRear") == 0){
+    		if(toPrePackRear(group_l_,group_r_,group_both_)){
+    			return "prepack-rear";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}
+    	return "pickedup-rear";
+    }
 
     //------PREPACK-------------------------------------------
     else if(currentState.compare("prepack") == 0){
@@ -1312,6 +1616,21 @@ public:
       }    
 
     	return "prepack";
+    }
+	  
+	  //------PREPACK-REAR-------------------------------------------
+    else if(currentState.compare("prepack-rear") == 0){
+
+    	//Transitions
+    	if(transition.compare("toHome") == 0){
+    		if(toHome(group_l_,group_r_,group_both_)){
+    			return "home";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}    
+
+    	return "prepack-rear";
     }
 
 
@@ -1403,7 +1722,7 @@ public:
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
 
-   // workspace_sim(group_l_,group_r_,group_both_);
+    //workspace_sim(group_l_,group_r_,group_both_);
 
 
     ros::Rate loop_rate(1);
