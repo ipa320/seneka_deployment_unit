@@ -13,9 +13,6 @@
 
 #include <opencv/cv.h>
 
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
-
 #include <SerializeIO.h>
 #include <seneka_pnp_tools.h>
 
@@ -57,57 +54,19 @@
 class SenekaPickAndPlace
 {
 
-struct pose{
-  double x;
-  double y;
-  double z;
-};
-
-struct quaternion{
-  double w;
-  double x;
-  double y;
-  double z;
-};
-
-struct pose3d{
-  pose translation;
-  quaternion rotation;
-};
-
-struct handhold{
-  pose3d handle;
-  pose3d entry;
-  pose3d up;
-  pose3d down;
-};
-
 struct trajectory_execution_validation{
   unsigned int dual_flag;
   bool finished;
   bool success;
 };
+
   
 private:
   ros::NodeHandle node_handle_;
-  std::vector<handhold> handholds_;
-  pose3d sensornode_;
 
   ros::Subscriber subscr_;
   
   std::vector<std::vector<double> > teached_wayp_r, teached_wayp_l;
-
-  tf::TransformListener listener;
-  tf::StampedTransform transform;
-
-  tf::TransformListener listener_entry;
-  tf::StampedTransform transform_entry;
-
-  tf::TransformListener listener_up;
-  tf::StampedTransform transform_up;
-    
-  tf::TransformListener listener_down;
-  tf::StampedTransform transform_down;
 
   std::string currentState_;
   std::string transition_;
@@ -303,11 +262,13 @@ public:
 	    geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
 	    geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
 
-	    ROS_INFO("handholds:%d", (int)handholds_.size());
-	    if(!getSensornodePose()){
-	      return false;
-	    }
-	    ROS_INFO("handholds:%d", (int)handholds_.size());
+	    tje_lock_.lock(); 
+	    sensornode node = seneka_pnp_tools::getSensornodePose();
+	    tje_lock_.unlock(); 
+	    if(!node.success)
+	    	return false;
+	    
+	    ROS_INFO("handholds:%d", (int)node.handholds.size());
 
 	    //set start state to start_pose
 	    robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
@@ -348,24 +309,24 @@ public:
 	    waypoints_r.clear();
 	    waypoints_l.clear();
 
-	    target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
-	    target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
-	    target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+	    target_pose2_r.position.x = node.handholds[used_handle_r].entry.translation.x;
+	    target_pose2_r.position.y = node.handholds[used_handle_r].entry.translation.y;
+	    target_pose2_r.position.z = node.handholds[used_handle_r].entry.translation.z;
 	    waypoints_r.push_back(target_pose2_r);
-	    target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
-	    target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
-	    target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
-	    target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+	    target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
+	    target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
+	    target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
+	    target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
 	    waypoints_r.push_back(target_pose2_r);
 
-	    target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
-	    target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
-	    target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+	    target_pose2_l.position.x = node.handholds[used_handle_l].entry.translation.x;
+	    target_pose2_l.position.y = node.handholds[used_handle_l].entry.translation.y;
+	    target_pose2_l.position.z = node.handholds[used_handle_l].entry.translation.z;
 	    waypoints_r.push_back(target_pose2_r);
-	    target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
-	    target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
-	    target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
-	    target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+	    target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
+	    target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
+	    target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
+	    target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
 	    waypoints_l.push_back(target_pose2_l);
 
 	    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
@@ -381,30 +342,30 @@ public:
 	      target_pose2_r = group_r->getCurrentPose().pose;
 	      target_pose2_l = group_l->getCurrentPose().pose;
 
-	      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
-	      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
-	      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
-	      target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
-	      target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
-	      target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
-	      target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+	      target_pose2_r.position.x = node.handholds[used_handle_r].down.translation.x;
+	      target_pose2_r.position.y = node.handholds[used_handle_r].down.translation.y;
+	      target_pose2_r.position.z = node.handholds[used_handle_r].down.translation.z;
+	      target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
+	      target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
+	      target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
+	      target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
 	      waypoints_r.push_back(target_pose2_r);
-	      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
-	      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
-	      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+	      target_pose2_r.position.x = node.handholds[used_handle_r].up.translation.x;
+	      target_pose2_r.position.y = node.handholds[used_handle_r].up.translation.y;
+	      target_pose2_r.position.z = node.handholds[used_handle_r].up.translation.z;
 	      waypoints_r.push_back(target_pose2_r);
 
-	      target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
-	      target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
-	      target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
-	      target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
-	      target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
-	      target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
-	      target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+	      target_pose2_l.position.x = node.handholds[used_handle_l].down.translation.x;
+	      target_pose2_l.position.y = node.handholds[used_handle_l].down.translation.y;
+	      target_pose2_l.position.z = node.handholds[used_handle_l].down.translation.z;
+	      target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
+	      target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
+	      target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
+	      target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
 	      waypoints_l.push_back(target_pose2_l);
-	      target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
-	      target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
-	      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
+	      target_pose2_l.position.x = node.handholds[used_handle_l].up.translation.x;
+	      target_pose2_l.position.y = node.handholds[used_handle_l].up.translation.y;
+	      target_pose2_l.position.z = node.handholds[used_handle_l].up.translation.z; 
 	      waypoints_l.push_back(target_pose2_l);
 	      
 	      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
@@ -438,37 +399,38 @@ public:
     geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
 
-    ROS_INFO("handholds:%d", (int)handholds_.size());
-    if(!getSensornodePose()){
-      return false;
-    }
-    ROS_INFO("handholds:%d", (int)handholds_.size());
+    tje_lock_.lock(); 
+    sensornode node = seneka_pnp_tools::getSensornodePose();
+    tje_lock_.unlock(); 
+    if(!node.success)
+    	return false;
+    ROS_INFO("handholds:%d", (int)node.handholds.size());
       
     //------------------------Pickup Position/Orientation -------------------------------------------------
     waypoints_r.clear();
     waypoints_l.clear();
 
-    target_pose2_r.position.x = handholds_[used_handle_r].entry.translation.x;
-    target_pose2_r.position.y = handholds_[used_handle_r].entry.translation.y;
-    target_pose2_r.position.z = handholds_[used_handle_r].entry.translation.z;
+    target_pose2_r.position.x = node.handholds[used_handle_r].entry.translation.x;
+    target_pose2_r.position.y = node.handholds[used_handle_r].entry.translation.y;
+    target_pose2_r.position.z = node.handholds[used_handle_r].entry.translation.z;
     waypoints_r.push_back(target_pose2_r);
-    target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
-    target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
-    target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
-    target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+    target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
+    target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
+    target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
+    target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
     waypoints_r.push_back(target_pose2_r);
     waypoints_r.push_back(target_pose2_r);
     waypoints_r.push_back(target_pose2_r);
     waypoints_r.push_back(target_pose2_r);
 
-    target_pose2_l.position.x = handholds_[used_handle_l].entry.translation.x;
-    target_pose2_l.position.y = handholds_[used_handle_l].entry.translation.y;
-    target_pose2_l.position.z = handholds_[used_handle_l].entry.translation.z;
+    target_pose2_l.position.x = node.handholds[used_handle_l].entry.translation.x;
+    target_pose2_l.position.y = node.handholds[used_handle_l].entry.translation.y;
+    target_pose2_l.position.z = node.handholds[used_handle_l].entry.translation.z;
     waypoints_l.push_back(target_pose2_l);
-    target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
-    target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
-    target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
-    target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+    target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
+    target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
+    target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
+    target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
     waypoints_l.push_back(target_pose2_l);
     waypoints_l.push_back(target_pose2_l); 
     waypoints_l.push_back(target_pose2_l);
@@ -488,30 +450,30 @@ public:
       target_pose2_r = group_r->getCurrentPose().pose;
       target_pose2_l = group_l->getCurrentPose().pose;
 
-      target_pose2_r.position.x = handholds_[used_handle_r].down.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].down.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].down.translation.z;
-      target_pose2_r.orientation.w = handholds_[used_handle_r].entry.rotation.w;
-      target_pose2_r.orientation.x = handholds_[used_handle_r].entry.rotation.x;
-      target_pose2_r.orientation.y = handholds_[used_handle_r].entry.rotation.y;
-      target_pose2_r.orientation.z = handholds_[used_handle_r].entry.rotation.z;
+      target_pose2_r.position.x = node.handholds[used_handle_r].down.translation.x;
+      target_pose2_r.position.y = node.handholds[used_handle_r].down.translation.y;
+      target_pose2_r.position.z = node.handholds[used_handle_r].down.translation.z;
+      target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
+      target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
+      target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
+      target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
       waypoints_r.push_back(target_pose2_r);
-      target_pose2_r.position.x = handholds_[used_handle_r].up.translation.x;
-      target_pose2_r.position.y = handholds_[used_handle_r].up.translation.y;
-      target_pose2_r.position.z = handholds_[used_handle_r].up.translation.z;
+      target_pose2_r.position.x = node.handholds[used_handle_r].up.translation.x;
+      target_pose2_r.position.y = node.handholds[used_handle_r].up.translation.y;
+      target_pose2_r.position.z = node.handholds[used_handle_r].up.translation.z;
       waypoints_r.push_back(target_pose2_r);
 
-      target_pose2_l.position.x = handholds_[used_handle_l].down.translation.x;
-      target_pose2_l.position.y = handholds_[used_handle_l].down.translation.y;
-      target_pose2_l.position.z = handholds_[used_handle_l].down.translation.z;
-      target_pose2_l.orientation.w = handholds_[used_handle_l].entry.rotation.w;
-      target_pose2_l.orientation.x = handholds_[used_handle_l].entry.rotation.x;
-      target_pose2_l.orientation.y = handholds_[used_handle_l].entry.rotation.y;
-      target_pose2_l.orientation.z = handholds_[used_handle_l].entry.rotation.z;
+      target_pose2_l.position.x = node.handholds[used_handle_l].down.translation.x;
+      target_pose2_l.position.y = node.handholds[used_handle_l].down.translation.y;
+      target_pose2_l.position.z = node.handholds[used_handle_l].down.translation.z;
+      target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
+      target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
+      target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
+      target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
       waypoints_l.push_back(target_pose2_l);
-      target_pose2_l.position.x = handholds_[used_handle_l].up.translation.x;
-      target_pose2_l.position.y = handholds_[used_handle_l].up.translation.y;
-      target_pose2_l.position.z = handholds_[used_handle_l].up.translation.z; 
+      target_pose2_l.position.x = node.handholds[used_handle_l].up.translation.x;
+      target_pose2_l.position.y = node.handholds[used_handle_l].up.translation.y;
+      target_pose2_l.position.z = node.handholds[used_handle_l].up.translation.z; 
       waypoints_l.push_back(target_pose2_l);
       
       mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
@@ -884,21 +846,23 @@ public:
 
   bool sensornodePosValid()
   {
-	  if(!getSensornodePose()){
-		  return false;
-	  }
+	  tje_lock_.lock(); 
+	  sensornode node = seneka_pnp_tools::getSensornodePose();
+	  tje_lock_.unlock();
+	  if(!node.success)
+		  return false; 
 
 	  double x_lower_bound =  1.3;
 	  double x_upper_bound =  1.7;
 	  double y_lower_bound = -0.2;
 	  double y_upper_bound =  0.2;
 
-	  ROS_INFO("Sensornode pose is X:%f Y:%f", sensornode_.translation.x, sensornode_.translation.y);
+	  ROS_INFO("Sensornode pose is X:%f Y:%f", node.pose.translation.x, node.pose.translation.y);
 	  ROS_INFO("Bounds X: %f and %f", x_lower_bound, x_upper_bound);
 	  ROS_INFO("Bounds Y: %f and %f", y_lower_bound, y_upper_bound);
 
-	  if((x_lower_bound < sensornode_.translation.x && sensornode_.translation.x < x_upper_bound) &&
-			  (y_lower_bound < sensornode_.translation.y && sensornode_.translation.y < y_upper_bound)){
+	  if((x_lower_bound < node.pose.translation.x && node.pose.translation.x < x_upper_bound) &&
+			  (y_lower_bound < node.pose.translation.y && node.pose.translation.y < y_upper_bound)){
 		  return true;	  
 	  }   
 
@@ -955,128 +919,7 @@ public:
 
     ROS_INFO("SetModelState : %u", resp.success);
   }
-  
-  //HERE
-  bool getSensornodePose(){
-
-	  tje_lock_.lock();  
-	  handholds_.clear();
-
-	  int ret = true;  
-
-	  //sensornode pose
-	  try{
-		  listener.waitForTransform("/quanjo_body", "/sensornode" , ros::Time::now(), ros::Duration(0.2));
-		  listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0), transform);
-	  }
-	  catch (tf::TransformException ex){
-		  ROS_ERROR("%s",ex.what());
-		  ret = false;
-	  }
-
-	  sensornode_.translation.x = transform.getOrigin().x();
-	  sensornode_.translation.y = transform.getOrigin().y();
-	  sensornode_.translation.z = transform.getOrigin().z();
-
-	  sensornode_.rotation.w = transform.getRotation().getW();
-	  sensornode_.rotation.x = transform.getRotation().getX();
-	  sensornode_.rotation.y = transform.getRotation().getY();
-	  sensornode_.rotation.z = transform.getRotation().getZ();
-
-
-	  //handholds and helper points
-	  for(unsigned int i = 1; i < 7;i++){
-
-		  //get all tf transformations
-		  char name[50];
-
-		  sprintf(name,"handle%u",i);
-		  try{
-			  listener.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-			  listener.lookupTransform("/quanjo_body", name, ros::Time(0), transform);
-		  }
-		  catch (tf::TransformException ex){
-			  ROS_ERROR("%s",ex.what());
-			  ret = false;
-		  }
-
-		  sprintf(name,"grab_entry%u",i);
-		  try{
-			  listener_entry.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-			  listener_entry.lookupTransform("/quanjo_body", name, ros::Time(0), transform_entry);
-		  }
-		  catch (tf::TransformException ex){
-			  ROS_ERROR("%s",ex.what());
-			  ret = false;
-		  }
-
-		  sprintf(name,"trigger_%u_up",i);
-		  try{
-			  listener_up.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-			  listener_up.lookupTransform("/quanjo_body", name, ros::Time(0), transform_up);
-		  }
-		  catch (tf::TransformException ex){
-			  ROS_ERROR("%s",ex.what());
-			  ret = false;
-		  }
-
-		  sprintf(name,"trigger_%u_down",i);
-		  try{
-			  listener_down.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
-			  listener_down.lookupTransform("/quanjo_body", name, ros::Time(0), transform_down);
-		  }
-		  catch (tf::TransformException ex){
-			  ROS_ERROR("%s",ex.what());
-			  ret = false;
-		  }
-
-		  handhold handh;
-		  //handle
-		  handh.handle.translation.x = transform.getOrigin().x();
-		  handh.handle.translation.y = transform.getOrigin().y();
-		  handh.handle.translation.z = transform.getOrigin().z();
-
-		  handh.handle.rotation.w = transform.getRotation().getW();
-		  handh.handle.rotation.x = transform.getRotation().getX();
-		  handh.handle.rotation.y = transform.getRotation().getY();
-		  handh.handle.rotation.z = transform.getRotation().getZ();
-
-		  //entry
-		  handh.entry.translation.x = transform_entry.getOrigin().x();
-		  handh.entry.translation.y = transform_entry.getOrigin().y();
-		  handh.entry.translation.z = transform_entry.getOrigin().z();
-
-		  handh.entry.rotation.w = transform_entry.getRotation().getW();
-		  handh.entry.rotation.x = transform_entry.getRotation().getX();
-		  handh.entry.rotation.y = transform_entry.getRotation().getY();
-		  handh.entry.rotation.z = transform_entry.getRotation().getZ();
-
-		  //up
-		  handh.up.translation.x = transform_up.getOrigin().x();
-		  handh.up.translation.y = transform_up.getOrigin().y();
-		  handh.up.translation.z = transform_up.getOrigin().z();
-
-		  handh.up.rotation.w = transform_up.getRotation().getW();
-		  handh.up.rotation.x = transform_up.getRotation().getX();
-		  handh.up.rotation.y = transform_up.getRotation().getY();
-		  handh.up.rotation.z = transform_up.getRotation().getZ();
-
-		  //down
-		  handh.down.translation.x = transform_down.getOrigin().x();
-		  handh.down.translation.y = transform_down.getOrigin().y();
-		  handh.down.translation.z = transform_down.getOrigin().z();
-
-		  handh.down.rotation.w = transform_down.getRotation().getW();
-		  handh.down.rotation.x = transform_down.getRotation().getX();
-		  handh.down.rotation.y = transform_down.getRotation().getY();
-		  handh.down.rotation.z = transform_down.getRotation().getZ();      
-
-		  handholds_.push_back(handh);
-	  }
-	  tje_lock_.unlock();
-	  return ret;
-  }
-  
+    
   std::string getTransition(){
     return transition_;
   } 

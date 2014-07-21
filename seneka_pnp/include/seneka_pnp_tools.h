@@ -18,7 +18,166 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/joint_model_group.h>
 
+#include <tf/transform_listener.h>
+
+struct pose{
+  double x;
+  double y;
+  double z;
+};
+
+struct quaternion{
+  double w;
+  double x;
+  double y;
+  double z;
+};
+
+struct pose3d{
+  pose translation;
+  quaternion rotation;
+};
+
+struct handhold{
+  pose3d handle;
+  pose3d entry;
+  pose3d up;
+  pose3d down;
+};
+
+struct sensornode{	
+	bool success;
+	pose3d pose;
+	std::vector<handhold> handholds;
+};
+
 namespace seneka_pnp_tools{
+
+sensornode getSensornodePose(){
+	
+	  tf::TransformListener listener;
+	  tf::StampedTransform transform;
+	  tf::TransformListener listener_entry;
+	  tf::StampedTransform transform_entry;
+	  tf::TransformListener listener_up;
+	  tf::StampedTransform transform_up;  
+	  tf::TransformListener listener_down;
+	  tf::StampedTransform transform_down;
+
+	  sensornode node;
+	  node.success = true;
+
+	  //sensornode pose
+	  try{
+		  listener.waitForTransform("/quanjo_body", "/sensornode" , ros::Time::now(), ros::Duration(0.2));
+		  listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0), transform);
+	  }
+	  catch (tf::TransformException ex){
+		  ROS_ERROR("%s",ex.what());
+		  node.success = false;
+	  }
+
+	  node.pose.translation.x = transform.getOrigin().x();
+	  node.pose.translation.y = transform.getOrigin().y();
+	  node.pose.translation.z = transform.getOrigin().z();
+
+	  node.pose.rotation.w = transform.getRotation().getW();
+	  node.pose.rotation.x = transform.getRotation().getX();
+	  node.pose.rotation.y = transform.getRotation().getY();
+	  node.pose.rotation.z = transform.getRotation().getZ();
+
+
+	  //handholds and helper points
+	  for(unsigned int i = 1; i < 7;i++){
+
+		  //get all tf transformations
+		  char name[50];
+
+		  sprintf(name,"handle%u",i);
+		  try{
+			  listener.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener.lookupTransform("/quanjo_body", name, ros::Time(0), transform);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  node.success = false;
+		  }
+
+		  sprintf(name,"grab_entry%u",i);
+		  try{
+			  listener_entry.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener_entry.lookupTransform("/quanjo_body", name, ros::Time(0), transform_entry);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  node.success = false;
+		  }
+
+		  sprintf(name,"trigger_%u_up",i);
+		  try{
+			  listener_up.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener_up.lookupTransform("/quanjo_body", name, ros::Time(0), transform_up);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  node.success = false;
+		  }
+
+		  sprintf(name,"trigger_%u_down",i);
+		  try{
+			  listener_down.waitForTransform("/quanjo_body", name , ros::Time::now(), ros::Duration(0.2));
+			  listener_down.lookupTransform("/quanjo_body", name, ros::Time(0), transform_down);
+		  }
+		  catch (tf::TransformException ex){
+			  ROS_ERROR("%s",ex.what());
+			  node.success = false;
+		  }
+
+		  handhold handh;
+		  //handle
+		  handh.handle.translation.x = transform.getOrigin().x();
+		  handh.handle.translation.y = transform.getOrigin().y();
+		  handh.handle.translation.z = transform.getOrigin().z();
+
+		  handh.handle.rotation.w = transform.getRotation().getW();
+		  handh.handle.rotation.x = transform.getRotation().getX();
+		  handh.handle.rotation.y = transform.getRotation().getY();
+		  handh.handle.rotation.z = transform.getRotation().getZ();
+
+		  //entry
+		  handh.entry.translation.x = transform_entry.getOrigin().x();
+		  handh.entry.translation.y = transform_entry.getOrigin().y();
+		  handh.entry.translation.z = transform_entry.getOrigin().z();
+
+		  handh.entry.rotation.w = transform_entry.getRotation().getW();
+		  handh.entry.rotation.x = transform_entry.getRotation().getX();
+		  handh.entry.rotation.y = transform_entry.getRotation().getY();
+		  handh.entry.rotation.z = transform_entry.getRotation().getZ();
+
+		  //up
+		  handh.up.translation.x = transform_up.getOrigin().x();
+		  handh.up.translation.y = transform_up.getOrigin().y();
+		  handh.up.translation.z = transform_up.getOrigin().z();
+
+		  handh.up.rotation.w = transform_up.getRotation().getW();
+		  handh.up.rotation.x = transform_up.getRotation().getX();
+		  handh.up.rotation.y = transform_up.getRotation().getY();
+		  handh.up.rotation.z = transform_up.getRotation().getZ();
+
+		  //down
+		  handh.down.translation.x = transform_down.getOrigin().x();
+		  handh.down.translation.y = transform_down.getOrigin().y();
+		  handh.down.translation.z = transform_down.getOrigin().z();
+
+		  handh.down.rotation.w = transform_down.getRotation().getW();
+		  handh.down.rotation.x = transform_down.getRotation().getX();
+		  handh.down.rotation.y = transform_down.getRotation().getY();
+		  handh.down.rotation.z = transform_down.getRotation().getZ();      
+
+		  node.handholds.push_back(handh);
+	  }
+	  return node;
+  }
 
 	//wrapper for calling the fk service due to some failures when using it with move_group.h
 	void fk_solver(ros::NodeHandle *node_handle, std::vector<double> &joint_positions_r, std::vector<double> &joint_positions_l, geometry_msgs::Pose *pose_l, geometry_msgs::Pose *pose_r){
