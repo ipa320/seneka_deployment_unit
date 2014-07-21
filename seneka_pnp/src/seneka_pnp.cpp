@@ -304,6 +304,9 @@ public:
 	    waypoints_r.clear();
 	    waypoints_l.clear();
 	    
+	    target_pose_r = group_r->getCurrentPose().pose;
+	    target_pose_l = group_l->getCurrentPose().pose;
+	    	      
 	    target_pose_r.position = node.handholds[used_handle_r].entry.position;
 	    waypoints_r.push_back(target_pose_r);
 	    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
