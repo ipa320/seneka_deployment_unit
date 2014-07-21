@@ -1229,7 +1229,59 @@ bool workspace_sim(move_group_interface::MoveGroup* group_l, move_group_interfac
     outf_.close();
     tje_lock_.unlock(); 
     return true;
-  }*/
+  }
+  
+  bool setSensornodeState(double x, double y)
+  {
+    gazebo_msgs::ModelState state;
+    geometry_msgs::Pose pose;
+    gazebo_msgs::SetModelState::Request req;
+    gazebo_msgs::SetModelState::Response resp;
+
+    gazebo_msgs::GetModelState::Request get_req;
+    gazebo_msgs::GetModelState::Response get_resp;
+    
+
+    //set pose in world_dummy_link
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = 0.01;
+
+    state.reference_frame = "world_dummy_link";
+    state.model_name = "sensornode";
+    state.pose = pose;    
+
+    req.model_state = state;
+    service_gazebo.call(req,resp);   
+
+    //get pose in world frame
+    get_req.model_name = "sensornode";
+    get_req.relative_entity_name = "world";
+    service_gazebo_get.call(get_req,get_resp);
+
+    pose = get_resp.pose;
+
+
+    //set pose in world frame
+    //use orientation in world frame (don't use "world_dummy_link")
+    pose.orientation.w =  0.438058031738; 
+    pose.orientation.x =  0.438036624618;
+    pose.orientation.y = -0.555087759704;
+    pose.orientation.z = -0.555073558504;
+
+    state.reference_frame = "world";
+    state.model_name = "sensornode";
+    state.pose = pose;    
+
+    req.model_state = state;
+    service_gazebo.call(req,resp);    
+
+    ROS_INFO("SetModelState : %u", resp.success);
+  }
+  
+  
+  
+  */
 
 
 

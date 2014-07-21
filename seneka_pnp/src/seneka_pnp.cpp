@@ -23,13 +23,11 @@
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
-
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/CollisionObject.h>
 #include <moveit_msgs/GetPositionIK.h>
 #include <moveit_msgs/MoveItErrorCodes.h>
 #include <moveit_msgs/JointConstraint.h>
-
 
 #include <moveit/robot_state/robot_state.h>
 #include <moveit/robot_state/joint_state_group.h>
@@ -76,7 +74,6 @@ private:
   move_group_interface::MoveGroup *group_r_;
   move_group_interface::MoveGroup *group_l_;
   move_group_interface::MoveGroup *group_both_;
-
 
   //tje = trajectory execution
   trajectory_execution_validation tje_validation_;  
@@ -252,15 +249,15 @@ public:
 	    used_handle_r--;
 	    used_handle_l--;
 
-	    moveit::planning_interface::MoveGroup::Plan myPlan, mergedPlan;
+	    moveit::planning_interface::MoveGroup::Plan mergedPlan;
 
 	    group_r->setStartStateToCurrentState();      
 	    group_l->setStartStateToCurrentState();
 	    group_both->setStartStateToCurrentState();
 
 	    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
-	    geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
-	    geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+	    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
+	    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
 
 	    tje_lock_.lock(); 
 	    sensornode node = seneka_pnp_tools::getSensornodePose();
@@ -268,8 +265,6 @@ public:
 	    if(!node.success)
 	    	return false;
 	    
-	    ROS_INFO("handholds:%d", (int)node.handholds.size());
-
 	    //set start state to start_pose
 	    robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
 	    robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
@@ -308,26 +303,16 @@ public:
 	    //------------------------Pickup Position/Orientation -------------------------------------------------
 	    waypoints_r.clear();
 	    waypoints_l.clear();
+	    
+	    target_pose_r.position = node.handholds[used_handle_r].entry.position;
+	    waypoints_r.push_back(target_pose_r);
+	    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+	    waypoints_r.push_back(target_pose_r);
 
-	    target_pose2_r.position.x = node.handholds[used_handle_r].entry.translation.x;
-	    target_pose2_r.position.y = node.handholds[used_handle_r].entry.translation.y;
-	    target_pose2_r.position.z = node.handholds[used_handle_r].entry.translation.z;
-	    waypoints_r.push_back(target_pose2_r);
-	    target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
-	    target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
-	    target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
-	    target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
-	    waypoints_r.push_back(target_pose2_r);
-
-	    target_pose2_l.position.x = node.handholds[used_handle_l].entry.translation.x;
-	    target_pose2_l.position.y = node.handholds[used_handle_l].entry.translation.y;
-	    target_pose2_l.position.z = node.handholds[used_handle_l].entry.translation.z;
-	    waypoints_r.push_back(target_pose2_r);
-	    target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
-	    target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
-	    target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
-	    target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
-	    waypoints_l.push_back(target_pose2_l);
+	    target_pose_l.position = node.handholds[used_handle_l].entry.position;
+	    waypoints_l.push_back(target_pose_l);
+	    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+	    waypoints_l.push_back(target_pose_l);
 
 	    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
 	    
@@ -339,34 +324,20 @@ public:
 	      waypoints_r.clear();
 	      waypoints_l.clear();
 
-	      target_pose2_r = group_r->getCurrentPose().pose;
-	      target_pose2_l = group_l->getCurrentPose().pose;
+	      target_pose_r = group_r->getCurrentPose().pose;
+	      target_pose_l = group_l->getCurrentPose().pose;
 
-	      target_pose2_r.position.x = node.handholds[used_handle_r].down.translation.x;
-	      target_pose2_r.position.y = node.handholds[used_handle_r].down.translation.y;
-	      target_pose2_r.position.z = node.handholds[used_handle_r].down.translation.z;
-	      target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
-	      target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
-	      target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
-	      target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
-	      waypoints_r.push_back(target_pose2_r);
-	      target_pose2_r.position.x = node.handholds[used_handle_r].up.translation.x;
-	      target_pose2_r.position.y = node.handholds[used_handle_r].up.translation.y;
-	      target_pose2_r.position.z = node.handholds[used_handle_r].up.translation.z;
-	      waypoints_r.push_back(target_pose2_r);
+	      target_pose_r.position = node.handholds[used_handle_r].down.position;
+	      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+	      waypoints_r.push_back(target_pose_r);
+	      target_pose_r.position = node.handholds[used_handle_r].up.position;
+	      waypoints_r.push_back(target_pose_r);
 
-	      target_pose2_l.position.x = node.handholds[used_handle_l].down.translation.x;
-	      target_pose2_l.position.y = node.handholds[used_handle_l].down.translation.y;
-	      target_pose2_l.position.z = node.handholds[used_handle_l].down.translation.z;
-	      target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
-	      target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
-	      target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
-	      target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
-	      waypoints_l.push_back(target_pose2_l);
-	      target_pose2_l.position.x = node.handholds[used_handle_l].up.translation.x;
-	      target_pose2_l.position.y = node.handholds[used_handle_l].up.translation.y;
-	      target_pose2_l.position.z = node.handholds[used_handle_l].up.translation.z; 
-	      waypoints_l.push_back(target_pose2_l);
+	      target_pose_l.position = node.handholds[used_handle_l].down.position;
+	      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+	      waypoints_l.push_back(target_pose_l);
+	      target_pose_l.position = node.handholds[used_handle_l].up.position;
+	      waypoints_l.push_back(target_pose_l);
 	      
 	      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
 	      group_both->asyncExecute(mergedPlan);
@@ -389,16 +360,17 @@ public:
     used_handle_r--;
     used_handle_l--;
 
-    moveit::planning_interface::MoveGroup::Plan myPlan, mergedPlan;
+    moveit::planning_interface::MoveGroup::Plan mergedPlan;
 
     group_r->setStartStateToCurrentState();      
     group_l->setStartStateToCurrentState();
     group_both->setStartStateToCurrentState();
 
     std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
-    geometry_msgs::Pose target_pose2_r = group_r->getCurrentPose().pose;
-    geometry_msgs::Pose target_pose2_l = group_l->getCurrentPose().pose;
+    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
+    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
 
+    //get sensornode pose
     tje_lock_.lock(); 
     sensornode node = seneka_pnp_tools::getSensornodePose();
     tje_lock_.unlock(); 
@@ -409,32 +381,21 @@ public:
     //------------------------Pickup Position/Orientation -------------------------------------------------
     waypoints_r.clear();
     waypoints_l.clear();
+    target_pose_r.position = node.handholds[used_handle_r].entry.position;
+    waypoints_r.push_back(target_pose_r);
+    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+    waypoints_r.push_back(target_pose_r);
+    waypoints_r.push_back(target_pose_r);
+    waypoints_r.push_back(target_pose_r);
+    waypoints_r.push_back(target_pose_r);
 
-    target_pose2_r.position.x = node.handholds[used_handle_r].entry.translation.x;
-    target_pose2_r.position.y = node.handholds[used_handle_r].entry.translation.y;
-    target_pose2_r.position.z = node.handholds[used_handle_r].entry.translation.z;
-    waypoints_r.push_back(target_pose2_r);
-    target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
-    target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
-    target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
-    target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
-    waypoints_r.push_back(target_pose2_r);
-    waypoints_r.push_back(target_pose2_r);
-    waypoints_r.push_back(target_pose2_r);
-    waypoints_r.push_back(target_pose2_r);
-
-    target_pose2_l.position.x = node.handholds[used_handle_l].entry.translation.x;
-    target_pose2_l.position.y = node.handholds[used_handle_l].entry.translation.y;
-    target_pose2_l.position.z = node.handholds[used_handle_l].entry.translation.z;
-    waypoints_l.push_back(target_pose2_l);
-    target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
-    target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
-    target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
-    target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
-    waypoints_l.push_back(target_pose2_l);
-    waypoints_l.push_back(target_pose2_l); 
-    waypoints_l.push_back(target_pose2_l);
-    waypoints_l.push_back(target_pose2_l);
+    target_pose_l.position = node.handholds[used_handle_l].entry.position;
+    waypoints_l.push_back(target_pose_l);
+    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+    waypoints_l.push_back(target_pose_l);
+    waypoints_l.push_back(target_pose_l); 
+    waypoints_l.push_back(target_pose_l);
+    waypoints_l.push_back(target_pose_l);
 
     mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
     
@@ -447,34 +408,20 @@ public:
       waypoints_r.clear();
       waypoints_l.clear();
 
-      target_pose2_r = group_r->getCurrentPose().pose;
-      target_pose2_l = group_l->getCurrentPose().pose;
+      target_pose_r = group_r->getCurrentPose().pose;
+      target_pose_l = group_l->getCurrentPose().pose;
 
-      target_pose2_r.position.x = node.handholds[used_handle_r].down.translation.x;
-      target_pose2_r.position.y = node.handholds[used_handle_r].down.translation.y;
-      target_pose2_r.position.z = node.handholds[used_handle_r].down.translation.z;
-      target_pose2_r.orientation.w = node.handholds[used_handle_r].entry.rotation.w;
-      target_pose2_r.orientation.x = node.handholds[used_handle_r].entry.rotation.x;
-      target_pose2_r.orientation.y = node.handholds[used_handle_r].entry.rotation.y;
-      target_pose2_r.orientation.z = node.handholds[used_handle_r].entry.rotation.z;
-      waypoints_r.push_back(target_pose2_r);
-      target_pose2_r.position.x = node.handholds[used_handle_r].up.translation.x;
-      target_pose2_r.position.y = node.handholds[used_handle_r].up.translation.y;
-      target_pose2_r.position.z = node.handholds[used_handle_r].up.translation.z;
-      waypoints_r.push_back(target_pose2_r);
+      target_pose_r.position = node.handholds[used_handle_r].down.position;
+      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+      waypoints_r.push_back(target_pose_r);
+      target_pose_r.position = node.handholds[used_handle_r].up.position;
+      waypoints_r.push_back(target_pose_r);
 
-      target_pose2_l.position.x = node.handholds[used_handle_l].down.translation.x;
-      target_pose2_l.position.y = node.handholds[used_handle_l].down.translation.y;
-      target_pose2_l.position.z = node.handholds[used_handle_l].down.translation.z;
-      target_pose2_l.orientation.w = node.handholds[used_handle_l].entry.rotation.w;
-      target_pose2_l.orientation.x = node.handholds[used_handle_l].entry.rotation.x;
-      target_pose2_l.orientation.y = node.handholds[used_handle_l].entry.rotation.y;
-      target_pose2_l.orientation.z = node.handholds[used_handle_l].entry.rotation.z;
-      waypoints_l.push_back(target_pose2_l);
-      target_pose2_l.position.x = node.handholds[used_handle_l].up.translation.x;
-      target_pose2_l.position.y = node.handholds[used_handle_l].up.translation.y;
-      target_pose2_l.position.z = node.handholds[used_handle_l].up.translation.z; 
-      waypoints_l.push_back(target_pose2_l);
+      target_pose_l.position = node.handholds[used_handle_l].down.position;
+      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+      waypoints_l.push_back(target_pose_l);
+      target_pose_l.position = node.handholds[used_handle_l].up.position;
+      waypoints_l.push_back(target_pose_l);
       
       mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
       group_both->asyncExecute(mergedPlan);
@@ -499,7 +446,6 @@ public:
     geometry_msgs::Pose current_pose_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose current_pose_l = group_l->getCurrentPose().pose;    
     
-    ROS_INFO("blabla");
     group_l->setNamedTarget("lprepack");
     group_r->setNamedTarget("rprepack");
     
@@ -834,7 +780,7 @@ public:
 	  linear_plan_l.trajectory_ = trajectory_l;
 	  sleep(visualizationtime);
 
-	  double spd = 0.1;
+	  //double spd = 0.1;
 	  //moveit::planning_interface::MoveGroup::Plan scaled_plan_r = seneka_pnp_tools::scaleTrajSpeed(linear_plan_r,spd);
 	  //moveit::planning_interface::MoveGroup::Plan scaled_plan_l = seneka_pnp_tools::scaleTrajSpeed(linear_plan_l,spd);
 
@@ -857,12 +803,12 @@ public:
 	  double y_lower_bound = -0.2;
 	  double y_upper_bound =  0.2;
 
-	  ROS_INFO("Sensornode pose is X:%f Y:%f", node.pose.translation.x, node.pose.translation.y);
+	  ROS_INFO("Sensornode pose is X:%f Y:%f", node.pose.position.x, node.pose.position.y);
 	  ROS_INFO("Bounds X: %f and %f", x_lower_bound, x_upper_bound);
 	  ROS_INFO("Bounds Y: %f and %f", y_lower_bound, y_upper_bound);
 
-	  if((x_lower_bound < node.pose.translation.x && node.pose.translation.x < x_upper_bound) &&
-			  (y_lower_bound < node.pose.translation.y && node.pose.translation.y < y_upper_bound)){
+	  if((x_lower_bound < node.pose.position.x && node.pose.position.x < x_upper_bound) &&
+			  (y_lower_bound < node.pose.position.y && node.pose.position.y < y_upper_bound)){
 		  return true;	  
 	  }   
 
@@ -871,55 +817,7 @@ public:
 
   
 
-  // ---------------------------------------- SET AND GET ------------------------------------------------------------------
-  bool setSensornodeState(double x, double y)
-  {
-    gazebo_msgs::ModelState state;
-    geometry_msgs::Pose pose;
-    gazebo_msgs::SetModelState::Request req;
-    gazebo_msgs::SetModelState::Response resp;
-
-    gazebo_msgs::GetModelState::Request get_req;
-    gazebo_msgs::GetModelState::Response get_resp;
-    
-
-    //set pose in world_dummy_link
-    pose.position.x = x;
-    pose.position.y = y;
-    pose.position.z = 0.01;
-
-    state.reference_frame = "world_dummy_link";
-    state.model_name = "sensornode";
-    state.pose = pose;    
-
-    req.model_state = state;
-    service_gazebo.call(req,resp);   
-
-    //get pose in world frame
-    get_req.model_name = "sensornode";
-    get_req.relative_entity_name = "world";
-    service_gazebo_get.call(get_req,get_resp);
-
-    pose = get_resp.pose;
-
-
-    //set pose in world frame
-    //use orientation in world frame (don't use "world_dummy_link")
-    pose.orientation.w =  0.438058031738; 
-    pose.orientation.x =  0.438036624618;
-    pose.orientation.y = -0.555087759704;
-    pose.orientation.z = -0.555073558504;
-
-    state.reference_frame = "world";
-    state.model_name = "sensornode";
-    state.pose = pose;    
-
-    req.model_state = state;
-    service_gazebo.call(req,resp);    
-
-    ROS_INFO("SetModelState : %u", resp.success);
-  }
-    
+  // ---------------------------------------- SET AND GET ------------------------------------------------------------------    
   std::string getTransition(){
     return transition_;
   } 
@@ -1207,8 +1105,7 @@ public:
   }	
   
   void loadMoveGroups()
-  {
-    
+  {    
     group_r_ =  new move_group_interface::MoveGroup("right_arm_group");
     group_l_ =  new move_group_interface::MoveGroup("left_arm_group");
     group_both_ = new move_group_interface::MoveGroup("both_arms");
@@ -1234,7 +1131,6 @@ public:
     group_both_->setGoalOrientationTolerance(orientation_tolerance);
     group_both_->setGoalPositionTolerance(position_tolerance);
     group_both_->setPlanningTime(planning_time);
-
   }
   //--------------------------------------- Load on Init ------------------------------------
   //main loop

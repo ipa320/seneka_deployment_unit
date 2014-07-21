@@ -20,34 +20,16 @@
 
 #include <tf/transform_listener.h>
 
-struct pose{
-  double x;
-  double y;
-  double z;
-};
-
-struct quaternion{
-  double w;
-  double x;
-  double y;
-  double z;
-};
-
-struct pose3d{
-  pose translation;
-  quaternion rotation;
-};
-
 struct handhold{
-  pose3d handle;
-  pose3d entry;
-  pose3d up;
-  pose3d down;
+	geometry_msgs::Pose handle;
+	geometry_msgs::Pose entry;
+	geometry_msgs::Pose up;
+	geometry_msgs::Pose down;
 };
 
 struct sensornode{	
 	bool success;
-	pose3d pose;
+	geometry_msgs::Pose pose;
 	std::vector<handhold> handholds;
 };
 
@@ -77,14 +59,14 @@ sensornode getSensornodePose(){
 		  node.success = false;
 	  }
 
-	  node.pose.translation.x = transform.getOrigin().x();
-	  node.pose.translation.y = transform.getOrigin().y();
-	  node.pose.translation.z = transform.getOrigin().z();
+	  node.pose.position.x = transform.getOrigin().x();
+	  node.pose.position.y = transform.getOrigin().y();
+	  node.pose.position.z = transform.getOrigin().z();
 
-	  node.pose.rotation.w = transform.getRotation().getW();
-	  node.pose.rotation.x = transform.getRotation().getX();
-	  node.pose.rotation.y = transform.getRotation().getY();
-	  node.pose.rotation.z = transform.getRotation().getZ();
+	  node.pose.orientation.w = transform.getRotation().getW();
+	  node.pose.orientation.x = transform.getRotation().getX();
+	  node.pose.orientation.y = transform.getRotation().getY();
+	  node.pose.orientation.z = transform.getRotation().getZ();
 
 
 	  //handholds and helper points
@@ -135,44 +117,44 @@ sensornode getSensornodePose(){
 
 		  handhold handh;
 		  //handle
-		  handh.handle.translation.x = transform.getOrigin().x();
-		  handh.handle.translation.y = transform.getOrigin().y();
-		  handh.handle.translation.z = transform.getOrigin().z();
+		  handh.handle.position.x = transform.getOrigin().x();
+		  handh.handle.position.y = transform.getOrigin().y();
+		  handh.handle.position.z = transform.getOrigin().z();
 
-		  handh.handle.rotation.w = transform.getRotation().getW();
-		  handh.handle.rotation.x = transform.getRotation().getX();
-		  handh.handle.rotation.y = transform.getRotation().getY();
-		  handh.handle.rotation.z = transform.getRotation().getZ();
+		  handh.handle.orientation.w = transform.getRotation().getW();
+		  handh.handle.orientation.x = transform.getRotation().getX();
+		  handh.handle.orientation.y = transform.getRotation().getY();
+		  handh.handle.orientation.z = transform.getRotation().getZ();
 
 		  //entry
-		  handh.entry.translation.x = transform_entry.getOrigin().x();
-		  handh.entry.translation.y = transform_entry.getOrigin().y();
-		  handh.entry.translation.z = transform_entry.getOrigin().z();
+		  handh.entry.position.x = transform_entry.getOrigin().x();
+		  handh.entry.position.y = transform_entry.getOrigin().y();
+		  handh.entry.position.z = transform_entry.getOrigin().z();
 
-		  handh.entry.rotation.w = transform_entry.getRotation().getW();
-		  handh.entry.rotation.x = transform_entry.getRotation().getX();
-		  handh.entry.rotation.y = transform_entry.getRotation().getY();
-		  handh.entry.rotation.z = transform_entry.getRotation().getZ();
+		  handh.entry.orientation.w = transform_entry.getRotation().getW();
+		  handh.entry.orientation.x = transform_entry.getRotation().getX();
+		  handh.entry.orientation.y = transform_entry.getRotation().getY();
+		  handh.entry.orientation.z = transform_entry.getRotation().getZ();
 
 		  //up
-		  handh.up.translation.x = transform_up.getOrigin().x();
-		  handh.up.translation.y = transform_up.getOrigin().y();
-		  handh.up.translation.z = transform_up.getOrigin().z();
+		  handh.up.position.x = transform_up.getOrigin().x();
+		  handh.up.position.y = transform_up.getOrigin().y();
+		  handh.up.position.z = transform_up.getOrigin().z();
 
-		  handh.up.rotation.w = transform_up.getRotation().getW();
-		  handh.up.rotation.x = transform_up.getRotation().getX();
-		  handh.up.rotation.y = transform_up.getRotation().getY();
-		  handh.up.rotation.z = transform_up.getRotation().getZ();
+		  handh.up.orientation.w = transform_up.getRotation().getW();
+		  handh.up.orientation.x = transform_up.getRotation().getX();
+		  handh.up.orientation.y = transform_up.getRotation().getY();
+		  handh.up.orientation.z = transform_up.getRotation().getZ();
 
 		  //down
-		  handh.down.translation.x = transform_down.getOrigin().x();
-		  handh.down.translation.y = transform_down.getOrigin().y();
-		  handh.down.translation.z = transform_down.getOrigin().z();
+		  handh.down.position.x = transform_down.getOrigin().x();
+		  handh.down.position.y = transform_down.getOrigin().y();
+		  handh.down.position.z = transform_down.getOrigin().z();
 
-		  handh.down.rotation.w = transform_down.getRotation().getW();
-		  handh.down.rotation.x = transform_down.getRotation().getX();
-		  handh.down.rotation.y = transform_down.getRotation().getY();
-		  handh.down.rotation.z = transform_down.getRotation().getZ();      
+		  handh.down.orientation.w = transform_down.getRotation().getW();
+		  handh.down.orientation.x = transform_down.getRotation().getX();
+		  handh.down.orientation.y = transform_down.getRotation().getY();
+		  handh.down.orientation.z = transform_down.getRotation().getZ();      
 
 		  node.handholds.push_back(handh);
 	  }
