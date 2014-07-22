@@ -286,21 +286,22 @@ public:
 			  }
 		  }
 
-		  smartJointValues();
+		  tmp_pose_ = smartJointValues(tmp_pose_);
 		  marker_changed_ = false;		  
 	  }
   }
   
-  void smartJointValues(){
+  node_pose smartJointValues(node_pose np){
 	  
-	  for(uint i=0; i < tmp_pose_.joint_states_r.size(); i++){
-		  tmp_pose_.joint_states_r[i] = createSmartJointValue(tmp_pose_.joint_states_r[i]);
+	  for(uint i=0; i < np.joint_states_r.size(); i++){
+		  np.joint_states_r[i] = createSmartJointValue(np.joint_states_r[i]);
 	  }
 	  
-	  for(uint i=0; i < tmp_pose_.joint_states_l.size(); i++){
-		  tmp_pose_.joint_states_l[i] = createSmartJointValue(tmp_pose_.joint_states_l[i]);
+	  for(uint i=0; i < np.joint_states_l.size(); i++){
+		  np.joint_states_l[i] = createSmartJointValue(np.joint_states_l[i]);
 	  }
 	  
+	  return np;
   }
   
   double createSmartJointValue(double jointvalue){
@@ -701,7 +702,7 @@ public:
 	  robot_state_publisher_l_.publish( DisplayRobotStateFromJointStates("left_arm_group", new_pose.joint_states_l) );
 
 	  tmp_pose_ = new_pose; 
-	  smartJointValues();
+	  tmp_pose_ = smartJointValues(tmp_pose_);
 	  
 	  res.success = true;
 	  return res.success;
@@ -868,7 +869,6 @@ public:
  void create_stored_poses(){
 	  
 	  node_pose pose;
-	  pose.name = "prepack";
 
 	  pose.joint_names_r.push_back("right_arm_shoulder_pan_joint");
 	  pose.joint_names_r.push_back("right_arm_shoulder_lift_joint");
@@ -886,7 +886,8 @@ public:
 	  
 	  
 	  //prepack front
-	  /*pose.joint_states_r.push_back(-1.10186);
+	  pose.name = "prepack";
+	  pose.joint_states_r.push_back(-1.10186);
 	  pose.joint_states_r.push_back(-1.72479);
 	  pose.joint_states_r.push_back(4.82816);
 	  pose.joint_states_r.push_back(-3.10249);
@@ -898,7 +899,7 @@ public:
 	  pose.joint_states_l.push_back(-4.82702);
 	  pose.joint_states_l.push_back(-0.0431126);
 	  pose.joint_states_l.push_back(-3.61312);
-	  pose.joint_states_l.push_back(3.36654);*/
+	  pose.joint_states_l.push_back(3.36654);
 	  
 	  //
 	  /*pose.joint_states_r.push_back(1.55605);
@@ -913,12 +914,12 @@ public:
 	  pose.joint_states_l.push_back(-1.1049);
 	  pose.joint_states_l.push_back(2.67448);
 	  pose.joint_states_l.push_back(0.012207);
-	  pose.joint_states_l.push_back(3.53443);
+	  pose.joint_states_l.push_back(3.53443);*/
 	  
-	  	  
 	  pose.pose.position.x = 1.38785;
 	  pose.pose.position.y = 0;
-	  pose.pose.position.z = 0.549912;*/
+	  pose.pose.position.z = 0.549912;
+	  stored_poses.push_back(pose);
 	  
 	  //pregrasp-rear-close
 	  pose.joint_states_r.clear();

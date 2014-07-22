@@ -213,13 +213,35 @@ public:
 
 	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
 	  moveit_msgs::DisplayTrajectory display_trajectory;
-
+	  
 	  moveit::planning_interface::MoveGroup::Plan lplan, rplan, merged_plan;
 	  moveit::planning_interface::MoveGroup::Plan myPlan;
-
+	  
+	  /*std::vector<double> group_variable_values;
+	  group_variable_values = group_r->getCurrentJointValues();
+	  group_variable_values[0] = 1.0;
+	  group_variable_values[1] = -1.5;
+	  group_variable_values[2] = 2.5;
+	  group_r->setJointValueTarget(group_variable_values);
+	  
+	  group_variable_values = group_l->getCurrentJointValues();
+	  group_variable_values[0] = -1.0;
+	  group_variable_values[1] = -1.5;
+	  group_variable_values[2] = -2.5;
+	  group_l->setJointValueTarget(group_variable_values);
+	  
+	  if(seneka_pnp_tools::multiplan(group_r,&rplan)){
+		  group_r->asyncExecute(rplan);
+		  ret = monitorArmMovement(false,true);
+	  }
+	  
+	  if(seneka_pnp_tools::multiplan(group_l,&lplan) && ret){
+		  group_r->asyncExecute(lplan);
+		  ret = monitorArmMovement(true,false);
+	  }*/
+	  
 	  group_l->setNamedTarget("lpregrasp-rear");
-	  group_r->setNamedTarget("rpregrasp-rear");  
-
+	  group_r->setNamedTarget("rpregrasp-rear");
 	  if(seneka_pnp_tools::multiplan(group_l,&myPlan)){
 		  sleep(5.0);
 		  group_l->asyncExecute(myPlan);
@@ -265,68 +287,68 @@ public:
 	    if(!node.success)
 	    	return false;
 	    
-	    //set start state to start_pose
-	    robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-	    robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
-	    robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-	    robot_state::JointStateGroup* joint_state_group_r = kinematic_state->getJointStateGroup("right_arm_group");
-	    robot_state::JointStateGroup* joint_state_group_l = kinematic_state->getJointStateGroup("left_arm_group");
-	    
 	    std::vector<double> joint_values_r,joint_values_l;
-	    joint_state_group_r->getVariableValues(joint_values_r);
-	    joint_state_group_l->getVariableValues(joint_values_l);
+	    
+	    joint_values_r = group_r->getCurrentJointValues();
+	    joint_values_l = group_l->getCurrentJointValues();
 		  
+	    for(uint i = 0; i < joint_values_r.size(); i++ )
+	    	 ROS_INFO("%f",joint_values_r[i]);
+	    for(uint i = 0; i < joint_values_l.size(); i++ )
+	    	ROS_INFO("%f",joint_values_l[i]);
+	    
 	    moveit_msgs::Constraints constraint_l, constraint_r;	  
 	    moveit_msgs::JointConstraint joint_constraint_l, joint_constraint_r;
-	    joint_constraint_l.joint_name = "left_arm_wrist_1_joint";
-	    joint_constraint_l.position = joint_values_l[3];
-	    joint_constraint_l.tolerance_above = M_PI/4;
-	    joint_constraint_l.tolerance_below = M_PI/4;
-	    joint_constraint_l.joint_name = "left_arm_wrist_3_joint";
-	    joint_constraint_l.position = joint_values_l[5];
-	    joint_constraint_l.tolerance_above = M_PI/8;
-	    joint_constraint_l.tolerance_below = M_PI/8;
 	    joint_constraint_r.joint_name = "right_arm_wrist_1_joint";
 	    joint_constraint_r.position = joint_values_r[3];
 	    joint_constraint_r.tolerance_above = M_PI/4;
 	    joint_constraint_r.tolerance_below = M_PI/4;
+	    constraint_r.joint_constraints.push_back(joint_constraint_r);
 	    joint_constraint_r.joint_name = "right_arm_wrist_3_joint";
 	    joint_constraint_r.position = joint_values_r[5];
-	    joint_constraint_r.tolerance_above = M_PI/8;
-	    joint_constraint_r.tolerance_below = M_PI/8;		  
-
+	    joint_constraint_r.tolerance_above = M_PI/4;
+	    joint_constraint_r.tolerance_below = M_PI/4;		
 	    constraint_r.joint_constraints.push_back(joint_constraint_r);
-		constraint_l.joint_constraints.push_back(joint_constraint_l);
-		
-		group_r->setPathConstraints(constraint_r);
-		group_l->setPathConstraints(constraint_l);	      
+	    
+	    joint_constraint_l.joint_name = "left_arm_wrist_1_joint";
+	    joint_constraint_l.position = joint_values_l[3];
+	    joint_constraint_l.tolerance_above = M_PI/4;
+	    joint_constraint_l.tolerance_below = M_PI/4;
+	    constraint_l.joint_constraints.push_back(joint_constraint_l);
+	    joint_constraint_l.joint_name = "left_arm_wrist_3_joint";
+	    joint_constraint_l.position = joint_values_l[5];
+	    joint_constraint_l.tolerance_above = M_PI/4;
+	    joint_constraint_l.tolerance_below = M_PI/4;
+	    constraint_l.joint_constraints.push_back(joint_constraint_l);
+	    
+	    group_r->setPathConstraints(constraint_r);
+		group_l->setPathConstraints(constraint_l);	     
+		group_both->setPathConstraints(constraint_r);
+		group_both->setPathConstraints(constraint_l);
 	    //------------------------Pickup Position/Orientation -------------------------------------------------
 	    waypoints_r.clear();
-	    waypoints_l.clear();
-	    
+	    waypoints_l.clear();	    
 	    target_pose_r = group_r->getCurrentPose().pose;
 	    target_pose_l = group_l->getCurrentPose().pose;
 	    	      
 	    target_pose_r.position = node.handholds[used_handle_r].entry.position;
-	    waypoints_r.push_back(target_pose_r);
 	    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-	    waypoints_r.push_back(target_pose_r);
 
 	    target_pose_l.position = node.handholds[used_handle_l].entry.position;
-	    waypoints_l.push_back(target_pose_l);
 	    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-	    waypoints_l.push_back(target_pose_l);
-
-	    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
-	    
-	    group_both->asyncExecute(mergedPlan);
-	    ret = monitorArmMovement(true,true);  
+	    	    
+	    group_both->setPoseTarget(target_pose_r,"right_arm_ee_link");
+	    group_both->setPoseTarget(target_pose_l,"left_arm_ee_link");
+	    	    
+	    if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+	    	group_both->asyncExecute(mergedPlan);
+	    	ret = monitorArmMovement(true,true);
+	    }   
 	   	    
-	    //------------------------PICK UP-----------------------------------------------------------------------------
+	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
 	    if(ret){
 	      waypoints_r.clear();
 	      waypoints_l.clear();
-
 	      target_pose_r = group_r->getCurrentPose().pose;
 	      target_pose_l = group_l->getCurrentPose().pose;
 
@@ -349,7 +371,7 @@ public:
 	  
 	    group_r->clearPathConstraints();
 	    group_l->clearPathConstraints();
-	    
+	    group_both->clearPathConstraints();
 	    return ret;
   }
   
@@ -840,7 +862,7 @@ public:
   {
 	  std::string transition_tmp = req.transition; 
 
-	  if(transition_tmp.compare("toPickedUp") == 0){
+	  if(transition_tmp.compare("toPickedUp") == 0 || transition_tmp.compare("toPickedUpRear") == 0){
 		  if(!sensornodePosValid()){
 			  res.transition = "Sensornode is not in a valid grab position";
 			  transition_ = "";
@@ -964,6 +986,13 @@ public:
 	  //------PREGRASP-REAR-------------------------------------------
 	  else if(currentState.compare("pregrasp-rear") == 0){
 		  
+		  if(transition.compare("toHome") == 0){
+			  if(toHome(group_l_,group_r_,group_both_)){
+				  return "home";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }    
 		  if(transition.compare("toPickedUpRear") == 0){
 			  if(toPickedUpRear(group_l_,group_r_,group_both_)){
 				  return "pickedup-rear";
@@ -1114,7 +1143,7 @@ public:
     group_both_ = new move_group_interface::MoveGroup("both_arms");
 
     //planning settings
-    double planning_time = 10.0;
+    double planning_time = 20.0;
     double orientation_tolerance = 0.01;
     double position_tolerance = 0.01;
 
