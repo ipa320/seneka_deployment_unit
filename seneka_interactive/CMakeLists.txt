@@ -35,6 +35,8 @@ add_service_files(
    toggleArmFreeze.srv
    setJointState.srv
    getJointStates.srv
+   setConstraints.srv
+   generateIK.srv
 )
 
 generate_messages(

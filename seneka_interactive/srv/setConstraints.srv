@@ -1,0 +1,6 @@
+string cmd
+string group 
+float64 tolerance
+float64 position
+-------------------------------
+bool success
