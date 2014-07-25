@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core 
   moveit_ros_planning_interface
   message_generation
+  seneka_pnp
 )
 
 find_package(OpenCV REQUIRED)
@@ -119,6 +120,7 @@ catkin_package(
     std_msgs
     moveit_core
     moveit_ros_planning_interface
+    seneka_pnp
   DEPENDS
     OpenCV
     Eigen

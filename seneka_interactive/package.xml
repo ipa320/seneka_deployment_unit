@@ -21,12 +21,15 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>moveit_core</build_depend>
   <build_depend>moveit_ros_planning_interface</build_depend>
+  <build_depend>seneka_pnp</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>moveit_core</run_depend>
   <run_depend>moveit_ros_planning_interface</run_depend>
+  <run_depend>seneka_pnp</run_depend>
+
 </package>
 
 

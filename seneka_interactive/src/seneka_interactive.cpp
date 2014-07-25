@@ -9,6 +9,7 @@
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <seneka_interactive_tools.h>
+#include <seneka_pnp_tools.h>
 
 // Moveit msgs
 #include <moveit_msgs/GetPositionIK.h>
@@ -254,7 +255,7 @@ public:
 		return distance;
 	}
 
-	void generateIkSolutions() {
+	node_pose generateIkSolutions(node_pose start_pose, node_pose goal_pose, bool equaljointstates) {
 
 		std::vector<double> joint_values_l;
 		std::vector<double> joint_values_r;
@@ -262,152 +263,172 @@ public:
 		std::vector < std::string > joint_names_l;
 		std::vector < std::string > joint_names_r;
 
-		if (generateIK_) {
+		ROS_INFO("Generate IK Solution");
+		ros::ServiceClient service_client;
+		service_client = node_handle_.serviceClient < moveit_msgs::GetPositionIK > ("compute_ik");
 
-			ROS_INFO("Generate IK Solution");
-			ros::ServiceClient service_client;
-			service_client = node_handle_.serviceClient < moveit_msgs::GetPositionIK > ("compute_ik");
+		geometry_msgs::Pose target_pose_l = goal_pose.handle_l;
+		geometry_msgs::Pose target_pose_r = goal_pose.handle_r;
 
-			geometry_msgs::Pose target_pose_l = handle_l_;
-			geometry_msgs::Pose target_pose_r = handle_r_;
+		bool result = false;
+		moveit_msgs::GetPositionIK::Request service_request;
+		moveit_msgs::GetPositionIK::Response service_response;
 
-			bool result = false;
-			moveit_msgs::GetPositionIK::Request service_request;
-			moveit_msgs::GetPositionIK::Response service_response;
+		service_request.ik_request.attempts = 20;
+		service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link";
+		service_request.ik_request.avoid_collisions = false;
+		
+		node_pose node;
+		node = smartJointValues(start_pose);
 
-			service_request.ik_request.attempts = 20;
-			service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link";
-			service_request.ik_request.avoid_collisions = false;
-			
-			tmp_pose_ = smartJointValues(start_pose_);
+		//freezes ik generation when necessary
+		if (!freeze_ik_left_) {
+			//left arm
+			service_request.ik_request.group_name = "left_arm_group";
+			service_request.ik_request.pose_stamped.pose = target_pose_l;
+			service_request.ik_request.constraints = constraints_l;
 
-			//freezes ik generation when necessary
-			if (!freeze_ik_left_) {
-				//left arm
-				service_request.ik_request.group_name = "left_arm_group";
-				service_request.ik_request.pose_stamped.pose = target_pose_l;
-				service_request.ik_request.constraints = constraints_l;
-				
-				
-				uint samples;
-				equaljointstates_ ? samples = 100 : samples = 1;
 
-				std::vector<double> referencejoints;
-				referencejoints = tmp_pose_.joint_states_l;
-				double statedistance = 6 * 2 * PI;
+			uint samples;
+			equaljointstates ? samples = 100 : samples = 1;
 
-				for (uint i = 0; (i < samples); i++) {
-					joint_values_l.clear();
-					service_client.call(service_request, service_response);
+			std::vector<double> referencejoints;
+			referencejoints = node.joint_states_l;
+			double statedistance = 6 * 2 * PI;
 
-					if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
+			for (uint i = 0; (i < samples); i++) {
+				joint_values_l.clear();
+				service_client.call(service_request, service_response);
 
-						robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
-						robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
-						robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
-						robot_state::JointStateGroup* joint_state_group_l =	kinematic_state_l->getJointStateGroup("left_arm_group");
+				if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 
-						for (uint i = 0; i < 6; i++) {
-							//std::cout << service_response.solution.joint_state.name[i] << ": ";
-							//std::cout << service_response.solution.joint_state.position[i] << std::endl;
+					robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
+					robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
+					robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
+					robot_state::JointStateGroup* joint_state_group_l =	kinematic_state_l->getJointStateGroup("left_arm_group");
 
-							joint_values_l.push_back(service_response.solution.joint_state.position[i]);
-							joint_names_l.push_back(service_response.solution.joint_state.name[i]);
-						}
+					for (uint i = 0; i < 6; i++) {
+						//std::cout << service_response.solution.joint_state.name[i] << ": ";
+						//std::cout << service_response.solution.joint_state.position[i] << std::endl;
 
-						joint_state_group_l->setVariableValues(joint_values_l);
-						joint_values_l = smartJointValues(joint_values_l);
-
-						double tmp = getStateDistance(referencejoints,	joint_values_l);
-						ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
-						if (tmp < statedistance) {
-
-							moveit_msgs::DisplayRobotState msg_l;
-							robot_state::robotStateToRobotStateMsg(*kinematic_state_l, msg_l.state);
-							robot_state_publisher_l_.publish(msg_l);
-
-							ROS_INFO("IK Solution L: TRUE");
-							result = true;
-
-							tmp_pose_.joint_names_l = joint_names_l;
-							tmp_pose_.joint_states_l = joint_values_l;
-							statedistance = tmp;
-						}
-
-						//joint_state_group_l;
-
-					} else {
-						ROS_INFO("IK Solution L: FALSE");
+						joint_values_l.push_back(service_response.solution.joint_state.position[i]);
+						joint_names_l.push_back(service_response.solution.joint_state.name[i]);
 					}
+
+					joint_state_group_l->setVariableValues(joint_values_l);
+					//joint_values_l = smartJointValues(joint_values_l);
+
+					double tmp = getStateDistance(referencejoints,	joint_values_l);
+					ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
+					if (tmp < statedistance) {
+
+						moveit_msgs::DisplayRobotState msg_l;
+						robot_state::robotStateToRobotStateMsg(*kinematic_state_l, msg_l.state);
+						robot_state_publisher_l_.publish(msg_l);
+
+						ROS_INFO("IK Solution L: TRUE");
+						result = true;
+
+						node.joint_names_l = joint_names_l;
+						node.joint_states_l = joint_values_l;
+						statedistance = tmp;
+					}
+
+					//joint_state_group_l;
+
+				} else {
+					ROS_INFO("IK Solution L: FALSE");
 				}
 			}
-
-			//freezes ik generation when necessary
-			if (!freeze_ik_right_) {
-				service_request.ik_request.group_name = "right_arm_group";
-				service_request.ik_request.pose_stamped.pose = target_pose_r;
-				//if(result)
-				service_request.ik_request.constraints = constraints_r;
-				
-				uint samples;
-				equaljointstates_ ? samples = 100 : samples = 1;
-
-				std::vector<double> referencejoints;
-				referencejoints = tmp_pose_.joint_states_r;
-				double statedistance = 6 * 2 * PI;
-
-				for (uint i = 0; (i < samples); i++) {
-					joint_values_r.clear();
-					service_client.call(service_request, service_response);
-
-					if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
-
-						/* Load the robot model */
-						robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
-						robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
-						robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
-						robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
-
-						for (uint i = 6; i < 12; i++) {
-							std::cout << service_response.solution.joint_state.name[i] << ": ";
-							std::cout << service_response.solution.joint_state.position[i] << std::endl;
-
-							joint_values_r.push_back(
-									service_response.solution.joint_state.position[i]);
-							joint_names_r.push_back(
-									service_response.solution.joint_state.name[i]);
-						}
-
-						joint_state_group_r->setVariableValues(joint_values_r);
-						joint_values_r = smartJointValues(joint_values_r);
-						
-						double tmp = getStateDistance(referencejoints,	joint_values_r);
-						ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
-						if (tmp < statedistance) {
-
-							moveit_msgs::DisplayRobotState msg_r;
-							robot_state::robotStateToRobotStateMsg(*kinematic_state_r,	msg_r.state);
-							robot_state_publisher_r_.publish(msg_r);
-
-							ROS_INFO("IK Solution R: TRUE");
-
-							tmp_pose_.joint_names_r = joint_names_r;
-							tmp_pose_.joint_states_r = joint_values_r;
-							statedistance = tmp;
-						}
-						
-					} else {
-						ROS_INFO("IK Solution R: FALSE");
-					}
-				}
-			}
-
-			tmp_pose_ = smartJointValues(tmp_pose_);
-			marker_changed_ = false;
 		}
-		generateIK_ = false;
-	}
 
+		//freezes ik generation when necessary
+		if (!freeze_ik_right_) {
+			service_request.ik_request.group_name = "right_arm_group";
+			service_request.ik_request.pose_stamped.pose = target_pose_r;
+			//if(result)
+			service_request.ik_request.constraints = constraints_r;
+
+			uint samples;
+			equaljointstates ? samples = 100 : samples = 1;
+
+			std::vector<double> referencejoints;
+			referencejoints = node.joint_states_r;
+			double statedistance = 6 * 2 * PI;
+
+			for (uint i = 0; (i < samples); i++) {
+				joint_values_r.clear();
+				service_client.call(service_request, service_response);
+
+				if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
+
+					/* Load the robot model */
+					robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
+					robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
+					robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
+					robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
+
+					for (uint i = 6; i < 12; i++) {
+						std::cout << service_response.solution.joint_state.name[i] << ": ";
+						std::cout << service_response.solution.joint_state.position[i] << std::endl;
+
+						joint_values_r.push_back(
+								service_response.solution.joint_state.position[i]);
+						joint_names_r.push_back(
+								service_response.solution.joint_state.name[i]);
+					}
+
+					joint_state_group_r->setVariableValues(joint_values_r);
+					//joint_values_r = smartJointValues(joint_values_r);
+
+					double tmp = getStateDistance(referencejoints,	joint_values_r);
+					ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
+					if (tmp < statedistance) {
+
+						moveit_msgs::DisplayRobotState msg_r;
+						robot_state::robotStateToRobotStateMsg(*kinematic_state_r,	msg_r.state);
+						robot_state_publisher_r_.publish(msg_r);
+
+						ROS_INFO("IK Solution R: TRUE");
+
+						node.joint_names_r = joint_names_r;
+						node.joint_states_r = joint_values_r;
+						statedistance = tmp;
+					}
+
+				} else {
+					ROS_INFO("IK Solution R: FALSE");
+				}
+			}
+		}
+
+		//tmp_pose_ = smartJointValues(tmp_pose_);
+	
+		return node;
+	}
+	
+	//simulates from pregrasp to pickedup
+	void simulateFromRealWorld(node_pose start_pose){
+		
+		sensornode rwnode = seneka_pnp_tools::getSensornodePose();
+		
+		if(node.success){
+			
+			node_pose nodepose;
+			nodepose.pose = rwnode.pose;
+			nodepose.handle_l		
+			
+//			//choose handles
+//			unsigned int used_handle_r = 2;//use the real handle id 1-6
+//			unsigned int used_handle_l = 5;//use the real handle id 1-6
+//			used_handle_r--;
+//			used_handle_l--;
+//			nodepose.handle_r = node.handholds[used_handle_r].handle;
+//			nodepose.handle_l = node.handholds[used_handle_l].handle;	
+			
+		}		
+	}
+	
 	//HERE
 	/* simulates from start to goal state using different planning techniques
 	 * option = 0: linear path planning using CartesianPath
@@ -793,9 +814,8 @@ public:
 				server_->insert(marker);
 				server_->applyChanges();
 				
-				pose.handle_r = handle_r_;
-				pose.handle_l = handle_l_;
-
+				handle_r_ = pose.handle_r;
+				handle_l_ = pose.handle_l;
 				robot_state_publisher_r_.publish(
 						DisplayRobotStateFromJointStates("right_arm_group",
 								stored_poses[i].joint_states_r));
@@ -821,8 +841,7 @@ public:
 
 				visualization_msgs::InteractiveMarker marker;
 				node_pose pose = stored_poses[i];
-				pose = stored_poses[i];
-				
+				pose = stored_poses[i];				
 
 				res.name = stored_poses[i].name;
 				res.joint_names_r = stored_poses[i].joint_names_r;
@@ -835,9 +854,8 @@ public:
 				server_->insert(marker);
 				server_->applyChanges();
 				
-				pose.handle_r = handle_r_;
-				pose.handle_l = handle_l_;
-
+				handle_r_ = pose.handle_r;
+				handle_l_ = pose.handle_l;
 				robot_state_publisher_r_.publish(
 						DisplayRobotStateFromJointStates("right_arm_group",
 								stored_poses[i].joint_states_r));
@@ -1293,13 +1311,16 @@ public:
 
 		ros::Rate loop_rate(1);
 		while (ros::ok()) {
-			
+						
 			if(constraints_r.joint_constraints.size() > 0)
 				ROS_INFO("Joint Constraints right active");
 			if(constraints_l.joint_constraints.size() > 0)
 				ROS_INFO("Joint Constraints left active");
-				
-			generateIkSolutions();
+			
+			if(generateIK_){
+				tmp_pose_ = generateIkSolutions(start_pose_, goal_pose_, equaljointstates_);
+				generateIK_ = false;
+			}
 			if (simulate_.simulate) {
 				simulation(simulate_.option,simulate_.iterations);
 				simulate_.simulate = false;
