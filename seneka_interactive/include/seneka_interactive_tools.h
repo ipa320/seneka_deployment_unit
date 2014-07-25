@@ -13,6 +13,10 @@
 
 #include <boost/algorithm/string.hpp>
 
+const unsigned int SIMULATED_ARM_RIGHT = 0; 
+const unsigned int SIMULATED_ARM_LEFT = 1; 
+const unsigned int SIMULATED_ARM_BOTH = 2; 
+
 struct node_pose {
 	std::string name;
 	geometry_msgs::Pose pose;
@@ -22,6 +26,13 @@ struct node_pose {
 	std::vector<std::string> joint_names_l;
 	std::vector<double> joint_states_r;
 	std::vector<double> joint_states_l;
+};
+
+struct simulation_order{
+	bool simulate;
+	uint simulated_arm;
+	uint iterations;
+	uint option;	
 };
 
 namespace seneka_interactive_tools{

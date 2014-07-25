@@ -70,9 +70,10 @@ private:
 	double gripper_length;
 	std::vector<node_pose> stored_poses;
 
-	bool simulate_;
+	//bool simulate_;
 	bool generateIK_;
 	bool equaljointstates_;
+	simulation_order simulate_;
 
 	bool freeze_ik_left_, freeze_ik_right_;
 
@@ -138,7 +139,8 @@ public:
 		freeze_ik_left_ = false;
 
 		marker_changed_ = false;
-		simulate_ = false;
+		simulate_.simulate = false;
+		simulate_.option = 0;
 		generateIK_ = false;
 		equaljointstates_ = false;
 
@@ -199,6 +201,41 @@ public:
 
 		return constraint;
 	}*/
+	
+	node_pose smartJointValues(node_pose np) {
+
+		for (uint i = 0; i < np.joint_states_r.size(); i++) {
+			np.joint_states_r[i] = createSmartJointValue(np.joint_states_r[i]);
+		}
+
+		for (uint i = 0; i < np.joint_states_l.size(); i++) {
+			np.joint_states_l[i] = createSmartJointValue(np.joint_states_l[i]);
+		}
+
+		return np;
+	}
+	
+	std::vector<double> smartJointValues(std::vector<double> joint_positions) {
+
+		for (uint i = 0; i < joint_positions.size(); i++) {
+			joint_positions[i] = createSmartJointValue(joint_positions[i]);
+		}
+
+		return joint_positions;
+	}
+
+	double createSmartJointValue(double jointvalue) {
+
+		if (jointvalue > PI) {
+			jointvalue -= 2 * PI;
+		} else if (jointvalue < -PI) {
+			jointvalue += 2 * PI;
+		} else {
+			//joint value already in shape
+		}
+
+		return jointvalue;
+	}
 
 	
 
@@ -208,8 +245,10 @@ public:
 		double distance = 0;
 
 		for (uint i = 0; i < a.size() && i < b.size(); i++) {
+			
 			double res = a[i] - b[i];
 			distance += std::sqrt(res * res);
+			//ROS_INFO("[%u] RJ:[%f]   CJ:[%f]  RES:[%f]  DIST:[%f]",i,a[i],b[i],res,distance);
 		}
 
 		return distance;
@@ -239,6 +278,8 @@ public:
 			service_request.ik_request.attempts = 20;
 			service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link";
 			service_request.ik_request.avoid_collisions = false;
+			
+			tmp_pose_ = smartJointValues(start_pose_);
 
 			//freezes ik generation when necessary
 			if (!freeze_ik_left_) {
@@ -252,7 +293,7 @@ public:
 				equaljointstates_ ? samples = 100 : samples = 1;
 
 				std::vector<double> referencejoints;
-				referencejoints = start_pose_.joint_states_l;
+				referencejoints = tmp_pose_.joint_states_l;
 				double statedistance = 6 * 2 * PI;
 
 				for (uint i = 0; (i < samples); i++) {
@@ -267,14 +308,15 @@ public:
 						robot_state::JointStateGroup* joint_state_group_l =	kinematic_state_l->getJointStateGroup("left_arm_group");
 
 						for (uint i = 0; i < 6; i++) {
-							std::cout << service_response.solution.joint_state.name[i] << ": ";
-							std::cout << service_response.solution.joint_state.position[i] << std::endl;
+							//std::cout << service_response.solution.joint_state.name[i] << ": ";
+							//std::cout << service_response.solution.joint_state.position[i] << std::endl;
 
 							joint_values_l.push_back(service_response.solution.joint_state.position[i]);
 							joint_names_l.push_back(service_response.solution.joint_state.name[i]);
 						}
 
 						joint_state_group_l->setVariableValues(joint_values_l);
+						joint_values_l = smartJointValues(joint_values_l);
 
 						double tmp = getStateDistance(referencejoints,	joint_values_l);
 						ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
@@ -311,7 +353,7 @@ public:
 				equaljointstates_ ? samples = 100 : samples = 1;
 
 				std::vector<double> referencejoints;
-				referencejoints = start_pose_.joint_states_r;
+				referencejoints = tmp_pose_.joint_states_r;
 				double statedistance = 6 * 2 * PI;
 
 				for (uint i = 0; (i < samples); i++) {
@@ -321,15 +363,10 @@ public:
 					if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 
 						/* Load the robot model */
-						robot_model_loader::RobotModelLoader robot_model_loader_r(
-								"robot_description");
-						robot_model::RobotModelPtr kinematic_model_r =
-								robot_model_loader_r.getModel();
-						robot_state::RobotStatePtr kinematic_state_r(
-								new robot_state::RobotState(kinematic_model_r));
-						robot_state::JointStateGroup* joint_state_group_r =
-								kinematic_state_r->getJointStateGroup(
-										"right_arm_group");
+						robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
+						robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
+						robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
+						robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
 
 						for (uint i = 6; i < 12; i++) {
 							std::cout << service_response.solution.joint_state.name[i] << ": ";
@@ -342,14 +379,14 @@ public:
 						}
 
 						joint_state_group_r->setVariableValues(joint_values_r);
+						joint_values_r = smartJointValues(joint_values_r);
 						
 						double tmp = getStateDistance(referencejoints,	joint_values_r);
 						ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
 						if (tmp < statedistance) {
 
 							moveit_msgs::DisplayRobotState msg_r;
-							robot_state::robotStateToRobotStateMsg(*kinematic_state_r,
-									msg_r.state);
+							robot_state::robotStateToRobotStateMsg(*kinematic_state_r,	msg_r.state);
 							robot_state_publisher_r_.publish(msg_r);
 
 							ROS_INFO("IK Solution R: TRUE");
@@ -371,35 +408,91 @@ public:
 		generateIK_ = false;
 	}
 
-	node_pose smartJointValues(node_pose np) {
-
-		for (uint i = 0; i < np.joint_states_r.size(); i++) {
-			np.joint_states_r[i] = createSmartJointValue(np.joint_states_r[i]);
+	//HERE
+	/* simulates from start to goal state using different planning techniques
+	 * option = 0: linear path planning using CartesianPath
+	 * option = 1:
+	 * option = 2:
+	 */
+	void simulation(uint option, uint iterations){
+		
+		if(iterations == 0) iterations = 1;
+		uint success_counter = 0;	
+		
+		for(uint i=0; i < iterations; i++){
+			
+			bool feedback = false;
+					
+			if(option == 0)	feedback = simulateCartesianPath();
+			else if(option == 1) feedback = simulateJointTarget();
+			else if(option == 2) feedback = simulatePoseTarget();
+			else ROS_INFO("This option is not available");//Nothing to do			
+			
+			if(feedback) success_counter++;
 		}
-
-		for (uint i = 0; i < np.joint_states_l.size(); i++) {
-			np.joint_states_l[i] = createSmartJointValue(np.joint_states_l[i]);
-		}
-
-		return np;
+		
+		//evaluation
+		float percentage = (float)success_counter/iterations * 100;
+		ROS_INFO("The success rate was %f %% doing %u iterations", percentage, iterations);
 	}
+	
+	bool simulatePoseTarget(){
+		
+		double visualizationtime = 0;
+		
+		move_group_interface::MoveGroup group_both("both_arms");
+		moveit::planning_interface::MoveGroup::Plan two_arm_plan;
+		
+		//set start state to start_pose
+		robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+		robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+		robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+		robot_state::JointStateGroup* joint_state_group_r =	kinematic_state->getJointStateGroup("right_arm_group");
+		robot_state::JointStateGroup* joint_state_group_l =	kinematic_state->getJointStateGroup("left_arm_group");
 
-	double createSmartJointValue(double jointvalue) {
+		joint_state_group_r->setVariableValues(start_pose_.joint_states_r);
+		joint_state_group_l->setVariableValues(start_pose_.joint_states_l);
+		
+		group_both.setWorkspace (0, 0, 0, 5, 5, 5);
+		group_both.setStartState(*kinematic_state);
+		group_both.setGoalOrientationTolerance(0.01);
+		group_both.setGoalPositionTolerance(0.01);
+		group_both.setPlanningTime(15.0);
+		
+		group_both.setPoseTarget(goal_pose_.handle_r, "right_arm_ee_link");
+		group_both.setPoseTarget(goal_pose_.handle_l, "left_arm_ee_link");
+		
+		bool ret = false;
+		if (group_both.plan(two_arm_plan)){
+			
+			ret = true;
+			//visualize target state and store in tmp_pose_
+			uint trajectory_size = two_arm_plan.trajectory_.joint_trajectory.points.size();
+			std::vector<double> left, right;
+			for (uint i = 0;i < two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions.size() - 6; i++) {
+				left.push_back(two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions[i]);
+			}
+			for (uint i = 6; i < two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions.size(); i++) {
+				right.push_back(two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions[i]);
+			}
 
-		if (jointvalue > PI) {
-			jointvalue -= 2 * PI;
-		} else if (jointvalue < -PI) {
-			jointvalue += 2 * PI;
-		} else {
-			//joint value already in shape
-		}
+			tmp_pose_.handle_r = goal_pose_.handle_r;
+			tmp_pose_.handle_l = goal_pose_.handle_l;
+			tmp_pose_.joint_states_r = right;
+			tmp_pose_.joint_states_l = left;
 
-		return jointvalue;
+			robot_state_publisher_r_.publish(DisplayRobotStateFromJointStates("right_arm_group", tmp_pose_.joint_states_r));
+			robot_state_publisher_l_.publish(DisplayRobotStateFromJointStates("left_arm_group", tmp_pose_.joint_states_l));
+
+			sleep(visualizationtime);			
+		}	
+		
+		return ret;
 	}
+	
+	bool simulateJointTarget() {
 
-	void simpolateCartesianPath() {
-
-		double visualizationtime = 5;
+		double visualizationtime = 0;
 
 		move_group_interface::MoveGroup group_r("right_arm_group");
 		move_group_interface::MoveGroup group_l("left_arm_group");
@@ -428,31 +521,11 @@ public:
 //	  group_l.setGoalOrientationTolerance(0.01);
 //	  group_l.setPlanningTime(10.0);
 
-		//group_both.setWorkspace (0, 0, 0, 5, 5, 5);
+		group_both.setWorkspace (0, 0, 0, 5, 5, 5);
 		group_both.setStartState(*kinematic_state);
-		//group_both.setGoalOrientationTolerance(0.01);
-		//group_both.setGoalPositionTolerance(5);
+		group_both.setGoalOrientationTolerance(0.01);
+		group_both.setGoalPositionTolerance(0.01);
 		group_both.setPlanningTime(15.0);
-
-//	  std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
-//	  waypoints_r.clear();
-//	  waypoints_l.clear();
-//
-//	  waypoints_r.push_back(handle_r_);
-//	  waypoints_l.push_back(handle_l_);
-//
-//	  double fraction_r = 0;
-//	  double fraction_l = 0;
-//	  uint attempts = 10;    
-//	  //-------RIGHT-------------------------
-//	  for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
-//		  fraction_r = group_r.computeCartesianPath(waypoints_r,
-//				  0.01,  // eef_step
-//				  1000.0,   // jump_threshold
-//				  trajectory_r);
-//	  }
-//	  linear_plan_r.trajectory_ = trajectory_r;
-//	  sleep(visualizationtime);	  
 
 		std::vector<double> joints_combined;
 		for (uint i = 0; i < goal_pose_.joint_states_l.size(); i++) {
@@ -462,14 +535,13 @@ public:
 			joints_combined.push_back(goal_pose_.joint_states_r[i]);
 		}
 		group_both.setJointValueTarget(joints_combined);
-		//group_both.setPoseTarget(handle_r_, "right_arm_ee_link");
-		//group_both.setPoseTarget(handle_l_, "left_arm_ee_link");
 
+		bool ret = false;
 		if (group_both.plan(two_arm_plan)) {
-
+			
+			ret = true;
 			//visualize target state and store in tmp_pose_
-			uint trajectory_size =
-					two_arm_plan.trajectory_.joint_trajectory.points.size();
+			uint trajectory_size = two_arm_plan.trajectory_.joint_trajectory.points.size();
 			std::vector<double> left, right;
 			for (uint i = 0;i < two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions.size() - 6; i++) {
 				left.push_back(two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions[i]);
@@ -478,6 +550,8 @@ public:
 				right.push_back(two_arm_plan.trajectory_.joint_trajectory.points[trajectory_size - 1].positions[i]);
 			}
 
+			tmp_pose_.handle_r = goal_pose_.handle_r;
+			tmp_pose_.handle_l = goal_pose_.handle_l;
 			tmp_pose_.joint_states_r = right;
 			tmp_pose_.joint_states_l = left;
 
@@ -486,31 +560,27 @@ public:
 
 			sleep(visualizationtime);
 		}
+		
+		return ret;
 	}
 
-	//Simulates the planning with cartesian path between a start state and the actual handle positions of the sensorsonde
-	void simulateCartesianPath() {
+	//Simulates the planning with cartesian path between a start state and the goal position
+	bool simulateCartesianPath() {
 
-		double visualizationtime = 5;
+		double visualizationtime = 0;
 
 		move_group_interface::MoveGroup group_r("right_arm_group");
 		move_group_interface::MoveGroup group_l("left_arm_group");
 
 		moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
-		moveit::planning_interface::MoveGroup::Plan linear_plan_r,
-				linear_plan_l, mergedPlan;
+		moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
 
 		//set start state to start_pose
-		robot_model_loader::RobotModelLoader robot_model_loader(
-				"robot_description");
-		robot_model::RobotModelPtr kinematic_model =
-				robot_model_loader.getModel();
-		robot_state::RobotStatePtr kinematic_state(
-				new robot_state::RobotState(kinematic_model));
-		robot_state::JointStateGroup* joint_state_group_r =
-				kinematic_state->getJointStateGroup("right_arm_group");
-		robot_state::JointStateGroup* joint_state_group_l =
-				kinematic_state->getJointStateGroup("left_arm_group");
+		robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+		robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+		robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+		robot_state::JointStateGroup* joint_state_group_r = kinematic_state->getJointStateGroup("right_arm_group");
+		robot_state::JointStateGroup* joint_state_group_l = kinematic_state->getJointStateGroup("left_arm_group");
 
 		joint_state_group_r->setVariableValues(start_pose_.joint_states_r);
 		joint_state_group_l->setVariableValues(start_pose_.joint_states_l);
@@ -528,13 +598,12 @@ public:
 		std::vector<geometry_msgs::Pose> waypoints_r, waypoints_l;
 		waypoints_r.clear();
 		waypoints_l.clear();
-
-		waypoints_r.push_back(handle_r_);
-		waypoints_l.push_back(handle_l_);
+		waypoints_r.push_back(goal_pose_.handle_r);
+		waypoints_l.push_back(goal_pose_.handle_l);
 
 		double fraction_r = 0;
 		double fraction_l = 0;
-		uint attempts = 10;
+		uint attempts = 50;
 		//-------RIGHT-------------------------
 		for (uint i = 0; fraction_r < 1.0 && i < attempts; i++) {
 			fraction_r = group_r.computeCartesianPath(waypoints_r, 0.01, // eef_step
@@ -553,28 +622,30 @@ public:
 		linear_plan_l.trajectory_ = trajectory_l;
 		sleep(visualizationtime);
 
-		//set joint_state to the last state in computed trajectory
-		uint trajectory_size =
-				linear_plan_r.trajectory_.joint_trajectory.points.size();
-		tmp_pose_.joint_names_r =
-				linear_plan_r.trajectory_.joint_trajectory.joint_names;
-		tmp_pose_.joint_states_r =
-				linear_plan_r.trajectory_.joint_trajectory.points[trajectory_size
-						- 1].positions;
-		joint_state_group_r->setVariableValues(tmp_pose_.joint_states_r);
+		bool ret = false;
+		if(fraction_r >= 1 && fraction_l >= 1){
+			
+			ret = true;
+			//set joint_state to the last state in computed trajectory
+			uint trajectory_size = linear_plan_r.trajectory_.joint_trajectory.points.size();
+			tmp_pose_.joint_names_r = linear_plan_r.trajectory_.joint_trajectory.joint_names;
+			tmp_pose_.joint_states_r = linear_plan_r.trajectory_.joint_trajectory.points[trajectory_size - 1].positions;
+			joint_state_group_r->setVariableValues(tmp_pose_.joint_states_r);
 
-		trajectory_size =
-				linear_plan_l.trajectory_.joint_trajectory.points.size();
-		tmp_pose_.joint_names_l =
-				linear_plan_l.trajectory_.joint_trajectory.joint_names;
-		tmp_pose_.joint_states_l =
-				linear_plan_l.trajectory_.joint_trajectory.points[trajectory_size
-						- 1].positions;
-		joint_state_group_l->setVariableValues(tmp_pose_.joint_states_l);
+			trajectory_size = linear_plan_l.trajectory_.joint_trajectory.points.size();
+			tmp_pose_.joint_names_l = linear_plan_l.trajectory_.joint_trajectory.joint_names;
+			tmp_pose_.joint_states_l = linear_plan_l.trajectory_.joint_trajectory.points[trajectory_size - 1].positions;
+			joint_state_group_l->setVariableValues(tmp_pose_.joint_states_l);
+			
+			tmp_pose_.handle_r = goal_pose_.handle_r;
+			tmp_pose_.handle_l = goal_pose_.handle_l;
 
-		moveit_msgs::DisplayRobotState msg_r;
-		robot_state::robotStateToRobotStateMsg(*kinematic_state, msg_r.state);
-		robot_state_publisher_r_.publish(msg_r);
+			moveit_msgs::DisplayRobotState msg_r;
+			robot_state::robotStateToRobotStateMsg(*kinematic_state, msg_r.state);
+			robot_state_publisher_r_.publish(msg_r);
+		}		
+		
+		return ret;
 	}
 
 	void processFeedback(
@@ -709,9 +780,8 @@ public:
 			if (!stored_poses[i].name.compare(requested_name)) {
 
 				visualization_msgs::InteractiveMarker marker;
-				start_pose_ = stored_poses[i];
-				tmp_pose_ = stored_poses[i];
-
+				node_pose pose = stored_poses[i];
+				
 				res.name = stored_poses[i].name;
 				res.joint_names_r = stored_poses[i].joint_names_r;
 				res.joint_names_l = stored_poses[i].joint_names_l;
@@ -722,6 +792,9 @@ public:
 				marker.pose = stored_poses[i].pose;
 				server_->insert(marker);
 				server_->applyChanges();
+				
+				pose.handle_r = handle_r_;
+				pose.handle_l = handle_l_;
 
 				robot_state_publisher_r_.publish(
 						DisplayRobotStateFromJointStates("right_arm_group",
@@ -730,6 +803,8 @@ public:
 						DisplayRobotStateFromJointStates("left_arm_group",
 								stored_poses[i].joint_states_l));
 
+				tmp_pose_ = pose;
+				start_pose_ = pose;
 				return true;
 			}
 		}
@@ -745,8 +820,9 @@ public:
 			if (!stored_poses[i].name.compare(requested_name)) {
 
 				visualization_msgs::InteractiveMarker marker;
-				tmp_pose_ = stored_poses[i];
-				goal_pose_ = stored_poses[i];
+				node_pose pose = stored_poses[i];
+				pose = stored_poses[i];
+				
 
 				res.name = stored_poses[i].name;
 				res.joint_names_r = stored_poses[i].joint_names_r;
@@ -758,6 +834,9 @@ public:
 				marker.pose = stored_poses[i].pose;
 				server_->insert(marker);
 				server_->applyChanges();
+				
+				pose.handle_r = handle_r_;
+				pose.handle_l = handle_l_;
 
 				robot_state_publisher_r_.publish(
 						DisplayRobotStateFromJointStates("right_arm_group",
@@ -766,6 +845,8 @@ public:
 						DisplayRobotStateFromJointStates("left_arm_group",
 								stored_poses[i].joint_states_l));
 
+				tmp_pose_ = pose;
+				goal_pose_ = pose;
 				return true;
 			}
 		}
@@ -872,8 +953,24 @@ public:
 	bool simulate(seneka_interactive::simulate::Request &req,
 			seneka_interactive::simulate::Response &res) 
 	{
+		simulate_.simulate = true;
+		simulate_.iterations = req.iterations;
+		simulate_.simulated_arm = SIMULATED_ARM_RIGHT;
+		
 		res.msg = "Simulating one iteration!";
-		simulate_ = true;
+		if(!req.option.compare("cartesian")){
+			simulate_.option = 0;
+		}
+		else if(!req.option.compare("jointtarget")){
+			simulate_.option = 1;
+		}
+		else if(!req.option.compare("posetarget")){
+			simulate_.option = 2;
+		}
+		else{
+			res.msg = "Sry this is not known. The possible options are \n [cartesian] \n [jointtarget] \n [posetarget]";
+			simulate_.simulate = false;
+		}
 		return true;
 	}
 
@@ -1203,9 +1300,9 @@ public:
 				ROS_INFO("Joint Constraints left active");
 				
 			generateIkSolutions();
-			if (simulate_) {
-				simpolateCartesianPath();
-				simulate_ = false;
+			if (simulate_.simulate) {
+				simulation(simulate_.option,simulate_.iterations);
+				simulate_.simulate = false;
 			}
 			loop_rate.sleep();
 		}
