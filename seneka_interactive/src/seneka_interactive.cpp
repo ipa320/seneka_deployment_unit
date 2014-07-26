@@ -46,7 +46,7 @@
 #include "seneka_interactive/generateIK.h"
 
 
-
+#include <boost/thread/mutex.hpp>
 #include <boost/bind.hpp>
 
 const double PI = 3.14159265359;
@@ -79,6 +79,7 @@ private:
 	bool freeze_ik_left_, freeze_ik_right_;
 
 	node_pose start_pose_, tmp_pose_, goal_pose_;
+	boost::mutex lock;
 
 public:
 	//Constructor
@@ -279,8 +280,9 @@ public:
 		service_request.ik_request.avoid_collisions = false;
 		
 		node_pose node;
-		node = smartJointValues(start_pose);
-
+		//node = smartJointValues(start_pose);
+		node = start_pose;
+		
 		//freezes ik generation when necessary
 		if (!freeze_ik_left_) {
 			//left arm
@@ -290,7 +292,7 @@ public:
 
 
 			uint samples;
-			equaljointstates ? samples = 100 : samples = 1;
+			equaljointstates ? samples = 300 : samples = 1;
 
 			std::vector<double> referencejoints;
 			referencejoints = node.joint_states_l;
@@ -350,7 +352,7 @@ public:
 			service_request.ik_request.constraints = constraints_r;
 
 			uint samples;
-			equaljointstates ? samples = 100 : samples = 1;
+			equaljointstates ? samples = 300 : samples = 1;
 
 			std::vector<double> referencejoints;
 			referencejoints = node.joint_states_r;
@@ -410,21 +412,55 @@ public:
 	//simulates from pregrasp to pickedup
 	void simulateFromRealWorld(node_pose start_pose){
 		
-		sensornode rwnode = seneka_pnp_tools::getSensornodePose();
+		unsigned int used_handle_r = 2;//use the real handle id 1-6
+		unsigned int used_handle_l = 5;//use the real handle id 1-6
+		used_handle_r--;
+		used_handle_l--;
 		
-		if(node.success){
+		lock.lock();
+		sensornode rwnode = seneka_pnp_tools::getSensornodePose();
+		lock.unlock();
+		
+		if(rwnode.success){
 			
-			node_pose nodepose;
-			nodepose.pose = rwnode.pose;
-			nodepose.handle_l		
+			node_pose dual_arm_pose;
+			dual_arm_pose.pose = rwnode.pose;
+			dual_arm_pose.joint_names_r = start_pose.joint_names_r;
+			dual_arm_pose.joint_names_r = start_pose.joint_names_l;
+			dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].down;
+			dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].down;
 			
-//			//choose handles
-//			unsigned int used_handle_r = 2;//use the real handle id 1-6
-//			unsigned int used_handle_l = 5;//use the real handle id 1-6
-//			used_handle_r--;
-//			used_handle_l--;
-//			nodepose.handle_r = node.handholds[used_handle_r].handle;
-//			nodepose.handle_l = node.handholds[used_handle_l].handle;	
+			//generate ik from handhold position
+			lock.lock();
+			node_pose tmp_pose = generateIkSolutions(start_pose, dual_arm_pose, true);
+			lock.unlock();
+			dual_arm_pose.joint_states_r = tmp_pose.joint_states_r;
+			dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;			
+			
+			//move to down pose with jointtarget
+			if(simulateJointTarget(start_pose, dual_arm_pose)){
+				
+				start_pose = dual_arm_pose;
+				dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].up;
+				dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].up;
+				if(simulateCartesianPath(start_pose, dual_arm_pose)){
+					tmp_pose = tmp_pose_;
+					setGoalState("prepack-rear");
+					if(simulateJointTarget(tmp_pose, goal_pose_)){
+						tmp_pose = tmp_pose_;
+						setGoalState("packed-rear-h1");
+						if(simulateJointTarget(tmp_pose, goal_pose_)){
+							tmp_pose = tmp_pose_;
+							setGoalState("packed-rear");
+							simulateJointTarget(tmp_pose, goal_pose_);	
+						}
+					}
+				}
+
+			}
+			
+			
+
 			
 		}		
 	}
@@ -444,8 +480,8 @@ public:
 			
 			bool feedback = false;
 					
-			if(option == 0)	feedback = simulateCartesianPath();
-			else if(option == 1) feedback = simulateJointTarget();
+			if(option == 0)	feedback = simulateCartesianPath(start_pose_, goal_pose_);
+			else if(option == 1) feedback = simulateJointTarget(start_pose_, goal_pose_);
 			else if(option == 2) feedback = simulatePoseTarget();
 			else ROS_INFO("This option is not available");//Nothing to do			
 			
@@ -511,7 +547,7 @@ public:
 		return ret;
 	}
 	
-	bool simulateJointTarget() {
+	bool simulateJointTarget(node_pose start_pose, node_pose goal_pose) {
 
 		double visualizationtime = 0;
 
@@ -529,8 +565,8 @@ public:
 		robot_state::JointStateGroup* joint_state_group_r =	kinematic_state->getJointStateGroup("right_arm_group");
 		robot_state::JointStateGroup* joint_state_group_l =	kinematic_state->getJointStateGroup("left_arm_group");
 
-		joint_state_group_r->setVariableValues(start_pose_.joint_states_r);
-		joint_state_group_l->setVariableValues(start_pose_.joint_states_l);
+		joint_state_group_r->setVariableValues(start_pose.joint_states_r);
+		joint_state_group_l->setVariableValues(start_pose.joint_states_l);
 
 //	  group_r.setWorkspace (0, 0, 0, 5, 5, 5);
 //	  group_r.setStartState(*kinematic_state);
@@ -549,11 +585,11 @@ public:
 		group_both.setPlanningTime(15.0);
 
 		std::vector<double> joints_combined;
-		for (uint i = 0; i < goal_pose_.joint_states_l.size(); i++) {
-			joints_combined.push_back(goal_pose_.joint_states_l[i]);
+		for (uint i = 0; i < goal_pose.joint_states_l.size(); i++) {
+			joints_combined.push_back(goal_pose.joint_states_l[i]);
 		}
-		for (uint i = 0; i < goal_pose_.joint_states_r.size(); i++) {
-			joints_combined.push_back(goal_pose_.joint_states_r[i]);
+		for (uint i = 0; i < goal_pose.joint_states_r.size(); i++) {
+			joints_combined.push_back(goal_pose.joint_states_r[i]);
 		}
 		group_both.setJointValueTarget(joints_combined);
 
@@ -586,9 +622,9 @@ public:
 	}
 
 	//Simulates the planning with cartesian path between a start state and the goal position
-	bool simulateCartesianPath() {
+	bool simulateCartesianPath(node_pose start_pose, node_pose goal_pose) {
 
-		double visualizationtime = 0;
+		double visualizationtime = 5;
 
 		move_group_interface::MoveGroup group_r("right_arm_group");
 		move_group_interface::MoveGroup group_l("left_arm_group");
@@ -603,8 +639,8 @@ public:
 		robot_state::JointStateGroup* joint_state_group_r = kinematic_state->getJointStateGroup("right_arm_group");
 		robot_state::JointStateGroup* joint_state_group_l = kinematic_state->getJointStateGroup("left_arm_group");
 
-		joint_state_group_r->setVariableValues(start_pose_.joint_states_r);
-		joint_state_group_l->setVariableValues(start_pose_.joint_states_l);
+		joint_state_group_r->setVariableValues(start_pose.joint_states_r);
+		joint_state_group_l->setVariableValues(start_pose.joint_states_l);
 
 		group_r.setWorkspace(0, 0, 0, 5, 5, 5);
 		group_r.setStartState(*kinematic_state);
@@ -619,8 +655,8 @@ public:
 		std::vector<geometry_msgs::Pose> waypoints_r, waypoints_l;
 		waypoints_r.clear();
 		waypoints_l.clear();
-		waypoints_r.push_back(goal_pose_.handle_r);
-		waypoints_l.push_back(goal_pose_.handle_l);
+		waypoints_r.push_back(goal_pose.handle_r);
+		waypoints_l.push_back(goal_pose.handle_l);
 
 		double fraction_r = 0;
 		double fraction_l = 0;
@@ -790,38 +826,33 @@ public:
 		//robot_state_publisher_l_.publish( msg ); 
 		return msg;
 	}
-
-	//------------ Services -----------------------------------
-	bool setStartState(seneka_interactive::setStartState::Request &req,
-			seneka_interactive::setStartState::Response &res) 
-	{
-		std::string requested_name = req.name;
-
+	
+	bool setStartState(std::string name){
+		
+		std::string requested_name = name;
+				
 		for (uint i = 0; i < stored_poses.size(); i++) {
 			if (!stored_poses[i].name.compare(requested_name)) {
 
 				visualization_msgs::InteractiveMarker marker;
 				node_pose pose = stored_poses[i];
 				
-				res.name = stored_poses[i].name;
-				res.joint_names_r = stored_poses[i].joint_names_r;
-				res.joint_names_l = stored_poses[i].joint_names_l;
-				res.joint_states_r = stored_poses[i].joint_states_r;
-				res.joint_states_l = stored_poses[i].joint_states_l;
-
 				server_->get("my_marker", marker);
-				marker.pose = stored_poses[i].pose;
+				marker.pose = pose.pose;
 				server_->insert(marker);
 				server_->applyChanges();
+				lock.lock();
+				createGrabPoses(marker.pose);
+				lock.unlock();
 				
-				handle_r_ = pose.handle_r;
-				handle_l_ = pose.handle_l;
+				pose.handle_r = handle_r_;
+				pose.handle_l = handle_l_;
 				robot_state_publisher_r_.publish(
 						DisplayRobotStateFromJointStates("right_arm_group",
-								stored_poses[i].joint_states_r));
+								pose.joint_states_r));
 				robot_state_publisher_l_.publish(
 						DisplayRobotStateFromJointStates("left_arm_group",
-								stored_poses[i].joint_states_l));
+								pose.joint_states_l));
 
 				tmp_pose_ = pose;
 				start_pose_ = pose;
@@ -830,43 +861,68 @@ public:
 		}
 		return false;
 	}
-
-	bool setGoalState(seneka_interactive::setGoalState::Request &req,
-			seneka_interactive::setGoalState::Response &res) 
-	{
-		std::string requested_name = req.name;
+	
+	bool setGoalState(std::string name){
+		
+		std::string requested_name = name;
 
 		for (uint i = 0; i < stored_poses.size(); i++) {
 			if (!stored_poses[i].name.compare(requested_name)) {
 
 				visualization_msgs::InteractiveMarker marker;
 				node_pose pose = stored_poses[i];
-				pose = stored_poses[i];				
-
-				res.name = stored_poses[i].name;
-				res.joint_names_r = stored_poses[i].joint_names_r;
-				res.joint_names_l = stored_poses[i].joint_names_l;
-				res.joint_states_r = stored_poses[i].joint_states_r;
-				res.joint_states_l = stored_poses[i].joint_states_l;
+				pose = stored_poses[i];	
 
 				server_->get("my_marker", marker);
-				marker.pose = stored_poses[i].pose;
+				marker.pose = pose.pose;
 				server_->insert(marker);
 				server_->applyChanges();
+				lock.lock();
+				createGrabPoses(marker.pose);
+				lock.unlock();
 				
-				handle_r_ = pose.handle_r;
-				handle_l_ = pose.handle_l;
+				pose.handle_r = handle_r_;
+				pose.handle_l = handle_l_;
 				robot_state_publisher_r_.publish(
 						DisplayRobotStateFromJointStates("right_arm_group",
-								stored_poses[i].joint_states_r));
+								pose.joint_states_r));
 				robot_state_publisher_l_.publish(
 						DisplayRobotStateFromJointStates("left_arm_group",
-								stored_poses[i].joint_states_l));
+								pose.joint_states_l));
 
 				tmp_pose_ = pose;
 				goal_pose_ = pose;
 				return true;
 			}
+		}
+	}
+
+	//------------ Services -----------------------------------
+	bool setStartState(seneka_interactive::setStartState::Request &req,
+			seneka_interactive::setStartState::Response &res) 
+	{		
+		if(setStartState(req.name)){
+			res.name = start_pose_.name;
+			res.joint_names_r = start_pose_.joint_names_r;
+			res.joint_names_l = start_pose_.joint_names_l;
+			res.joint_states_r = start_pose_.joint_states_r;
+			res.joint_states_l = start_pose_.joint_states_l;
+			return true;
+		}
+		
+		return false;
+	}
+	
+	bool setGoalState(seneka_interactive::setGoalState::Request &req,
+			seneka_interactive::setGoalState::Response &res) 
+	{
+		if(setGoalState(req.name)){
+			res.name = start_pose_.name;
+			res.joint_names_r = goal_pose_.joint_names_r;
+			res.joint_names_l = goal_pose_.joint_names_l;
+			res.joint_states_r = goal_pose_.joint_states_r;
+			res.joint_states_l = goal_pose_.joint_states_l;
+			return true;
 		}
 
 		return false;
@@ -1223,7 +1279,7 @@ public:
 		pose.joint_states_l.push_back(-0.5);
 		pose.joint_states_l.push_back(3.141);
 		pose.joint_states_l.push_back(0.012214);
-		pose.joint_states_l.push_back(3.141);
+		pose.joint_states_l.push_back(-3.141);
 
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
@@ -1246,7 +1302,7 @@ public:
 		pose.joint_states_l.push_back(1.12702);
 		pose.joint_states_l.push_back(1.52883);
 		pose.joint_states_l.push_back(0.012214);
-		pose.joint_states_l.push_back(-2.74885);
+		pose.joint_states_l.push_back(-2.74885);//
 
 		pose.pose.position.x = 1.38785;
 		pose.pose.position.y = 0;
@@ -1306,7 +1362,7 @@ public:
 	//check Sensornode position and start planning
 	void mainLoop() {
 
-		ros::AsyncSpinner spinner(1); // Use 4 threads
+		ros::AsyncSpinner spinner(2); // Use 4 threads
 		spinner.start();
 
 		ros::Rate loop_rate(1);
@@ -1322,7 +1378,8 @@ public:
 				generateIK_ = false;
 			}
 			if (simulate_.simulate) {
-				simulation(simulate_.option,simulate_.iterations);
+				simulateFromRealWorld(start_pose_);
+				//simulation(simulate_.option,simulate_.iterations);
 				simulate_.simulate = false;
 			}
 			loop_rate.sleep();
