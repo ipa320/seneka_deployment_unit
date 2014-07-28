@@ -13,20 +13,10 @@
 
 #include <boost/algorithm/string.hpp>
 
-const unsigned int SIMULATED_ARM_RIGHT = 0; 
-const unsigned int SIMULATED_ARM_LEFT = 1; 
-const unsigned int SIMULATED_ARM_BOTH = 2; 
-
-struct node_pose {
-	std::string name;
-	geometry_msgs::Pose pose;
-	geometry_msgs::Pose handle_r;
-	geometry_msgs::Pose handle_l;
-	std::vector<std::string> joint_names_r;
-	std::vector<std::string> joint_names_l;
-	std::vector<double> joint_states_r;
-	std::vector<double> joint_states_l;
-};
+const unsigned int SIMULATE_CARTESIAN_PATH = 0; 
+const unsigned int SIMULATE_JOINT_TARGET = 1; 
+const unsigned int SIMULATE_POSE_TARGET = 2; 
+const unsigned int SIMULATE_FROM_REALWORLD = 3; 
 
 struct simulation_order{
 	bool simulate;

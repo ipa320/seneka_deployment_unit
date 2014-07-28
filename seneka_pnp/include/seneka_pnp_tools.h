@@ -33,7 +33,22 @@ struct sensornode{
 	std::vector<handhold> handholds;
 };
 
+struct node_pose {
+	std::string name;
+	geometry_msgs::Pose pose;
+	geometry_msgs::Pose handle_r;
+	geometry_msgs::Pose handle_l;
+	std::vector<std::string> joint_names_r;
+	std::vector<std::string> joint_names_l;
+	std::vector<double> joint_states_r;
+	std::vector<double> joint_states_l;
+};
+
+
 namespace seneka_pnp_tools{
+
+bool a();
+bool b();
 
 sensornode getSensornodePose(){
 	
@@ -160,6 +175,8 @@ sensornode getSensornodePose(){
 	  }
 	  return node;
   }
+
+
 
 	//wrapper for calling the fk service due to some failures when using it with move_group.h
 	void fk_solver(ros::NodeHandle *node_handle, std::vector<double> &joint_positions_r, std::vector<double> &joint_positions_l, geometry_msgs::Pose *pose_l, geometry_msgs::Pose *pose_r){

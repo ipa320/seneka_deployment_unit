@@ -94,6 +94,7 @@ public:
 
 	void init() {
 
+		//seneka_pnp_tools::a();
 		create_stored_poses();
 
 		robot_state_publisher_l_ = node_handle_.advertise
@@ -152,58 +153,6 @@ public:
 		mainLoop();
 	}
 
-	/*
-	 
-	///transform from left arm to right arm and add a jiggle factor
-	moveit_msgs::Constraints transformJointStates(std::vector<double> joints) {
-
-		double jiggle = PI;
-
-		moveit_msgs::Constraints constraint;
-
-		moveit_msgs::JointConstraint jconstraint;
-
-		jconstraint.joint_name = "right_arm_shoulder_pan_joint";
-		jconstraint.position = 1.04915;
-		jconstraint.tolerance_above = PI / 4;
-		jconstraint.tolerance_below = PI / 4;
-		jconstraint.weight = 1;
-		constraint.joint_constraints.push_back(jconstraint);
-
-		jconstraint.joint_name = "right_arm_shoulder_lift_joint";
-		jconstraint.position = 0;
-		jconstraint.tolerance_above = 0.6;
-		jconstraint.tolerance_below = 0.6;
-		jconstraint.weight = 1;
-		//constraint.joint_constraints.push_back(jconstraint);
-
-		return constraint;
-	}
-
-	moveit_msgs::Constraints leftArmConstraints() {
-
-		double jiggle = PI;
-
-		moveit_msgs::Constraints constraint;
-
-		moveit_msgs::JointConstraint jconstraint;
-		jconstraint.joint_name = "left_arm_shoulder_pan_joint";
-		jconstraint.position = -1.04728;
-		jconstraint.tolerance_above = PI / 4;
-		jconstraint.tolerance_below = PI / 4;
-		jconstraint.weight = 1;
-		constraint.joint_constraints.push_back(jconstraint);
-
-		jconstraint.joint_name = "left_arm_shoulder_lift_joint";
-		jconstraint.position = 1.09;
-		jconstraint.tolerance_above = 0.6;
-		jconstraint.tolerance_below = 0.6;
-		jconstraint.weight = 1;
-		//constraint.joint_constraints.push_back(jconstraint);
-
-		return constraint;
-	}*/
-	
 	node_pose smartJointValues(node_pose np) {
 
 		for (uint i = 0; i < np.joint_states_r.size(); i++) {
@@ -227,7 +176,7 @@ public:
 	}
 
 	double createSmartJointValue(double jointvalue) {
-
+		
 		if (jointvalue > PI) {
 			jointvalue -= 2 * PI;
 		} else if (jointvalue < -PI) {
@@ -235,11 +184,9 @@ public:
 		} else {
 			//joint value already in shape
 		}
-
+		
 		return jointvalue;
-	}
-
-	
+	}	
 
 	//returns distance between two states based on cumulated difference of joints
 	double getStateDistance(std::vector<double> a, std::vector<double> b) {
@@ -256,7 +203,7 @@ public:
 		return distance;
 	}
 
-	node_pose generateIkSolutions(node_pose start_pose, node_pose goal_pose, bool equaljointstates) {
+	node_pose generateIkSolutions(node_pose start_pose, node_pose goal_pose, bool equaljointstates, bool freezeikleft, bool freezeikright) {
 
 		std::vector<double> joint_values_l;
 		std::vector<double> joint_values_r;
@@ -284,7 +231,7 @@ public:
 		node = start_pose;
 		
 		//freezes ik generation when necessary
-		if (!freeze_ik_left_) {
+		if (!freezeikleft) {
 			//left arm
 			service_request.ik_request.group_name = "left_arm_group";
 			service_request.ik_request.pose_stamped.pose = target_pose_l;
@@ -345,7 +292,7 @@ public:
 		}
 
 		//freezes ik generation when necessary
-		if (!freeze_ik_right_) {
+		if (!freezeikright) {
 			service_request.ik_request.group_name = "right_arm_group";
 			service_request.ik_request.pose_stamped.pose = target_pose_r;
 			//if(result)
@@ -408,9 +355,38 @@ public:
 	
 		return node;
 	}
+		
+	//HERE
+	/* simulates from start to goal state using different planning techniques
+	 * option = 0: linear path planning using CartesianPath
+	 * option = 1:
+	 * option = 2:
+	 */
+	void simulation(uint option, uint iterations){
+		
+		if(iterations == 0) iterations = 1;
+		uint success_counter = 0;	
+		
+		for(uint i=0; i < iterations; i++){
+			
+			bool feedback = false;
+					
+			if(option == SIMULATE_CARTESIAN_PATH)	feedback = simulateCartesianPath(start_pose_, goal_pose_);
+			else if(option == SIMULATE_JOINT_TARGET) feedback = simulateJointTarget(start_pose_, goal_pose_);
+			else if(option == SIMULATE_POSE_TARGET) feedback = simulatePoseTarget();
+			else if(option == SIMULATE_FROM_REALWORLD) feedback = simulateFromRealWorld(start_pose_);
+			else ROS_INFO("This option is not available");//Nothing to do
+			
+			if(feedback) success_counter++;
+		}
+		
+		//evaluation
+		float percentage = (float)success_counter/iterations * 100;
+		ROS_INFO("The success rate was %f %% doing %u iterations", percentage, iterations);
+	}
 	
 	//simulates from pregrasp to pickedup
-	void simulateFromRealWorld(node_pose start_pose){
+	bool simulateFromRealWorld(node_pose start_pose){
 		
 		unsigned int used_handle_r = 2;//use the real handle id 1-6
 		unsigned int used_handle_l = 5;//use the real handle id 1-6
@@ -432,7 +408,7 @@ public:
 			
 			//generate ik from handhold position
 			lock.lock();
-			node_pose tmp_pose = generateIkSolutions(start_pose, dual_arm_pose, true);
+			node_pose tmp_pose = generateIkSolutions(start_pose, dual_arm_pose, true,freeze_ik_left_,freeze_ik_right_);
 			lock.unlock();
 			dual_arm_pose.joint_states_r = tmp_pose.joint_states_r;
 			dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;			
@@ -456,41 +432,9 @@ public:
 						}
 					}
 				}
-
-			}
-			
-			
-
-			
+			}		
 		}		
-	}
-	
-	//HERE
-	/* simulates from start to goal state using different planning techniques
-	 * option = 0: linear path planning using CartesianPath
-	 * option = 1:
-	 * option = 2:
-	 */
-	void simulation(uint option, uint iterations){
-		
-		if(iterations == 0) iterations = 1;
-		uint success_counter = 0;	
-		
-		for(uint i=0; i < iterations; i++){
-			
-			bool feedback = false;
-					
-			if(option == 0)	feedback = simulateCartesianPath(start_pose_, goal_pose_);
-			else if(option == 1) feedback = simulateJointTarget(start_pose_, goal_pose_);
-			else if(option == 2) feedback = simulatePoseTarget();
-			else ROS_INFO("This option is not available");//Nothing to do			
-			
-			if(feedback) success_counter++;
-		}
-		
-		//evaluation
-		float percentage = (float)success_counter/iterations * 100;
-		ROS_INFO("The success rate was %f %% doing %u iterations", percentage, iterations);
+		return true;
 	}
 	
 	bool simulatePoseTarget(){
@@ -705,8 +649,7 @@ public:
 		return ret;
 	}
 
-	void processFeedback(
-			const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback) {
+	void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback) {
 		/*ROS_INFO_STREAM( feedback->marker_name << " is now at "
 		 << feedback->pose.position.x << ", " << feedback->pose.position.y
 		 << ", " << feedback->pose.position.z );*/
@@ -1029,17 +972,20 @@ public:
 	{
 		simulate_.simulate = true;
 		simulate_.iterations = req.iterations;
-		simulate_.simulated_arm = SIMULATED_ARM_RIGHT;
+		//simulate_.simulated_arm = SIMULATED_ARM_RIGHT;
 		
 		res.msg = "Simulating one iteration!";
 		if(!req.option.compare("cartesian")){
-			simulate_.option = 0;
+			simulate_.option = SIMULATE_CARTESIAN_PATH;
 		}
 		else if(!req.option.compare("jointtarget")){
-			simulate_.option = 1;
+			simulate_.option = SIMULATE_JOINT_TARGET;
 		}
 		else if(!req.option.compare("posetarget")){
-			simulate_.option = 2;
+			simulate_.option = SIMULATE_POSE_TARGET;
+		}
+		else if(!req.option.compare("realworld")){
+			simulate_.option = SIMULATE_FROM_REALWORLD;
 		}
 		else{
 			res.msg = "Sry this is not known. The possible options are \n [cartesian] \n [jointtarget] \n [posetarget]";
@@ -1240,29 +1186,6 @@ public:
 		pose.pose.position.z = 0.549912;
 		stored_poses.push_back(pose);
 
-		//pregrasp-rear-close
-		pose.joint_states_r.clear();
-		pose.joint_states_l.clear();
-		pose.name = "pregrasp-rear-close";
-
-		pose.joint_states_r.push_back(1.1);
-		pose.joint_states_r.push_back(-1);
-		pose.joint_states_r.push_back(2);
-		pose.joint_states_r.push_back(-1.1);
-		pose.joint_states_r.push_back(-0.0127962);
-		pose.joint_states_r.push_back(3.05);
-		pose.joint_states_l.push_back(-1.1);
-		pose.joint_states_l.push_back(-2);
-		pose.joint_states_l.push_back(-2);
-		pose.joint_states_l.push_back(-2.2);
-		pose.joint_states_l.push_back(0.012214);
-		pose.joint_states_l.push_back(3.141);
-
-		pose.pose.position.x = 3;
-		pose.pose.position.y = 0;
-		pose.pose.position.z = 0.559795;
-		stored_poses.push_back(pose);
-
 		//pregrasp-rear
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
@@ -1374,12 +1297,11 @@ public:
 				ROS_INFO("Joint Constraints left active");
 			
 			if(generateIK_){
-				tmp_pose_ = generateIkSolutions(start_pose_, goal_pose_, equaljointstates_);
+				tmp_pose_ = generateIkSolutions(start_pose_, goal_pose_, equaljointstates_,freeze_ik_left_,freeze_ik_right_);
 				generateIK_ = false;
 			}
 			if (simulate_.simulate) {
-				simulateFromRealWorld(start_pose_);
-				//simulation(simulate_.option,simulate_.iterations);
+				simulation(simulate_.option,simulate_.iterations);
 				simulate_.simulate = false;
 			}
 			loop_rate.sleep();
