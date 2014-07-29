@@ -16,7 +16,6 @@
 #include <moveit_msgs/MoveItErrorCodes.h>
 
 #include <moveit/move_group_interface/move_group.h>
-#include <moveit_msgs/DisplayRobotState.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include <moveit_msgs/DisplayRobotState.h>
@@ -30,7 +29,6 @@
 
 // Robot state publishing
 #include <moveit/robot_state/conversions.h>
-#include <moveit_msgs/DisplayRobotState.h>
 
 //services
 #include "seneka_interactive/setStartState.h"
@@ -66,7 +64,7 @@ private:
 	interactive_markers::InteractiveMarkerServer* server_;
 	geometry_msgs::Pose marker_pose_;
 	geometry_msgs::Pose handle_l_, handle_r_;
-	moveit_msgs::Constraints constraints_l, constraints_r;
+	moveit_msgs::Constraints constraints_l_, constraints_r_;
 	bool marker_changed_;
 	double gripper_length;
 	std::vector<node_pose> stored_poses;
@@ -94,7 +92,6 @@ public:
 
 	void init() {
 
-		//seneka_pnp_tools::a();
 		create_stored_poses();
 
 		robot_state_publisher_l_ = node_handle_.advertise
@@ -235,7 +232,7 @@ public:
 			//left arm
 			service_request.ik_request.group_name = "left_arm_group";
 			service_request.ik_request.pose_stamped.pose = target_pose_l;
-			service_request.ik_request.constraints = constraints_l;
+			service_request.ik_request.constraints = constraints_l_;
 
 
 			uint samples;
@@ -296,7 +293,7 @@ public:
 			service_request.ik_request.group_name = "right_arm_group";
 			service_request.ik_request.pose_stamped.pose = target_pose_r;
 			//if(result)
-			service_request.ik_request.constraints = constraints_r;
+			service_request.ik_request.constraints = constraints_r_;
 
 			uint samples;
 			equaljointstates ? samples = 300 : samples = 1;
@@ -1035,12 +1032,12 @@ public:
 		res.success = false;
 		
 		if(!group.compare("r")){
-			constraints_r = seneka_interactive_tools::generateIKConstraints(cmd.c_str(), new_pose.joint_names_r, new_pose.joint_states_r, tolerance, position);
+			constraints_r_ = seneka_interactive_tools::generateIKConstraints(cmd.c_str(), new_pose.joint_names_r, new_pose.joint_states_r, tolerance, position);
 			res.success = true;
 		}
 		
 		if(!group.compare("l")){
-			constraints_l = seneka_interactive_tools::generateIKConstraints(cmd.c_str(), new_pose.joint_names_l, new_pose.joint_states_l, tolerance, position);
+			constraints_l_ = seneka_interactive_tools::generateIKConstraints(cmd.c_str(), new_pose.joint_names_l, new_pose.joint_states_l, tolerance, position);
 			res.success = true;
 		}	
 		
@@ -1277,6 +1274,29 @@ public:
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
 		stored_poses.push_back(pose);
+		
+		//home
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "home";
+
+		pose.joint_states_r.push_back(-1.5705);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(-2.5);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(-1.7);
+		pose.joint_states_l.push_back(1.5705);
+		pose.joint_states_l.push_back(-3.141);
+		pose.joint_states_l.push_back(2.5);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(3.141);
+		pose.joint_states_l.push_back(1.7);
+
+		pose.pose.position.x = 3;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.559808;
+		stored_poses.push_back(pose);
 
 		start_pose_ = pose;
 	}
@@ -1291,9 +1311,9 @@ public:
 		ros::Rate loop_rate(1);
 		while (ros::ok()) {
 						
-			if(constraints_r.joint_constraints.size() > 0)
+			if(constraints_r_.joint_constraints.size() > 0)
 				ROS_INFO("Joint Constraints right active");
-			if(constraints_l.joint_constraints.size() > 0)
+			if(constraints_l_.joint_constraints.size() > 0)
 				ROS_INFO("Joint Constraints left active");
 			
 			if(generateIK_){

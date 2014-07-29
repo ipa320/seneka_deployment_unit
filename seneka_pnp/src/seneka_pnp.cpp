@@ -207,6 +207,114 @@ public:
     return ret;
   }
   
+  bool homeToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+
+	  bool ret = false;
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  std::vector<double> joint_positions;	    
+
+	  //pregrasp-rear-h1
+	  joint_positions.clear();
+	  joint_positions.push_back(1.5705);//l
+	  joint_positions.push_back(-1.5);
+	  joint_positions.push_back(2.5);
+	  joint_positions.push_back(0);
+	  joint_positions.push_back(3.141);
+	  joint_positions.push_back(1.7);
+	  joint_positions.push_back(-1.5705);//r
+	  joint_positions.push_back(-1.6);
+	  joint_positions.push_back(-2.5);
+	  joint_positions.push_back(3.141);
+	  joint_positions.push_back(3.141);
+	  joint_positions.push_back(-1.7);
+
+	  group_both->setJointValueTarget(joint_positions);
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+
+	  //pregrasp-rear-h2
+	  if(ret){
+		  ret = false;
+		  joint_positions.clear();
+		  joint_positions.push_back(1.5705);//l
+		  joint_positions.push_back(-1.5);
+		  joint_positions.push_back(0);
+		  joint_positions.push_back(0);
+		  joint_positions.push_back(3.141);
+		  joint_positions.push_back(1.7);
+		  joint_positions.push_back(-1.5705);//r
+		  joint_positions.push_back(-1.6);
+		  joint_positions.push_back(0);
+		  joint_positions.push_back(3.141);
+		  joint_positions.push_back(3.141);
+		  joint_positions.push_back(-1.7);
+
+		  group_both->setJointValueTarget(joint_positions);
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  group_l->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
+
+		  //pregrasp-rear-h3
+		  if(ret){
+			  ret = false;
+			  joint_positions.clear();
+			  joint_positions.push_back(-1.5);//l
+			  joint_positions.push_back(-1.5);
+			  joint_positions.push_back(0);
+			  joint_positions.push_back(0);
+			  joint_positions.push_back(3.141);
+			  joint_positions.push_back(1.7);
+			  joint_positions.push_back(1.5);//r
+			  joint_positions.push_back(-1.6);
+			  joint_positions.push_back(0);
+			  joint_positions.push_back(3.141);
+			  joint_positions.push_back(3.141);
+			  joint_positions.push_back(-1.7);
+
+			  group_both->setJointValueTarget(joint_positions);
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  group_l->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }
+
+			  //pregrasp-rear-h4
+			  if(ret){
+				  ret = false;
+				  joint_positions.clear();
+				  joint_positions.push_back(-1.5);//l
+				  joint_positions.push_back(-2.0);
+				  joint_positions.push_back(0);
+				  joint_positions.push_back(0);
+				  joint_positions.push_back(0);
+				  joint_positions.push_back(1.7);
+				  joint_positions.push_back(1.5);//r
+				  joint_positions.push_back(-1.0);
+				  joint_positions.push_back(0);
+				  joint_positions.push_back(3.141);
+				  joint_positions.push_back(0);
+				  joint_positions.push_back(-1.7);
+
+				  group_both->setJointValueTarget(joint_positions);
+				  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+					  group_l->asyncExecute(plan);
+					  ret = monitorArmMovement(true,true);
+				  }
+
+				  //topregrasp
+				  if(ret){
+					  ret = toPreGraspRear(group_l, group_r, group_both);
+				  }
+			  }
+		  }
+	  }  
+	  return ret;
+  }
+	  
   bool toPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
 	  bool ret = false;
@@ -216,30 +324,7 @@ public:
 	  
 	  moveit::planning_interface::MoveGroup::Plan lplan, rplan, merged_plan;
 	  moveit::planning_interface::MoveGroup::Plan myPlan;
-	  
-	  /*std::vector<double> group_variable_values;
-	  group_variable_values = group_r->getCurrentJointValues();
-	  group_variable_values[0] = 1.0;
-	  group_variable_values[1] = -1.5;
-	  group_variable_values[2] = 2.5;
-	  group_r->setJointValueTarget(group_variable_values);
-	  
-	  group_variable_values = group_l->getCurrentJointValues();
-	  group_variable_values[0] = -1.0;
-	  group_variable_values[1] = -1.5;
-	  group_variable_values[2] = -2.5;
-	  group_l->setJointValueTarget(group_variable_values);
-	  
-	  if(seneka_pnp_tools::multiplan(group_r,&rplan)){
-		  group_r->asyncExecute(rplan);
-		  ret = monitorArmMovement(false,true);
-	  }
-	  
-	  if(seneka_pnp_tools::multiplan(group_l,&lplan) && ret){
-		  group_r->asyncExecute(lplan);
-		  ret = monitorArmMovement(true,false);
-	  }*/
-	  
+	  	  
 	  group_l->setNamedTarget("lpregrasp-rear");
 	  group_r->setNamedTarget("rpregrasp-rear");
 	  if(seneka_pnp_tools::multiplan(group_l,&myPlan)){
@@ -261,6 +346,7 @@ public:
 	  return ret;
   }
 
+  //HERE_PI
   bool toPickedUpRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
 	    bool ret = true;
@@ -288,90 +374,112 @@ public:
 	    	return false;
 	    
 	    std::vector<double> joint_values_r,joint_values_l;
+	    std::vector<std::string> joint_names_r,joint_names_l;
 	    
 	    joint_values_r = group_r->getCurrentJointValues();
 	    joint_values_l = group_l->getCurrentJointValues();
+	    joint_names_r = group_r->getJoints();
+	    joint_names_l = group_l->getJoints();
 		  
 	    for(uint i = 0; i < joint_values_r.size(); i++ )
 	    	 ROS_INFO("%f",joint_values_r[i]);
 	    for(uint i = 0; i < joint_values_l.size(); i++ )
 	    	ROS_INFO("%f",joint_values_l[i]);
 	    
-	    moveit_msgs::Constraints constraint_l, constraint_r;	  
-	    moveit_msgs::JointConstraint joint_constraint_l, joint_constraint_r;
-	    joint_constraint_r.joint_name = "right_arm_wrist_1_joint";
-	    joint_constraint_r.position = joint_values_r[3];
-	    joint_constraint_r.tolerance_above = M_PI/4;
-	    joint_constraint_r.tolerance_below = M_PI/4;
-	    constraint_r.joint_constraints.push_back(joint_constraint_r);
-	    joint_constraint_r.joint_name = "right_arm_wrist_3_joint";
-	    joint_constraint_r.position = joint_values_r[5];
-	    joint_constraint_r.tolerance_above = M_PI/4;
-	    joint_constraint_r.tolerance_below = M_PI/4;		
-	    constraint_r.joint_constraints.push_back(joint_constraint_r);
-	    
-	    joint_constraint_l.joint_name = "left_arm_wrist_1_joint";
-	    joint_constraint_l.position = joint_values_l[3];
-	    joint_constraint_l.tolerance_above = M_PI/4;
-	    joint_constraint_l.tolerance_below = M_PI/4;
-	    constraint_l.joint_constraints.push_back(joint_constraint_l);
-	    joint_constraint_l.joint_name = "left_arm_wrist_3_joint";
-	    joint_constraint_l.position = joint_values_l[5];
-	    joint_constraint_l.tolerance_above = M_PI/4;
-	    joint_constraint_l.tolerance_below = M_PI/4;
-	    constraint_l.joint_constraints.push_back(joint_constraint_l);
-	    
-	    group_r->setPathConstraints(constraint_r);
-		group_l->setPathConstraints(constraint_l);	     
-		group_both->setPathConstraints(constraint_r);
-		group_both->setPathConstraints(constraint_l);
+    
+	    moveit_msgs::Constraints constraint_r = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_r, joint_values_r, 2);
+	    moveit_msgs::Constraints constraint_l = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_l, joint_values_l, 2);
 	    //------------------------Pickup Position/Orientation -------------------------------------------------
-	    waypoints_r.clear();
-	    waypoints_l.clear();	    
+	    std::vector<double> joint_positions_r = group_r->getCurrentJointValues();
+	    std::vector<double> joint_positions_l = group_l->getCurrentJointValues();
+	    
 	    target_pose_r = group_r->getCurrentPose().pose;
-	    target_pose_l = group_l->getCurrentPose().pose;
-	    	      
+	    target_pose_l = group_l->getCurrentPose().pose;	 
+	    
 	    target_pose_r.position = node.handholds[used_handle_r].entry.position;
 	    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-
 	    target_pose_l.position = node.handholds[used_handle_l].entry.position;
 	    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-	    	    
-	    group_both->setPoseTarget(target_pose_r,"right_arm_ee_link");
-	    group_both->setPoseTarget(target_pose_l,"left_arm_ee_link");
-	    	    
+	    
+	    dual_arm_joints goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+	    
+	    group_both->setJointValueTarget(goal_joints.both);	    
 	    if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-	    	group_both->asyncExecute(mergedPlan);
-	    	ret = monitorArmMovement(true,true);
-	    }   
-	   	    
+	       	group_both->asyncExecute(mergedPlan);
+	      	ret = monitorArmMovement(true,true);
+	    }
+	    	   	    
 	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
 	    if(ret){
-	      waypoints_r.clear();
-	      waypoints_l.clear();
-	      target_pose_r = group_r->getCurrentPose().pose;
-	      target_pose_l = group_l->getCurrentPose().pose;
-
+	    	
+	      joint_positions_r = group_r->getCurrentJointValues();
+	      joint_positions_l = group_l->getCurrentJointValues();
+	      
 	      target_pose_r.position = node.handholds[used_handle_r].down.position;
 	      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-	      waypoints_r.push_back(target_pose_r);
-	      target_pose_r.position = node.handholds[used_handle_r].up.position;
-	      waypoints_r.push_back(target_pose_r);
-
 	      target_pose_l.position = node.handholds[used_handle_l].down.position;
 	      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-	      waypoints_l.push_back(target_pose_l);
-	      target_pose_l.position = node.handholds[used_handle_l].up.position;
-	      waypoints_l.push_back(target_pose_l);
+
+	      goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+
+	      group_both->setJointValueTarget(goal_joints.both);
+	      if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+	    	  group_both->asyncExecute(mergedPlan);
+	    	  ret = monitorArmMovement(true,true);
+	      }
 	      
-	      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01,1000);
-	      group_both->asyncExecute(mergedPlan);
-	      ret = monitorArmMovement(true,true);
+	      if(ret){
+	    	  
+		      joint_positions_r = group_r->getCurrentJointValues();
+		      joint_positions_l = group_l->getCurrentJointValues();
+		      
+		      target_pose_r.position = node.handholds[used_handle_r].up.position;
+		      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+		      target_pose_l.position = node.handholds[used_handle_l].up.position;
+		      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+
+		      goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+
+		      group_both->setJointValueTarget(goal_joints.both);
+		      if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+		    	  group_both->asyncExecute(mergedPlan);
+		    	  ret = monitorArmMovement(true,true);
+		      } 	  	    	  
+	      }
+	      
+	      
+
+//	      waypoints_r.clear();
+//	      waypoints_l.clear();
+//	      target_pose_r = group_r->getCurrentPose().pose;
+//	      target_pose_l = group_l->getCurrentPose().pose;
+//
+//	      target_pose_r.position = node.handholds[used_handle_r].down.position;
+//	      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+//	      waypoints_r.push_back(target_pose_r);
+//	      target_pose_r.position = node.handholds[used_handle_r].up.position;
+//	      waypoints_r.push_back(target_pose_r);
+//
+//	      target_pose_l.position = node.handholds[used_handle_l].down.position;
+//	      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+//	      waypoints_l.push_back(target_pose_l);
+//	      target_pose_l.position = node.handholds[used_handle_l].up.position;
+//	      waypoints_l.push_back(target_pose_l);	      
+	      
+//	      joint_values_r = group_r->getCurrentJointValues();
+//	      joint_values_l = group_l->getCurrentJointValues();
+//	      constraint_r = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_r, joint_values_r, 0.5);
+//	      constraint_l = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_l, joint_values_l, 0.5);	      	    
+//	      group_r->setPathConstraints(constraint_r);
+//	      group_l->setPathConstraints(constraint_l);
+	      
+//	      mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r, waypoints_l, 0.01, 10);
+//	      group_both->asyncExecute(mergedPlan);
+//	      ret = monitorArmMovement(true,true);
 	    }
-	  
-	    group_r->clearPathConstraints();
-	    group_l->clearPathConstraints();
-	    group_both->clearPathConstraints();
+	    
+//	    group_r->clearPathConstraints();
+//	    group_l->clearPathConstraints();
 	    return ret;
   }
   
@@ -422,7 +530,7 @@ public:
     waypoints_l.push_back(target_pose_l);
     waypoints_l.push_back(target_pose_l);
 
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
+    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
     
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);  
@@ -448,7 +556,7 @@ public:
       target_pose_l.position = node.handholds[used_handle_l].up.position;
       waypoints_l.push_back(target_pose_l);
       
-      mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.0007);
+      mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.0007);
       group_both->asyncExecute(mergedPlan);
       ret = monitorArmMovement(true,true);
     }
@@ -503,7 +611,7 @@ public:
     //waypoints_r.push_back(current_pose_r);
     waypoints_r.push_back(pose_r);
     
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
+    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //prepack---------------------------------------
@@ -535,7 +643,7 @@ public:
     //waypoints_r.push_back(current_pose_r);
     waypoints_r.push_back(pose_r);
     
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
+    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //packed--------------------------------------------
@@ -567,7 +675,7 @@ public:
     //waypoints_r.push_back(current_pose_r);
     waypoints_r.push_back(pose_r);
     
-    mergedPlan = mergedPlanFromWaypoints(waypoints_r,waypoints_l,0.01);
+    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //deployed_front--------------------------------------------
@@ -584,65 +692,12 @@ public:
 
 	  moveit::planning_interface::MoveGroup::Plan myPlan;
 
-	  moveit_msgs::Constraints constraint;	  
-	  moveit_msgs::JointConstraint joint_constraint;
-	  joint_constraint.joint_name = "left_arm_shoulder_pan_joint";
-	  joint_constraint.position = -1.55;
-	  joint_constraint.tolerance_above = M_PI/4;
-	  joint_constraint.tolerance_below = M_PI/4;
-	  joint_constraint.joint_name = "right_arm_shoulder_pan_joint";
-	  joint_constraint.position = 1.55;
-	  joint_constraint.tolerance_above = M_PI/4;
-	  joint_constraint.tolerance_below = M_PI/4;
-//	  joint_constraint.joint_name = "left_arm_wrist_1_joint";
-//	  joint_constraint.position = -1.52;
-//	  joint_constraint.tolerance_above = M_PI/4;
-//	  joint_constraint.tolerance_below = M_PI/4;
-//	  joint_constraint.joint_name = "right_arm_wrist_1_joint";
-//	  joint_constraint.position = joint_state_group_r[3];
-//	  joint_constraint.tolerance_above = M_PI/4;
-//	  joint_constraint.tolerance_below = M_PI/4;		  
-			    
-	  constraint.joint_constraints.push_back(joint_constraint);
-	  //group_both->setPathConstraints(constraint);
 	  	  	   
 	  //joint Value Target
-	  std::vector<double> joints_combined;
-	  joints_combined.push_back(-1.558);//l----
-	  joints_combined.push_back(-2.79);
-	  joints_combined.push_back(1.12702);
-	  joints_combined.push_back(-4.762);
-	  joints_combined.push_back(0.012214);
-	  joints_combined.push_back(3.532);
-	  joints_combined.push_back(1.55604);//r----
-	  joints_combined.push_back(-0.348553);
-	  joints_combined.push_back(-1.12702);
-	  joints_combined.push_back(1.50556);
-	  joints_combined.push_back(-0.0127962);
-	  joints_combined.push_back(-3.372);  
-	  group_both->setJointValueTarget(joints_combined);
-	  
-	  //set pose Target from joints	  
-//	  geometry_msgs::Pose pose_l,pose_r;
-//	  std::vector<double> joint_positions_l;
-//	  std::vector<double> joint_positions_r;
-		  
-//	  joint_positions_r.push_back(1.55604);
-//	  joint_positions_r.push_back(-0.348553);
-//	  joint_positions_r.push_back(-1.12702);
-//	  joint_positions_r.push_back(1.50556);
-//	  joint_positions_r.push_back(-0.0127962);
-//	  joint_positions_r.push_back(2.91043);
-//	  joint_positions_l.push_back(-1.558);
-//	  joint_positions_l.push_back(-2.79);
-//	  joint_positions_l.push_back(1.12702);
-//	  joint_positions_l.push_back(1.52883);
-//	  joint_positions_l.push_back(0.012214);
-//	  joint_positions_l.push_back(-2.74885);
-//
-//	  seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
-//	  group_both->setPoseTarget(pose_l, "left_arm_ee_link");
-//	  group_both->setPoseTarget(pose_r, "right_arm_ee_link");	  
+      std::vector<double> joints_combined;
+      
+      //------------to prepack-rear-----------------
+	  group_both->setNamedTarget("prepack-rear");
 	  
 	  if(seneka_pnp_tools::multiplan(group_both,&myPlan)){
 		  sleep(5.0);
@@ -650,22 +705,23 @@ public:
 		  ret = monitorArmMovement(true,true);
 	  }
 	  
+	  //------------to prepack-rear-h1-----------------
 	  if(ret){
 		  
 		  joints_combined.clear();
-
+		  
 		  joints_combined.push_back(-1.60649);//l
 		  joints_combined.push_back(-2.11752);
 		  joints_combined.push_back(1.97315);
-		  joints_combined.push_back(-6.082);
+		  joints_combined.push_back(0.199017);
 		  joints_combined.push_back(-0.0364981);
-		  joints_combined.push_back(3.315);
+		  joints_combined.push_back(-2.96735);
 		  joints_combined.push_back(1.60587);//r
 		  joints_combined.push_back(-1.01243);
 		  joints_combined.push_back(-1.98466);
 		  joints_combined.push_back(2.98633);
 		  joints_combined.push_back(0.0370389);
-		  joints_combined.push_back(-3.32);
+		  joints_combined.push_back(2.95235);
 		  group_both->setJointValueTarget(joints_combined);
 		  
 		  if(seneka_pnp_tools::multiplan(group_both,&myPlan)){
@@ -675,6 +731,7 @@ public:
 		  }		  
 	  }
 	  
+	  //------------to packed-rear------------------
 	  if(ret){
 		  
 		  joints_combined.clear();
@@ -682,17 +739,17 @@ public:
 		  joints_combined.push_back(-1.58925);//l
 		  joints_combined.push_back(-1.69424);
 		  joints_combined.push_back(1.79061);
-		  joints_combined.push_back(-6.082);
+		  joints_combined.push_back(0.00715636);
 		  joints_combined.push_back(-0.0193046);
-		  joints_combined.push_back(3.26574);
+		  joints_combined.push_back(-3.01626);
 		  joints_combined.push_back(1.58806);//r
 		  joints_combined.push_back(-1.43113);
 		  joints_combined.push_back(-1.80313);
 		  joints_combined.push_back(3.21233);
 		  joints_combined.push_back(0.019241);
-		  joints_combined.push_back(-3.319);
+		  joints_combined.push_back(2.96233);
 		  group_both->setJointValueTarget(joints_combined);
-		  
+			  
 		  if(seneka_pnp_tools::multiplan(group_both,&myPlan)){
 			  sleep(5.0);
 			  group_both->asyncExecute(myPlan);
@@ -760,32 +817,35 @@ public:
     tje_lock_.unlock();    
   }
 
-  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 1000.0){
+  //HERE_ME
+  move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both, 
+		  	  	  	  	  	  	  	  	  	  	  	  	  	  	std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 1000.0)
+  {
 
 	  double visualizationtime = 2;
 
-	  move_group_interface::MoveGroup group_r("right_arm_group");
-	  move_group_interface::MoveGroup group_l("left_arm_group");
+//	  move_group_interface::MoveGroup group_r("right_arm_group");
+//	  move_group_interface::MoveGroup group_l("left_arm_group");
 
 	  moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
 	  moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
 
-	  group_r.setWorkspace (0, 0, 0, 5, 5, 5);
-	  group_r.setStartStateToCurrentState();
-	  group_r.setGoalOrientationTolerance(0.01);
-	  group_r.setPlanningTime(10.0);
-
-	  group_l.setWorkspace (0, 0, 0, 5, 5, 5);
-	  group_l.setStartStateToCurrentState();
-	  group_l.setGoalOrientationTolerance(0.01);
-	  group_l.setPlanningTime(10.0);
+//	  group_r.setWorkspace (0, 0, 0, 5, 5, 5);
+//	  group_r.setStartStateToCurrentState();
+//	  group_r.setGoalOrientationTolerance(0.01);
+//	  group_r.setPlanningTime(10.0);
+//
+//	  group_l.setWorkspace (0, 0, 0, 5, 5, 5);
+//	  group_l.setStartStateToCurrentState();
+//	  group_l.setGoalOrientationTolerance(0.01);
+//	  group_l.setPlanningTime(10.0);
 
 	  double fraction_r = 0;
 	  double fraction_l = 0;
 	  uint attempts = 100;
 	  //-------RIGHT-------------------------
 	  for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
-		  fraction_r = group_r.computeCartesianPath(waypoints_r,
+		  fraction_r = group_r->computeCartesianPath(waypoints_r,
 				  eef_step,  // eef_step
 				  jump_threshold,   // jump_threshold
 				  trajectory_r);
@@ -796,7 +856,7 @@ public:
 
 	  //-------LEFT-------------------------
 	  for(uint i=0; fraction_l < 1.0 && i < attempts; i++){
-		  fraction_l = group_l.computeCartesianPath(waypoints_l,
+		  fraction_l = group_l->computeCartesianPath(waypoints_l,
 				  eef_step,  // eef_step
 				  jump_threshold,   // jump_threshold
 				  trajectory_l);  
@@ -952,6 +1012,13 @@ public:
 		  }    
 		  if(transition.compare("toPreGraspRear") == 0){
 			  if(toPreGraspRear(group_l_,group_r_,group_both_)){
+				  return "pregrasp-rear";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }  
+		  if(transition.compare("homeToPreGraspRear") == 0){
+			  if(homeToPreGraspRear(group_l_,group_r_,group_both_)){
 				  return "pregrasp-rear";
 			  } else {
 				  return "unknown_state";

@@ -145,6 +145,7 @@ add_executable(seneka_interactive
 target_link_libraries(seneka_interactive
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
+  seneka_pnp_tools
 )
 #############
 ## Install ##

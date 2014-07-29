@@ -84,12 +84,12 @@ add_executable(seneka_teach
 )
 
 ## Specify libraries to link a library or executable target against
-add_library(tools src/seneka_pnp_tools.cpp)
+add_library(seneka_pnp_tools src/seneka_pnp_tools.cpp)
 
 target_link_libraries(seneka_pick_and_place
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
-  tools
+  seneka_pnp_tools
 )
 target_link_libraries(seneka_teach 
   ${OpenCV_LIBS}

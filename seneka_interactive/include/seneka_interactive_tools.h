@@ -53,8 +53,8 @@ namespace seneka_interactive_tools{
 			if(!fields[i].compare("all")) all = true;
 			if(!fields[i].compare("copy")) copy = true;
 		}
-		ROS_INFO("command value: %d \n", all);
-		ROS_INFO("command value: %d \n", copy);
+		ROS_INFO("command value all: %d \n", all);
+		ROS_INFO("command value copy: %d \n", copy);
 
 		//extract the affected joints		
 		//move_group_interface::MoveGroup movegroup(group);
