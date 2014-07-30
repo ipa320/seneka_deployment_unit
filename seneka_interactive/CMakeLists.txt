@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core 
   moveit_ros_planning_interface
   message_generation
+  seneka_pnp
 )
 
 find_package(OpenCV REQUIRED)
@@ -35,6 +36,8 @@ add_service_files(
    toggleArmFreeze.srv
    setJointState.srv
    getJointStates.srv
+   setConstraints.srv
+   generateIK.srv
 )
 
 generate_messages(
@@ -117,6 +120,7 @@ catkin_package(
     std_msgs
     moveit_core
     moveit_ros_planning_interface
+    seneka_pnp
   DEPENDS
     OpenCV
     Eigen
@@ -141,6 +145,7 @@ add_executable(seneka_interactive
 target_link_libraries(seneka_interactive
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
+  seneka_pnp_tools
 )
 #############
 ## Install ##

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   control_msgs
   geometry_msgs
+  sensor_msgs
   tf
   moveit_core 
   moveit_ros_planning_interface
@@ -53,6 +54,7 @@ catkin_package(
     rospy
     std_msgs
     geometry_msgs
+    sensor_msgs
     tf
     moveit_core
     moveit_ros_planning_interface
@@ -84,9 +86,12 @@ add_executable(seneka_teach
 )
 
 ## Specify libraries to link a library or executable target against
+add_library(seneka_pnp_tools src/seneka_pnp_tools.cpp)
+
 target_link_libraries(seneka_pick_and_place
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
+  seneka_pnp_tools
 )
 target_link_libraries(seneka_teach 
   ${OpenCV_LIBS}

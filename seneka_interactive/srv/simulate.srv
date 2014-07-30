@@ -1,2 +1,4 @@
+string option
+uint32 iterations
 ------------------
 string msg
