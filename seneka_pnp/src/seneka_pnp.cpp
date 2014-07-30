@@ -63,6 +63,7 @@ private:
   ros::NodeHandle node_handle_;
 
   ros::Subscriber subscr_;
+  std::vector<dualArmJointState> armstates_;
   
   std::vector<std::vector<double> > teached_wayp_r, teached_wayp_l;
 
@@ -101,6 +102,8 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock(); 
 
+    armstates_ = seneka_pnp_tools::createArmStates();
+    
     //read params from parameter server
     node_handle_.param<std::string>("/seneka_pnp/start_state", currentState_, "gazebo_home");
 
@@ -119,29 +122,28 @@ public:
   //TRANSITION: toHomeState
   bool toHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
+    moveit::planning_interface::MoveGroup::Plan plan;
+    dualArmJointState state;
     bool ret = false;
-
-    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-    moveit_msgs::DisplayTrajectory display_trajectory;
-
-    moveit::planning_interface::MoveGroup::Plan lplan, rplan, merged_plan;
-    moveit::planning_interface::MoveGroup::Plan myPlan;
-
-    group_l->setNamedTarget("lhome");
-    group_r->setNamedTarget("rhome");   
     
-    if(seneka_pnp_tools::multiplan(group_l,&myPlan)){
+    if(!seneka_pnp_tools::getArmState(armstates_, "home", &state))
+    	return false;
+    
+    group_r->setJointValueTarget(state.right.position);
+    group_l->setJointValueTarget(state.left.position);    
+    
+    if(seneka_pnp_tools::multiplan(group_l,&plan)){
     	sleep(5.0);
-    	group_l->asyncExecute(myPlan);
+    	group_l->asyncExecute(plan);
     	ret = monitorArmMovement(true,false);
     }
 
     //r
     if(ret){
     	ret = false;
-    	if(seneka_pnp_tools::multiplan(group_r,&myPlan)){
+    	if(seneka_pnp_tools::multiplan(group_r,&plan)){
     		sleep(5.0);
-    		group_r->asyncExecute(myPlan);
+    		group_r->asyncExecute(plan);
     		ret = monitorArmMovement(false,true);
     	}
     }
@@ -185,14 +187,16 @@ public:
   //moves the arms to the initial pickup pose
   bool toPreGrasp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
+	moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
+	dualArmJointState state;
     bool ret = false;
-    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-
-    moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
     
-    group_l->setNamedTarget("lpregrasp");
-    group_r->setNamedTarget("rpregrasp");
+    if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp", &state))
+    	return false;
     
+    group_r->setJointValueTarget(state.right.position);
+    group_l->setJointValueTarget(state.left.position);   
+        
     if(!group_l->plan(lplan))
       return false;
       
@@ -209,28 +213,15 @@ public:
   
   bool homeToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
-	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-
-	  bool ret = false;
 	  moveit::planning_interface::MoveGroup::Plan plan;
-	  std::vector<double> joint_positions;	    
+	  dualArmJointState state;
+	  bool ret = false;	  
 
 	  //pregrasp-rear-h1
-	  joint_positions.clear();
-	  joint_positions.push_back(1.5705);//l
-	  joint_positions.push_back(-1.5);
-	  joint_positions.push_back(2.5);
-	  joint_positions.push_back(0);
-	  joint_positions.push_back(3.141);
-	  joint_positions.push_back(1.7);
-	  joint_positions.push_back(-1.5705);//r
-	  joint_positions.push_back(-1.6);
-	  joint_positions.push_back(-2.5);
-	  joint_positions.push_back(3.141);
-	  joint_positions.push_back(3.141);
-	  joint_positions.push_back(-1.7);
-
-	  group_both->setJointValueTarget(joint_positions);
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h1", &state))
+	      	return false;	  
+	  
+	  group_both->setJointValueTarget(state.both.position);	  
 	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 		  group_l->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
@@ -239,21 +230,10 @@ public:
 	  //pregrasp-rear-h2
 	  if(ret){
 		  ret = false;
-		  joint_positions.clear();
-		  joint_positions.push_back(1.5705);//l
-		  joint_positions.push_back(-1.5);
-		  joint_positions.push_back(0);
-		  joint_positions.push_back(0);
-		  joint_positions.push_back(3.141);
-		  joint_positions.push_back(1.7);
-		  joint_positions.push_back(-1.5705);//r
-		  joint_positions.push_back(-1.6);
-		  joint_positions.push_back(0);
-		  joint_positions.push_back(3.141);
-		  joint_positions.push_back(3.141);
-		  joint_positions.push_back(-1.7);
-
-		  group_both->setJointValueTarget(joint_positions);
+		  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h2", &state))
+		      	return false;
+		  
+		  group_both->setJointValueTarget(state.both.position);
 		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 			  group_l->asyncExecute(plan);
 			  ret = monitorArmMovement(true,true);
@@ -262,21 +242,10 @@ public:
 		  //pregrasp-rear-h3
 		  if(ret){
 			  ret = false;
-			  joint_positions.clear();
-			  joint_positions.push_back(-1.5);//l
-			  joint_positions.push_back(-1.5);
-			  joint_positions.push_back(0);
-			  joint_positions.push_back(0);
-			  joint_positions.push_back(3.141);
-			  joint_positions.push_back(1.7);
-			  joint_positions.push_back(1.5);//r
-			  joint_positions.push_back(-1.6);
-			  joint_positions.push_back(0);
-			  joint_positions.push_back(3.141);
-			  joint_positions.push_back(3.141);
-			  joint_positions.push_back(-1.7);
-
-			  group_both->setJointValueTarget(joint_positions);
+			  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h3", &state))
+			      	return false;
+			  
+			  group_both->setJointValueTarget(state.both.position);
 			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 				  group_l->asyncExecute(plan);
 				  ret = monitorArmMovement(true,true);
@@ -285,29 +254,32 @@ public:
 			  //pregrasp-rear-h4
 			  if(ret){
 				  ret = false;
-				  joint_positions.clear();
-				  joint_positions.push_back(-1.5);//l
-				  joint_positions.push_back(-2.0);
-				  joint_positions.push_back(0);
-				  joint_positions.push_back(0);
-				  joint_positions.push_back(0);
-				  joint_positions.push_back(1.7);
-				  joint_positions.push_back(1.5);//r
-				  joint_positions.push_back(-1.0);
-				  joint_positions.push_back(0);
-				  joint_positions.push_back(3.141);
-				  joint_positions.push_back(0);
-				  joint_positions.push_back(-1.7);
+				  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h4", &state))
+					  return false;		
 
-				  group_both->setJointValueTarget(joint_positions);
+				  group_both->setJointValueTarget(state.both.position);				 
 				  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 					  group_l->asyncExecute(plan);
 					  ret = monitorArmMovement(true,true);
 				  }
 
-				  //topregrasp
+				  //pregrasp-rear-h5
 				  if(ret){
-					  ret = toPreGraspRear(group_l, group_r, group_both);
+					  ret = false;
+					  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h5", &state))
+						  return false;		
+
+					  group_both->setJointValueTarget(state.both.position);				 
+					  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+						  group_l->asyncExecute(plan);
+						  ret = monitorArmMovement(true,true);
+					  }
+
+
+					  //topregrasp-rear
+					  if(ret){
+						  ret = toPreGraspRear(group_l, group_r, group_both);
+					  }
 				  }
 			  }
 		  }
@@ -317,28 +289,32 @@ public:
 	  
   bool toPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
 	  bool ret = false;
-
-	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-	  moveit_msgs::DisplayTrajectory display_trajectory;
 	  
-	  moveit::planning_interface::MoveGroup::Plan lplan, rplan, merged_plan;
-	  moveit::planning_interface::MoveGroup::Plan myPlan;
-	  	  
-	  group_l->setNamedTarget("lpregrasp-rear");
-	  group_r->setNamedTarget("rpregrasp-rear");
-	  if(seneka_pnp_tools::multiplan(group_l,&myPlan)){
+	  group_r->setStartStateToCurrentState();      
+	  group_l->setStartStateToCurrentState();
+	  group_both->setStartStateToCurrentState();
+	  	  	  
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear", &state))
+	      	return false;
+	  
+	  group_r->setJointValueTarget(state.right.position);
+	  group_l->setJointValueTarget(state.left.position);
+	  
+	  if(seneka_pnp_tools::multiplan(group_l,&plan)){
 		  sleep(5.0);
-		  group_l->asyncExecute(myPlan);
+		  group_l->asyncExecute(plan);
 		  ret = monitorArmMovement(true,false);
 	  }
 
 	  //r
 	  if(ret){
 		  ret = false;
-		  if(seneka_pnp_tools::multiplan(group_r,&myPlan)){
+		  if(seneka_pnp_tools::multiplan(group_r,&plan)){
 			  sleep(5.0);
-			  group_r->asyncExecute(myPlan);
+			  group_r->asyncExecute(plan);
 			  ret = monitorArmMovement(false,true);
 		  }
 	  }
@@ -446,40 +422,8 @@ public:
 		    	  ret = monitorArmMovement(true,true);
 		      } 	  	    	  
 	      }
-	      
-	      
-
-//	      waypoints_r.clear();
-//	      waypoints_l.clear();
-//	      target_pose_r = group_r->getCurrentPose().pose;
-//	      target_pose_l = group_l->getCurrentPose().pose;
-//
-//	      target_pose_r.position = node.handholds[used_handle_r].down.position;
-//	      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-//	      waypoints_r.push_back(target_pose_r);
-//	      target_pose_r.position = node.handholds[used_handle_r].up.position;
-//	      waypoints_r.push_back(target_pose_r);
-//
-//	      target_pose_l.position = node.handholds[used_handle_l].down.position;
-//	      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-//	      waypoints_l.push_back(target_pose_l);
-//	      target_pose_l.position = node.handholds[used_handle_l].up.position;
-//	      waypoints_l.push_back(target_pose_l);	      
-	      
-//	      joint_values_r = group_r->getCurrentJointValues();
-//	      joint_values_l = group_l->getCurrentJointValues();
-//	      constraint_r = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_r, joint_values_r, 0.5);
-//	      constraint_l = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_l, joint_values_l, 0.5);	      	    
-//	      group_r->setPathConstraints(constraint_r);
-//	      group_l->setPathConstraints(constraint_l);
-	      
-//	      mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r, waypoints_l, 0.01, 10);
-//	      group_both->asyncExecute(mergedPlan);
-//	      ret = monitorArmMovement(true,true);
 	    }
-	    
-//	    group_r->clearPathConstraints();
-//	    group_l->clearPathConstraints();
+	   
 	    return ret;
   }
   
@@ -683,78 +627,169 @@ public:
     return ret;
   }
   
-  bool toPrePackRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+  bool packedRearToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
 	  bool ret = false;
-
-	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-	  moveit_msgs::DisplayTrajectory display_trajectory;
-
-	  moveit::planning_interface::MoveGroup::Plan myPlan;
-
-	  	  	   
-	  //joint Value Target
-      std::vector<double> joints_combined;
-      
-      //------------to prepack-rear-----------------
-	  group_both->setNamedTarget("prepack-rear");
 	  
-	  if(seneka_pnp_tools::multiplan(group_both,&myPlan)){
+      //------------to packed-rear-h1-----------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-h1", &state))
+	      	return false;
+	  
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 		  sleep(5.0);
-		  group_both->asyncExecute(myPlan);
+		  group_both->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
 	  }
 	  
-	  //------------to prepack-rear-h1-----------------
-	  if(ret){
-		  
-		  joints_combined.clear();
-		  
-		  joints_combined.push_back(-1.60649);//l
-		  joints_combined.push_back(-2.11752);
-		  joints_combined.push_back(1.97315);
-		  joints_combined.push_back(0.199017);
-		  joints_combined.push_back(-0.0364981);
-		  joints_combined.push_back(-2.96735);
-		  joints_combined.push_back(1.60587);//r
-		  joints_combined.push_back(-1.01243);
-		  joints_combined.push_back(-1.98466);
-		  joints_combined.push_back(2.98633);
-		  joints_combined.push_back(0.0370389);
-		  joints_combined.push_back(2.95235);
-		  group_both->setJointValueTarget(joints_combined);
-		  
-		  if(seneka_pnp_tools::multiplan(group_both,&myPlan)){
-			  sleep(5.0);
-			  group_both->asyncExecute(myPlan);
-			  ret = monitorArmMovement(true,true);
-		  }		  
+      //------------to prepack-rear-----------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "prepack-rear", &state))
+	      	return false;
+	  
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  sleep(5.0);
+		  group_both->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
 	  }
 	  
-	  //------------to packed-rear------------------
+      //------------to pregrasp-rear-----------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear", &state))
+	      	return false;
+	  
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  sleep(5.0);
+		  group_both->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  
+	  return ret;	  
+  }
+  
+  bool preGraspRearToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
+	  bool ret = false;
+	  
+      //------------to pregrasp-rear-h5-----------------	  
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h5", &state))
+	      	return false;		
+	  
+	  group_both->setJointValueTarget(state.both.position);				 
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  
 	  if(ret){
+		  ret = false;	  
+
+		  //------------to pregrasp-rear-h4-----------------	  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h4", &state))
+			  return false;		
+
+		  group_both->setJointValueTarget(state.both.position);				 
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  group_l->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
 		  
-		  joints_combined.clear();
-		  
-		  joints_combined.push_back(-1.58925);//l
-		  joints_combined.push_back(-1.69424);
-		  joints_combined.push_back(1.79061);
-		  joints_combined.push_back(0.00715636);
-		  joints_combined.push_back(-0.0193046);
-		  joints_combined.push_back(-3.01626);
-		  joints_combined.push_back(1.58806);//r
-		  joints_combined.push_back(-1.43113);
-		  joints_combined.push_back(-1.80313);
-		  joints_combined.push_back(3.21233);
-		  joints_combined.push_back(0.019241);
-		  joints_combined.push_back(2.96233);
-		  group_both->setJointValueTarget(joints_combined);
+		  if(ret){
+			  ret = false;	
+		      //------------to pregrasp-rear-h3-----------------	  
+			  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h3", &state))
+			      	return false;		
 			  
-		  if(seneka_pnp_tools::multiplan(group_both,&myPlan)){
+			  group_both->setJointValueTarget(state.both.position);				 
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  group_l->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }
+			  
+			  if(ret){
+				  ret = false;
+			      //------------to pregrasp-rear-h2-----------------	  
+				  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h2", &state))
+				      	return false;		
+				  
+				  group_both->setJointValueTarget(state.both.position);				 
+				  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+					  group_l->asyncExecute(plan);
+					  ret = monitorArmMovement(true,true);
+				  }
+				  
+				  if(ret){
+					  ret = false;
+				      //------------to pregrasp-rear-h1-----------------	  
+					  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h1", &state))
+					      	return false;		
+					  
+					  group_both->setJointValueTarget(state.both.position);				 
+					  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+						  group_l->asyncExecute(plan);
+						  ret = monitorArmMovement(true,true);
+					  }
+					  
+					  if(ret){
+						  //---- to Home ------
+						  ret = toHome(group_l,group_r,group_both);  
+					  }
+				  }
+			  }
+		  }
+	  }  
+	  return ret;
+  }
+  
+  
+  
+  bool toPrePackRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
+	  bool ret = false;
+	  	  	         
+      //------------to prepack-rear-----------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "prepack-rear", &state))
+	      	return false;
+	  
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  sleep(5.0);
+		  group_both->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }	  
+
+	  //------------to packed-rear-h1-----------------
+	  if(ret){
+		  ret = false;
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-h1", &state))
+			  return false;
+		  	  
+		  group_both->setJointValueTarget(state.both.position);		   
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 			  sleep(5.0);
-			  group_both->asyncExecute(myPlan);
+			  group_both->asyncExecute(plan);
 			  ret = monitorArmMovement(true,true);
 		  }		  
+		  
+		  //------------to packed-rear------------------
+		  if(ret){
+			  ret = false;
+			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+				  return false;
+			  	  
+			  group_both->setJointValueTarget(state.both.position);			  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  sleep(5.0);
+				  group_both->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }		  
+		  }
 	  }
 	  
 	  return ret;
@@ -824,21 +859,8 @@ public:
 
 	  double visualizationtime = 2;
 
-//	  move_group_interface::MoveGroup group_r("right_arm_group");
-//	  move_group_interface::MoveGroup group_l("left_arm_group");
-
 	  moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
 	  moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
-
-//	  group_r.setWorkspace (0, 0, 0, 5, 5, 5);
-//	  group_r.setStartStateToCurrentState();
-//	  group_r.setGoalOrientationTolerance(0.01);
-//	  group_r.setPlanningTime(10.0);
-//
-//	  group_l.setWorkspace (0, 0, 0, 5, 5, 5);
-//	  group_l.setStartStateToCurrentState();
-//	  group_l.setGoalOrientationTolerance(0.01);
-//	  group_l.setPlanningTime(10.0);
 
 	  double fraction_r = 0;
 	  double fraction_l = 0;
@@ -1066,9 +1088,31 @@ public:
 			  } else {
 				  return "unknown_state";
 			  }
+		  } 		  
+		  if(transition.compare("preGraspRearToHome") == 0){
+			  if(preGraspRearToHome(group_l_,group_r_,group_both_)){
+				  return "home";
+			  } else {
+				  return "unknown_state";
+			  }
 		  } 
-		  
+		  	  
 		  return "pregrasp-rear";
+	  }
+	  
+	  
+	  //------PACKED-REAR-------------------------------------------
+	  else if(currentState.compare("packed-rear") == 0){
+		  
+		  if(transition.compare("packedRearToPreGraspRear") == 0){
+			  if(packedRearToPreGraspRear(group_l_,group_r_,group_both_)){
+				  return "pregrasp-rear";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }     
+		  
+		  return "packed-rear";
 	  }
 
     //------PICKED_UP-------------------------------------------

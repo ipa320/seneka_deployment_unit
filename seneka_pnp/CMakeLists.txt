@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   control_msgs
   geometry_msgs
+  sensor_msgs
   tf
   moveit_core 
   moveit_ros_planning_interface
@@ -53,6 +54,7 @@ catkin_package(
     rospy
     std_msgs
     geometry_msgs
+    sensor_msgs
     tf
     moveit_core
     moveit_ros_planning_interface

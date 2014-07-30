@@ -14,6 +14,8 @@
 
 #include <moveit/move_group_interface/move_group.h>
 
+#include <sensor_msgs/JointState.h>
+
 #include <moveit/robot_state/robot_state.h>
 #include <moveit/robot_state/joint_state_group.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -55,6 +57,13 @@ struct dual_arm_joints{
 	std::vector<double> left;
 };
 
+struct dualArmJointState{
+	std::string name;
+	sensor_msgs::JointState right;
+	sensor_msgs::JointState left;
+	sensor_msgs::JointState both;	
+};
+
 
 namespace seneka_pnp_tools{
 
@@ -86,6 +95,19 @@ double getStateDistance(std::vector<double>, std::vector<double>);
 //			0,1,2... -> apply to given joint number (multiple joints possible)
 // command, joint_names, joint_positions, tolerance, position
 moveit_msgs::Constraints generateIKConstraints(const char*, std::vector<std::string>, std::vector<double>, double, double position = 0);
+
+//This function initializes a vector wit all states
+//all states are hardcoded
+std::vector<dualArmJointState> createArmStates();
+
+//creates a single state with name, and 2*6 joints
+//name, 6*right, 6*left
+dualArmJointState createArmState(const char*,
+								 double, double, double, double, double, double,
+								 double, double, double, double, double, double);
+
+//crawls a vector for a state with specific name
+bool getArmState(std::vector<dualArmJointState>&, const char*, dualArmJointState*);
 
 }
 
