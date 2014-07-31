@@ -309,7 +309,7 @@ dual_arm_joints seneka_pnp_tools::generateIkSolutions(ros::NodeHandle nh,
 	robot_state_publisher_r = nh.advertise
 			< moveit_msgs::DisplayRobotState > ("robot_state_r", 1);
 		
-	uint attempts = 200;//300
+	uint attempts = 100;//300
 	
 	std::vector<double> joint_values_l;
 	std::vector<double> joint_values_r;
@@ -327,13 +327,21 @@ dual_arm_joints seneka_pnp_tools::generateIkSolutions(ros::NodeHandle nh,
 	moveit_msgs::GetPositionIK::Request service_request;
 	moveit_msgs::GetPositionIK::Response service_response;
 
-	service_request.ik_request.attempts = 20;
+	//service_request.ik_request.timeout = ros::duration(0.01);
+	service_request.ik_request.attempts = 1;
 	service_request.ik_request.pose_stamped.header.frame_id = "world_dummy_link";
 	service_request.ik_request.avoid_collisions = false;
 	
 	//node_pose node;
 	//node = smartJointValues(start_pose);
 	//node = start_pose;
+	
+	std::deque<bool> successstorage;
+	for(uint i=0; i< 10;i++){
+		successstorage.push_back(true);
+	}
+	
+		
 	
 	//freezes ik generation when necessary
 	if (!freezeikleft) {
@@ -346,31 +354,44 @@ dual_arm_joints seneka_pnp_tools::generateIkSolutions(ros::NodeHandle nh,
 		equaljointstates ? samples = attempts : samples = 1;
 		
 		double statedistance = 6 * 2 * M_PI;
+		
+		robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
+		robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
+		robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
+		robot_state::JointStateGroup* joint_state_group_l =	kinematic_state_l->getJointStateGroup("left_arm_group");
 
+		double successrate = 1;
+		bool success;
 		for (uint i = 0; (i < samples); i++) {
+			
+			if(successrate < 0.5){
+				service_request.ik_request.timeout = ros::Duration(0.05);
+				service_request.ik_request.attempts = 20;
+			} else {
+				service_request.ik_request.timeout = ros::Duration(0.01);
+				service_request.ik_request.attempts = 1;
+			}
+			
 			joint_values_l.clear();
 			service_client.call(service_request, service_response);
 
 			if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
-
-				robot_model_loader::RobotModelLoader robot_model_loader_l("robot_description");
-				robot_model::RobotModelPtr kinematic_model_l = robot_model_loader_l.getModel();
-				robot_state::RobotStatePtr kinematic_state_l(new robot_state::RobotState(kinematic_model_l));
-				robot_state::JointStateGroup* joint_state_group_l =	kinematic_state_l->getJointStateGroup("left_arm_group");
-
+				success = true;
+				
 				for (uint i = 0; i < 6; i++) {
 					//std::cout << service_response.solution.joint_state.name[i] << ": ";
 					//std::cout << service_response.solution.joint_state.position[i] << std::endl;
 
 					joint_values_l.push_back(service_response.solution.joint_state.position[i]);
-					joint_names_l.push_back(service_response.solution.joint_state.name[i]);
+					//joint_names_l.push_back(service_response.solution.joint_state.name[i]);
 				}
 
+				//joint_state_group_l->setVariableValues(service_response.solution.joint_state.position);
 				joint_state_group_l->setVariableValues(joint_values_l);
 				//joint_values_l = smartJointValues(joint_values_l);
 
 				double tmp = seneka_pnp_tools::getStateDistance(referencejoints_l,	joint_values_l);
-				ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
+				ROS_INFO("STATE DISTANCE L: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
 				if (tmp < statedistance) {
 
 					moveit_msgs::DisplayRobotState msg_l;
@@ -385,11 +406,24 @@ dual_arm_joints seneka_pnp_tools::generateIkSolutions(ros::NodeHandle nh,
 				//joint_state_group_l;
 
 			} else {
+				success = false;
 				ROS_INFO("IK Solution L: FALSE");
 			}
+			successstorage.pop_back();
+			successstorage.push_front(success);
+			uint successcounter = 0;
+			for(uint j=0; j < successstorage.size(); j++){
+				if(successstorage[j]) successcounter++;
+			}
+			successrate = (double)successcounter/successstorage.size();
+			
 		}
 	}
 
+	successstorage.clear();
+	for(uint i=0; i< 10;i++){
+		successstorage.push_back(true);
+	}
 	//freezes ik generation when necessary
 	if (!freezeikright) {
 		service_request.ik_request.group_name = "right_arm_group";
@@ -401,33 +435,43 @@ dual_arm_joints seneka_pnp_tools::generateIkSolutions(ros::NodeHandle nh,
 
 		double statedistance = 6 * 2 * M_PI;
 
+		/* Load the robot model */
+		robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
+		robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
+		robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
+		robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
+
+		double successrate = 1;
+		bool success;
 		for (uint i = 0; (i < samples); i++) {
+			
+			if(successrate < 0.5){
+				service_request.ik_request.timeout = ros::Duration(0.05);
+				service_request.ik_request.attempts = 20;
+			} else {
+				service_request.ik_request.timeout = ros::Duration(0.01);
+				service_request.ik_request.attempts = 1;
+			}
+			
 			joint_values_r.clear();
 			service_client.call(service_request, service_response);
 
 			if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
-
-				/* Load the robot model */
-				robot_model_loader::RobotModelLoader robot_model_loader_r("robot_description");
-				robot_model::RobotModelPtr kinematic_model_r = robot_model_loader_r.getModel();
-				robot_state::RobotStatePtr kinematic_state_r(new robot_state::RobotState(kinematic_model_r));
-				robot_state::JointStateGroup* joint_state_group_r = kinematic_state_r->getJointStateGroup("right_arm_group");
-
+				
+				success = true;
 				for (uint i = 6; i < 12; i++) {
 					//std::cout << service_response.solution.joint_state.name[i] << ": ";
 					//std::cout << service_response.solution.joint_state.position[i] << std::endl;
 
-					joint_values_r.push_back(
-							service_response.solution.joint_state.position[i]);
-					joint_names_r.push_back(
-							service_response.solution.joint_state.name[i]);
+					joint_values_r.push_back(service_response.solution.joint_state.position[i]);
+					//joint_names_r.push_back(service_response.solution.joint_state.name[i]);
 				}
 
 				joint_state_group_r->setVariableValues(joint_values_r);
 				//joint_values_r = smartJointValues(joint_values_r);
 
 				double tmp = seneka_pnp_tools::getStateDistance(referencejoints_r,	joint_values_r);
-				ROS_INFO("STATE DISTANCE: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
+				ROS_INFO("STATE DISTANCE R: %f  \n   TMP DISTANCE: %f", statedistance, tmp);
 				if (tmp < statedistance) {
 
 					moveit_msgs::DisplayRobotState msg_r;
@@ -441,8 +485,17 @@ dual_arm_joints seneka_pnp_tools::generateIkSolutions(ros::NodeHandle nh,
 				}
 
 			} else {
+				success = false;
 				ROS_INFO("IK Solution R: FALSE");
 			}
+			
+			successstorage.pop_back();
+			successstorage.push_front(success);
+			uint successcounter = 0;
+			for(uint j=0; j < successstorage.size(); j++){
+				if(successstorage[j]) successcounter++;
+			}
+			successrate = (double)successcounter/successstorage.size();
 		}
 	}
 

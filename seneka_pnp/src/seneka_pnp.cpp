@@ -408,7 +408,7 @@ public:
 	    	   	    
 	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
 	    if(ret){
-	    	
+	      ret = false;	
 	      joint_positions_r = group_r->getCurrentJointValues();
 	      joint_positions_l = group_l->getCurrentJointValues();
 	      
@@ -426,7 +426,7 @@ public:
 	      }
 	      
 	      if(ret){
-	    	  
+	    	  ret = false;
 		      joint_positions_r = group_r->getCurrentJointValues();
 		      joint_positions_l = group_l->getCurrentJointValues();
 		      
@@ -685,28 +685,33 @@ public:
 		  ret = monitorArmMovement(true,true);
 	  }
 	  
-      //------------to prepack-rear-----------------
-	  if(!seneka_pnp_tools::getArmState(armstates_, "prepack-rear", &state))
-	      	return false;
-	  
-	  group_both->setJointValueTarget(state.both.position);	  
-	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(5.0);
-		  group_both->asyncExecute(plan);
-		  ret = monitorArmMovement(true,true);
-	  }
-	  
-      //------------to pregrasp-rear-----------------
-	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear", &state))
-	      	return false;
-	  
-	  group_both->setJointValueTarget(state.both.position);	  
-	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(5.0);
-		  group_both->asyncExecute(plan);
-		  ret = monitorArmMovement(true,true);
-	  }
-	  
+	  if(ret){
+		  ret = false;
+	      //------------to prepack-rear-----------------
+		  if(!seneka_pnp_tools::getArmState(armstates_, "prepack-rear", &state))
+			  return false;
+
+		  group_both->setJointValueTarget(state.both.position);	  
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  sleep(5.0);
+			  group_both->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
+
+		  if(ret){
+			  ret = false;
+			  //------------to pregrasp-rear-----------------
+			  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear", &state))
+				  return false;
+
+			  group_both->setJointValueTarget(state.both.position);	  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  sleep(5.0);
+				  group_both->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }
+		  }
+	  }	  
 	  return ret;	  
   }
   
