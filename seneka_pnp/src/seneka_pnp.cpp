@@ -387,7 +387,7 @@ public:
 	    	   	    
 	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
 	    if(ret){
-	    	
+	      ret = false;	
 	      joint_positions_r = group_r->getCurrentJointValues();
 	      joint_positions_l = group_l->getCurrentJointValues();
 	      
@@ -405,7 +405,7 @@ public:
 	      }
 	      
 	      if(ret){
-	    	  
+	    	  ret = false;
 		      joint_positions_r = group_r->getCurrentJointValues();
 		      joint_positions_l = group_l->getCurrentJointValues();
 		      
