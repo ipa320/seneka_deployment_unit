@@ -69,7 +69,8 @@ private:
   
   bool extforceflag_;
   
-  bool trajexec;
+  bool trajexec_;
+  double mass_;
 
   ros::Subscriber subscr_;
   std::vector<dualArmJointState> armstates_;
@@ -113,12 +114,14 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
+    mass_ = 4;
+    
     extforce_lock_.lock();
     extforceflag_ = false;
     extforce_lock_.unlock();
     
     //Allows trajectory execution.. !!!Be patient with this!!!
-    trajexec = true;
+    trajexec_ = true;
 
     armstates_ = seneka_pnp_tools::createArmStates();
     
@@ -132,7 +135,7 @@ public:
     service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
     
     //set initial payload
-    //smoothSetPayload(0);
+    smoothSetPayload(0);
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
@@ -144,6 +147,10 @@ public:
   //TRANSITION: toHomeState
   bool toHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
+	group_r_->setStartStateToCurrentState();      
+	group_l_->setStartStateToCurrentState();
+	group_both_->setStartStateToCurrentState();
+  
     moveit::planning_interface::MoveGroup::Plan plan;
     dualArmJointState state;
     bool ret = false;
@@ -405,46 +412,49 @@ public:
 	       	group_both->asyncExecute(mergedPlan);
 	      	ret = monitorArmMovement(true,true);
 	    }
-	    	   	    
+
 	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
 	    if(ret){
-	      ret = false;	
-	      joint_positions_r = group_r->getCurrentJointValues();
-	      joint_positions_l = group_l->getCurrentJointValues();
-	      
-	      target_pose_r.position = node.handholds[used_handle_r].down.position;
-	      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-	      target_pose_l.position = node.handholds[used_handle_l].down.position;
-	      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+	    	ret = false;	
+	    	joint_positions_r = group_r->getCurrentJointValues();
+	    	joint_positions_l = group_l->getCurrentJointValues();
 
-	      goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+	    	target_pose_r.position = node.handholds[used_handle_r].down.position;
+	    	target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+	    	target_pose_l.position = node.handholds[used_handle_l].down.position;
+	    	target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
 
-	      group_both->setJointValueTarget(goal_joints.both);
-	      if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-	    	  group_both->asyncExecute(mergedPlan);
-	    	  ret = monitorArmMovement(true,true);
-	      }
-	      
-	      if(ret){
-	    	  ret = false;
-		      joint_positions_r = group_r->getCurrentJointValues();
-		      joint_positions_l = group_l->getCurrentJointValues();
-		      
-		      target_pose_r.position = node.handholds[used_handle_r].up.position;
-		      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-		      target_pose_l.position = node.handholds[used_handle_l].up.position;
-		      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+	    	goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
 
-		      goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+	    	group_both->setJointValueTarget(goal_joints.both);
+	    	if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+	    		group_both->asyncExecute(mergedPlan);
+	    		ret = monitorArmMovement(true,true);
+	    	}
 
-		      group_both->setJointValueTarget(goal_joints.both);
-		      if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-		    	  group_both->asyncExecute(mergedPlan);
-		    	  ret = monitorArmMovement(true,true);
-		      } 	  	    	  
-	      }
+	    	if(ret){
+		    	//setting mass before pickup
+		    	smoothSetPayload(mass_/2);
+		    	
+	    		ret = false;
+	    		joint_positions_r = group_r->getCurrentJointValues();
+	    		joint_positions_l = group_l->getCurrentJointValues();
+
+	    		target_pose_r.position = node.handholds[used_handle_r].up.position;
+	    		target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+	    		target_pose_l.position = node.handholds[used_handle_l].up.position;
+	    		target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+
+	    		goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+
+	    		group_both->setJointValueTarget(goal_joints.both);
+	    		if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+	    			group_both->asyncExecute(mergedPlan);
+	    			ret = monitorArmMovement(true,true);
+	    		} 	  	    	  
+	    	}
 	    }
-	   
+
 	    return ret;
   }
   
@@ -506,7 +516,7 @@ public:
 
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 
-	  if(trajexec)
+	  if(trajexec_)
 		  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true);
 
@@ -546,7 +556,7 @@ public:
 		  waypoints_l.push_back(target_pose_l);
 
 		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.007);
-		  if(trajexec)
+		  if(trajexec_)
 			  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true,true);//stop on external force
 
@@ -580,8 +590,8 @@ public:
 			  ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
 			  ur_driver::URSetPayload srv_r, srv_l;
 
-			  srv_r.request.payload = 13;
-			  srv_l.request.payload = 13;
+			  srv_r.request.payload = mass_/2;
+			  srv_l.request.payload = mass_/2;
 
 			  if (!client_r.call(srv_r))
 				  return false;
@@ -589,7 +599,7 @@ public:
 				  return false;
 
 			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
-			  if(trajexec)
+			  if(trajexec_)
 				  group_both->asyncExecute(mergedPlan);
 			  ret = monitorArmMovement(true,true);
 		  }
@@ -745,16 +755,17 @@ public:
 	  bool ret = false;
 	  
       //------------to packed-rear-h1-----------------
-	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-h1", &state))
-	      	return false;
+//	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-h1", &state))
+//	      	return false;
+//	  
+//	  group_both->setJointValueTarget(state.both.position);	  
+//	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+//		  sleep(5.0);
+//		  group_both->asyncExecute(plan);
+//		  ret = monitorArmMovement(true,true);
+//	  }
 	  
-	  group_both->setJointValueTarget(state.both.position);	  
-	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(5.0);
-		  group_both->asyncExecute(plan);
-		  ret = monitorArmMovement(true,true);
-	  }
-	  
+	  ret = true;
 	  if(ret){
 		  ret = false;
 	      //------------to prepack-rear-----------------
@@ -894,18 +905,18 @@ public:
 		  }		  
 		  
 		  //------------to packed-rear------------------
-		  if(ret){
-			  ret = false;
-			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
-				  return false;
-			  	  
-			  group_both->setJointValueTarget(state.both.position);			  
-			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-				  sleep(5.0);
-				  group_both->asyncExecute(plan);
-				  ret = monitorArmMovement(true,true);
-			  }		  
-		  }
+//		  if(ret){
+//			  ret = false;
+//			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+//				  return false;
+//			  	  
+//			  group_both->setJointValueTarget(state.both.position);			  
+//			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+//				  sleep(5.0);
+//				  group_both->asyncExecute(plan);
+//				  ret = monitorArmMovement(true,true);
+//			  }		  
+//		  }
 	  }
 	  
 	  return ret;
