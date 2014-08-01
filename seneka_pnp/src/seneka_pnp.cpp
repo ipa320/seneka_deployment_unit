@@ -216,7 +216,7 @@ public:
   //moves the arms to the initial pickup pose
   bool toPreGrasp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
-	moveit::planning_interface::MoveGroup::Plan lplan,rplan, merged_plan;
+	moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, merged_plan;
 	dualArmJointState state;
     bool ret = false;
     
@@ -237,7 +237,59 @@ public:
     group_both->asyncExecute(merged_plan);
     ret = monitorArmMovement(true,true);
 
+    if(ret){
+    	//pregrasp-jointflip
+    	if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-jointflip", &state))
+    		return false;	  
+
+    	group_both->setJointValueTarget(state.both.position);	  
+    	if(seneka_pnp_tools::multiplan(group_both,&plan)){
+    		group_l->asyncExecute(plan);
+    		ret = monitorArmMovement(true,true);
+    	}
+    }
+
     return ret;
+  }
+  
+  bool preGraspToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
+	  bool ret = false;
+
+	  //topregrasp
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp", &state))
+		  return false;	  
+
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  
+	  if(ret){
+		  //topregrasp
+		  if(!seneka_pnp_tools::getArmState(armstates_, "home", &state))
+			  return false;	  
+
+		  group_both->setJointValueTarget(state.both.position);	  
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  group_l->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }  
+	  }
+	  
+	  return ret;
+  }
+  
+  bool packedFrontToPreGrasp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
+	  bool ret = false;
+	  
+	  return ret;
   }
   
   bool homeToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
@@ -1218,13 +1270,13 @@ public:
 	  else if(currentState.compare("pregrasp") == 0){
 
 		  //Transitions
-		  if(transition.compare("toHome") == 0){
-			  if(toHome(group_l_,group_r_,group_both_)){
+		  if(transition.compare("preGraspToHome") == 0){
+			  if(preGraspToHome(group_l_,group_r_,group_both_)){
 				  return "home";
 			  } else {
 				  return "unknown_state";
 			  }
-		  }     
+		  }
 
 		  if(transition.compare("toPickedUp") == 0){
 			  if(toPickedUp(group_l_,group_r_,group_both_)){

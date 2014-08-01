@@ -65,6 +65,7 @@ namespace seneka_interactive_tools{
 			for (uint i = 0; i < joint_names.size(); i++) {
 				moveit_msgs::JointConstraint jconstraint;
 				jconstraint.joint_name = joint_names[i];
+				jconstraint.weight = 0.5;
 				jconstraint.position = joint_positions[i];
 				joint_constraints.push_back(jconstraint);
 			}
@@ -77,6 +78,7 @@ namespace seneka_interactive_tools{
 						if (j < joint_names.size() && j < joint_positions.size()) {
 							moveit_msgs::JointConstraint jconstraint;
 							jconstraint.joint_name = joint_names[j];//name
+							jconstraint.weight = 0.5;
 							jconstraint.position = joint_positions[j];//value
 							joint_constraints.push_back(jconstraint);
 						} else {
