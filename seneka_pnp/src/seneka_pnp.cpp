@@ -557,7 +557,7 @@ public:
 		  target_pose_l.position.z = node.handholds[used_handle_l].up.position.z;
 		  waypoints_l.push_back(target_pose_l);
 
-		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.007);
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
 		  if(trajexec_)
 			  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true,true);//stop on external force
@@ -567,45 +567,45 @@ public:
 		  extforce_lock_.unlock();
 		  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 
-		  //check for external force and replan..
-		  if(!ret && extforceflag){
-
-			  waypoints_r.clear();
-			  waypoints_l.clear();
-
-			  target_pose_r = group_r->getCurrentPose().pose;
-			  target_pose_l = group_l->getCurrentPose().pose;
-
-			  target_pose_r.position.x = node.handholds[used_handle_r].up.position.x;
-			  target_pose_r.position.y = node.handholds[used_handle_r].up.position.y;
-			  target_pose_r.position.z = node.handholds[used_handle_r].up.position.z;
-			  waypoints_r.push_back(target_pose_r);
-
-			  target_pose_l.position.x = node.handholds[used_handle_l].up.position.x;
-			  target_pose_l.position.y = node.handholds[used_handle_l].up.position.y;
-			  target_pose_l.position.z = node.handholds[used_handle_l].up.position.z;
-			  waypoints_l.push_back(target_pose_l);
-
-
-			  //set the payload through service call
-			  ros::ServiceClient client_r = node_handle_.serviceClient<ur_driver::URSetPayload>("/right_arm_controller/ur_driver/setPayload");
-			  ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
-			  ur_driver::URSetPayload srv_r, srv_l;
-
-			  srv_r.request.payload = mass_/2;
-			  srv_l.request.payload = mass_/2;
-
-			  if (!client_r.call(srv_r))
-				  return false;
-			  if (!client_l.call(srv_l))
-				  return false;
-
-			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
-			  if(trajexec_)
-				  group_both->asyncExecute(mergedPlan);
-			  ret = monitorArmMovement(true,true);
-		  }
-		  ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+//		  //check for external force and replan..
+//		  if(!ret && extforceflag){
+//
+//			  waypoints_r.clear();
+//			  waypoints_l.clear();
+//
+//			  target_pose_r = group_r->getCurrentPose().pose;
+//			  target_pose_l = group_l->getCurrentPose().pose;
+//
+//			  target_pose_r.position.x = node.handholds[used_handle_r].up.position.x;
+//			  target_pose_r.position.y = node.handholds[used_handle_r].up.position.y;
+//			  target_pose_r.position.z = node.handholds[used_handle_r].up.position.z;
+//			  waypoints_r.push_back(target_pose_r);
+//
+//			  target_pose_l.position.x = node.handholds[used_handle_l].up.position.x;
+//			  target_pose_l.position.y = node.handholds[used_handle_l].up.position.y;
+//			  target_pose_l.position.z = node.handholds[used_handle_l].up.position.z;
+//			  waypoints_l.push_back(target_pose_l);
+//
+//
+//			  //set the payload through service call
+//			  ros::ServiceClient client_r = node_handle_.serviceClient<ur_driver::URSetPayload>("/right_arm_controller/ur_driver/setPayload");
+//			  ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
+//			  ur_driver::URSetPayload srv_r, srv_l;
+//
+//			  srv_r.request.payload = mass_/2;
+//			  srv_l.request.payload = mass_/2;
+//
+//			  if (!client_r.call(srv_r))
+//				  return false;
+//			  if (!client_l.call(srv_l))
+//				  return false;
+//
+//			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
+//			  if(trajexec_)
+//				  group_both->asyncExecute(mergedPlan);
+//			  ret = monitorArmMovement(true,true);
+//		  }
+//		  ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 	  }
 
 	  return ret;

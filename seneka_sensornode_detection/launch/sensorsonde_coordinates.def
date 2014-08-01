@@ -88,11 +88,11 @@
 <var name="handle6_pitch">6.805</var>
 <var name="handle6_yaw">0</var>
 
-<var name="trigger_up_offset_x">-15</var>
+<var name="trigger_up_offset_x">-8</var>
 <var name="trigger_up_offset_y">0</var>
 <var name="trigger_up_offset_z">130</var>
 
-<var name="trigger_down_offset_x">-15</var>
+<var name="trigger_down_offset_x">-8</var>
 <var name="trigger_down_offset_y">0</var>
 <var name="trigger_down_offset_z">-130</var>
 
