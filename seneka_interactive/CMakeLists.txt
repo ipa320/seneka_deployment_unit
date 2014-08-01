@@ -38,6 +38,7 @@ add_service_files(
    getJointStates.srv
    setConstraints.srv
    generateIK.srv
+   evaluateIK.srv
 )
 
 generate_messages(

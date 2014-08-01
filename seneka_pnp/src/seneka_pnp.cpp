@@ -135,7 +135,7 @@ public:
     service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
     
     //set initial payload
-    smoothSetPayload(0);
+    smoothSetPayload(0.0);
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
@@ -351,6 +351,7 @@ public:
 	  return ret;
   }
 
+  //HERE_PI
   bool toPickedUpRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
 	    bool ret = true;
@@ -409,8 +410,8 @@ public:
 	    
 	    group_both->setJointValueTarget(goal_joints.both);	    
 	    if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-	       	group_both->asyncExecute(mergedPlan);
-	      	ret = monitorArmMovement(true,true);
+	    	group_both->asyncExecute(mergedPlan);
+	    	ret = monitorArmMovement(true,true);
 	    }
 
 	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
@@ -433,9 +434,9 @@ public:
 	    	}
 
 	    	if(ret){
-		    	//setting mass before pickup
-		    	smoothSetPayload(mass_/2);
-		    	
+	    		//setting mass before pickup
+	    		smoothSetPayload(mass_/2);
+
 	    		ret = false;
 	    		joint_positions_r = group_r->getCurrentJointValues();
 	    		joint_positions_l = group_l->getCurrentJointValues();
@@ -455,6 +456,7 @@ public:
 	    	}
 	    }
 
+	   
 	    return ret;
   }
   
@@ -629,10 +631,9 @@ public:
   
   bool toPrePack(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
-    bool ret = false;
-    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-    
-    moveit::planning_interface::MoveGroup::Plan lplan,rplan, mergedPlan;
+	moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, mergedPlan;
+	dualArmJointState state;
+	bool ret = false;
 
     group_r->setStartStateToCurrentState();      
     group_l->setStartStateToCurrentState();
@@ -641,110 +642,82 @@ public:
     std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
     geometry_msgs::Pose current_pose_r = group_r->getCurrentPose().pose;
     geometry_msgs::Pose current_pose_l = group_l->getCurrentPose().pose;    
-    
-    group_l->setNamedTarget("lprepack");
-    group_r->setNamedTarget("rprepack");
-    
+        
     geometry_msgs::Pose pose_l,pose_r;
     std::vector<double> joint_positions_l;
     std::vector<double> joint_positions_r;
-    //prepack-----------------------------------
-    //l
-	joint_positions_l.push_back(1.10002);
-	joint_positions_l.push_back(-1.41744);
-	joint_positions_l.push_back(-4.82702);
-	joint_positions_l.push_back(-0.0431126);
-	joint_positions_l.push_back(-3.61312);
-	joint_positions_l.push_back(3.36654);
-    //r
-    joint_positions_r.push_back(-1.10186);
-    joint_positions_r.push_back(-1.72479);
-    joint_positions_r.push_back(4.82816);
-    joint_positions_r.push_back(-3.10249);
-    joint_positions_r.push_back(-2.67068);
-    joint_positions_r.push_back(-3.34081);    
-    seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
-     
+    
     waypoints_l.clear();
     waypoints_r.clear();
+    //------------prepack-----------------
+    if(!seneka_pnp_tools::getArmState(armstates_, "prepack", &state))
+    	return false;
     
-    //waypoints_l.push_back(current_pose_l);
-    waypoints_l.push_back(pose_l);
-    
-    //waypoints_r.push_back(current_pose_r);
+    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
     waypoints_r.push_back(pose_r);
+    waypoints_l.push_back(pose_l);
+        
     
     mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //prepack---------------------------------------
+   
     
-    //packed-------------------------------------------------
-    joint_positions_l.clear();
-    joint_positions_r.clear();
+    return ret;
+  }
+  
+  bool toPackedFront(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
     
-    joint_positions_l.push_back(-0.170856);
-    joint_positions_l.push_back(-2.37488);
-    joint_positions_l.push_back(-3.99752);
-    joint_positions_l.push_back(0.0871943);
-    joint_positions_l.push_back(-4.88399);
-    joint_positions_l.push_back(3.37079);
-    //r
-    joint_positions_r.push_back(0.169261);
-    joint_positions_r.push_back(-0.76683);
-    joint_positions_r.push_back(3.99794);
-    joint_positions_r.push_back(-3.23071);
-    joint_positions_r.push_back(-1.39957);
-    joint_positions_r.push_back(-3.34166);   
-    seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
-     
-    waypoints_l.clear();
-    waypoints_r.clear();
-    
-    //waypoints_l.push_back(current_pose_l);
-    waypoints_l.push_back(pose_l);
-    
-    //waypoints_r.push_back(current_pose_r);
-    waypoints_r.push_back(pose_r);
-    
-    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-    group_both->asyncExecute(mergedPlan);
-    ret = monitorArmMovement(true,true);
-    //packed--------------------------------------------
-    
-    //deployed_front-------------------------------------------------
-    joint_positions_l.clear();
-    joint_positions_r.clear();
-    
-    joint_positions_l.push_back(0.164887);
-    joint_positions_l.push_back(-2.05895);
-    joint_positions_l.push_back(-3.62224);
-    joint_positions_l.push_back(-0.604017);
-    joint_positions_l.push_back(-4.54825);
-    joint_positions_l.push_back(3.37011);
-    //r
-    joint_positions_r.push_back(-0.166678);
-    joint_positions_r.push_back(-1.08266);
-    joint_positions_r.push_back(3.62272);
-    joint_positions_r.push_back(-2.53966);
-    joint_positions_r.push_back(-1.73551);
-    joint_positions_r.push_back(-3.34153);   
-    seneka_pnp_tools::fk_solver(&node_handle_, joint_positions_r, joint_positions_l, &pose_l, &pose_r);
-     
-    waypoints_l.clear();
-    waypoints_r.clear();
-    
-    //waypoints_l.push_back(current_pose_l);
-    waypoints_l.push_back(pose_l);
-    
-    //waypoints_r.push_back(current_pose_r);
-    waypoints_r.push_back(pose_r);
-    
-    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-    group_both->asyncExecute(mergedPlan);
-    ret = monitorArmMovement(true,true);
-    //deployed_front--------------------------------------------
+	moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, mergedPlan;
+	dualArmJointState state;
+	bool ret = false;
 
+    group_r->setStartStateToCurrentState();      
+    group_l->setStartStateToCurrentState();
+    group_both->setStartStateToCurrentState();
+
+    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+    geometry_msgs::Pose current_pose_r = group_r->getCurrentPose().pose;
+    geometry_msgs::Pose current_pose_l = group_l->getCurrentPose().pose;    
+        
+    geometry_msgs::Pose pose_l,pose_r;
+    std::vector<double> joint_positions_l;
+    std::vector<double> joint_positions_r;
+    
+     
+    waypoints_l.clear();
+    waypoints_r.clear();
+    //------------packed-front-----------------
+    if(!seneka_pnp_tools::getArmState(armstates_, "packed-front", &state))
+    	return false;
+    
+    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+    waypoints_r.push_back(pose_r);
+    waypoints_l.push_back(pose_l);
+        
+    
+    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+    group_both->asyncExecute(mergedPlan);
+    ret = monitorArmMovement(true,true);
+    //------------packed-front-----------------
+    
+    //------------packed-front-drop-----------------
+    if(ret){
+    	ret = false;
+        if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
+        	return false;
+        
+        seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+        waypoints_r.push_back(pose_r);
+        waypoints_l.push_back(pose_l);
+            
+        
+        mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+        group_both->asyncExecute(mergedPlan);
+        ret = monitorArmMovement(true,true);
+    }
+    //------------packed-front-drop-----------------
     return ret;
   }
   
@@ -1288,11 +1261,25 @@ public:
 				  return "unknown_state";
 			  }
 		  } 
-		  
+		  	  
 		  return "pregrasp-rear";
 	  }
-	  
-	  
+
+	  //------PACKED-FRONT-------------------------------------------
+	  else if(currentState.compare("packed-front") == 0){
+
+		  //Transitions
+		  if(transition.compare("toHome") == 0){
+			  if(toHome(group_l_,group_r_,group_both_)){
+				  return "home";
+			  } else {
+				  return "unknown_state";
+			  }
+		  } 
+
+		  return "packed-front";
+	  }
+
 	  //------PACKED-REAR-------------------------------------------
 	  else if(currentState.compare("packed-rear") == 0){
 		  
@@ -1367,7 +1354,14 @@ public:
     		} else {
     			return "unknown_state";
     		}
-      }    
+    	}    
+    	if(transition.compare("toPackedFront") == 0){
+    		if(toPackedFront(group_l_,group_r_,group_both_)){
+    			return "packed-front";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}    
 
     	return "prepack";
     }
@@ -1434,10 +1428,11 @@ public:
 			  vec_l->push_back(tmp[i]);
 		  }
 	  }
-	  
-	  delete ser;
-  }
 
+	  delete ser;
+
+  }	
+  
   void loadMoveGroups()
   {    
     group_r_ =  new move_group_interface::MoveGroup("right_arm_group");
@@ -1478,9 +1473,6 @@ public:
 
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
-
-   
-
 
     ros::Rate loop_rate(1);
     while(ros::ok()){
