@@ -1253,7 +1253,7 @@ public:
     //planning settings
     double planning_time = 20.0;
     double orientation_tolerance = 0.01;
-    double position_tolerance = 0.01;
+    double position_tolerance = 0.001;
 
     group_r_->setWorkspace (0, 0, 0, 5, 5, 5);
     group_r_->setStartStateToCurrentState();
