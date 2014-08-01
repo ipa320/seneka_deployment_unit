@@ -156,7 +156,7 @@ public:
 
 		//in m
 		gripper_length = 0.26;
-		gripper_depth = 0.02;
+		gripper_depth = 0.01;
 		
 		ik_solutions_iterator_r_ = 0;
 		ik_solutions_iterator_l_ = 0;
@@ -1495,18 +1495,41 @@ public:
 		pose.joint_states_l.clear();
 		pose.name = "pregrasp";
 
-		pose.joint_states_r.push_back(-1.05709);
-		pose.joint_states_r.push_back(-1.74269);
-		pose.joint_states_r.push_back(-0.892777);
-		pose.joint_states_r.push_back(2.63628);
-		pose.joint_states_r.push_back(3.65727);
-		pose.joint_states_r.push_back(-3.34089);
-		pose.joint_states_l.push_back(1.05509);
-		pose.joint_states_l.push_back(-1.39974);
-		pose.joint_states_l.push_back(0.894243);
-		pose.joint_states_l.push_back(0.501459);
-		pose.joint_states_l.push_back(2.62514);
-		pose.joint_states_l.push_back(3.36693);
+		pose.joint_states_r.push_back(-1.9705);
+		pose.joint_states_r.push_back(-2.441);
+		pose.joint_states_r.push_back(-0.8);
+		pose.joint_states_r.push_back(3.2);
+		pose.joint_states_r.push_back(3.241);//3.241
+		pose.joint_states_r.push_back(-3.3);
+		pose.joint_states_l.push_back(1.9705);
+		pose.joint_states_l.push_back(-0.7);
+		pose.joint_states_l.push_back(0.8);
+		pose.joint_states_l.push_back(0.0);
+		pose.joint_states_l.push_back(3.041);
+		pose.joint_states_l.push_back(3.3);
+
+		pose.pose.position.x = 3;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.663502;
+		stored_poses.push_back(pose);
+		
+		//pregrasp-jointflip
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "pregrasp-jointflip";
+
+		pose.joint_states_r.push_back(-1.9705);
+		pose.joint_states_r.push_back(-2.441);
+		pose.joint_states_r.push_back(-0.8);
+		pose.joint_states_r.push_back(3.2);
+		pose.joint_states_r.push_back(-3.041);//3.241
+		pose.joint_states_r.push_back(-3.3);
+		pose.joint_states_l.push_back(1.9705);
+		pose.joint_states_l.push_back(-0.7);
+		pose.joint_states_l.push_back(0.8);
+		pose.joint_states_l.push_back(0.0);
+		pose.joint_states_l.push_back(3.041);
+		pose.joint_states_l.push_back(3.3);
 
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
@@ -1521,7 +1544,7 @@ public:
 		pose.joint_states_r.push_back(-1.70806);
 		pose.joint_states_r.push_back(-1.08);//5.20262
 		pose.joint_states_r.push_back(2.788);//-3.49373
-		pose.joint_states_r.push_back(3.64382);//-2.63818
+		pose.joint_states_r.push_back(-2.63818);//-2.63818
 		pose.joint_states_r.push_back(-3.339);//2.94232
 		pose.joint_states_l.push_back(1.0674);
 		pose.joint_states_l.push_back(-1.43427);
@@ -1544,7 +1567,7 @@ public:
 		pose.joint_states_r.push_back(-0.780763);
 		pose.joint_states_r.push_back(-1.7279);
 		pose.joint_states_r.push_back(2.50947);
-		pose.joint_states_r.push_back(5.75764);
+		pose.joint_states_r.push_back(-0.52);//5.75764
 		pose.joint_states_r.push_back(-3.34229);
 		pose.joint_states_l.push_back(-1.03806);
 		pose.joint_states_l.push_back(-2.35984);
@@ -1562,20 +1585,20 @@ public:
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
 		pose.name = "packed-front-drop";
-	
-		pose.joint_states_r.push_back(0.398362);
-		pose.joint_states_r.push_back(-0.642881);
-		pose.joint_states_r.push_back(-2.33532);
-		pose.joint_states_r.push_back(2.97863);
-		pose.joint_states_r.push_back(5.11272);
-		pose.joint_states_r.push_back(-3.34176);
-		pose.joint_states_l.push_back(-0.399573);
-		pose.joint_states_l.push_back(-2.49877);
-		pose.joint_states_l.push_back(2.33571);
-		pose.joint_states_l.push_back(0.160897);
-		pose.joint_states_l.push_back(1.17048);
-		pose.joint_states_l.push_back(3.37129);
 		
+		pose.joint_states_r.push_back(0.354136);
+		pose.joint_states_r.push_back(-0.679861);
+		pose.joint_states_r.push_back(-2.32988);
+		pose.joint_states_r.push_back(3.01017);
+		pose.joint_states_r.push_back(1.21);//5.06849
+		pose.joint_states_r.push_back(-3.34174);
+		pose.joint_states_l.push_back(-0.355449);
+		pose.joint_states_l.push_back(-2.46181);
+		pose.joint_states_l.push_back(2.33029);
+		pose.joint_states_l.push_back(0.129397);
+		pose.joint_states_l.push_back(1.2146);
+		pose.joint_states_l.push_back(3.37119);
+
 		pose.pose.position.x = 0.82831;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.347945;
