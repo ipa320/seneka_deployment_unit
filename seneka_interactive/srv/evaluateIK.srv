@@ -1,0 +1,5 @@
+string cmd
+string arm
+------------
+float64 distance
+bool success
