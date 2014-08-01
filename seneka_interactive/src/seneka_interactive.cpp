@@ -67,7 +67,7 @@ private:
 	geometry_msgs::Pose handle_l_, handle_r_;
 	moveit_msgs::Constraints constraints_l_, constraints_r_;
 	bool marker_changed_;
-	double gripper_length;
+	double gripper_length, gripper_depth;
 	std::vector<node_pose> stored_poses;
 
 	//bool simulate_;
@@ -154,7 +154,9 @@ public:
 		generateIK_ = false;
 		equaljointstates_ = false;
 
+		//in m
 		gripper_length = 0.26;
+		gripper_depth = 0.02;
 		
 		ik_solutions_iterator_r_ = 0;
 		ik_solutions_iterator_l_ = 0;
@@ -1239,7 +1241,7 @@ public:
 		handle_r_ = marker_pose;
 
 		handle_l_.position.x += 0;
-		handle_l_.position.y += 0.215;
+		handle_l_.position.y += 0.215 + gripper_depth;
 		handle_l_.position.z += 0.70 + gripper_length;
 		handle_l_.orientation.x = 0.0095722;
 		handle_l_.orientation.y = -0.0108288;
@@ -1247,7 +1249,7 @@ public:
 		handle_l_.orientation.w = 0.707722;
 
 		handle_r_.position.x += 0;
-		handle_r_.position.y -= 0.215;
+		handle_r_.position.y -= 0.215 + gripper_depth;
 		handle_r_.position.z += 0.70 + gripper_length;
 		handle_r_.orientation.x = 0;
 		handle_r_.orientation.y = 0;
@@ -1561,23 +1563,22 @@ public:
 		pose.joint_states_l.clear();
 		pose.name = "packed-front-drop";
 	
-		pose.joint_states_r.push_back(0.312414);
-		pose.joint_states_r.push_back(-0.721236);
-		pose.joint_states_r.push_back(-2.3235);
-		pose.joint_states_r.push_back(3.04516);
-		pose.joint_states_r.push_back(5.02677);
-		pose.joint_states_r.push_back(-3.34172);
-		pose.joint_states_l.push_back(-0.313846);
-		pose.joint_states_l.push_back(-2.42043);
-		pose.joint_states_l.push_back(2.32391);
-		pose.joint_states_l.push_back(0.0944263);
-		pose.joint_states_l.push_back(1.25621);
-		pose.joint_states_l.push_back(3.37109);
-
-
+		pose.joint_states_r.push_back(0.398362);
+		pose.joint_states_r.push_back(-0.642881);
+		pose.joint_states_r.push_back(-2.33532);
+		pose.joint_states_r.push_back(2.97863);
+		pose.joint_states_r.push_back(5.11272);
+		pose.joint_states_r.push_back(-3.34176);
+		pose.joint_states_l.push_back(-0.399573);
+		pose.joint_states_l.push_back(-2.49877);
+		pose.joint_states_l.push_back(2.33571);
+		pose.joint_states_l.push_back(0.160897);
+		pose.joint_states_l.push_back(1.17048);
+		pose.joint_states_l.push_back(3.37129);
+		
 		pose.pose.position.x = 0.82831;
 		pose.pose.position.y = 0;
-		pose.pose.position.z = 0.347396;
+		pose.pose.position.z = 0.347945;
 		stored_poses.push_back(pose);
 					
 		start_pose_ = pose;
