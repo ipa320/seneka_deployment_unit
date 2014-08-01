@@ -1239,7 +1239,7 @@ public:
 		handle_r_ = marker_pose;
 
 		handle_l_.position.x += 0;
-		handle_l_.position.y += 0.2125;
+		handle_l_.position.y += 0.215;
 		handle_l_.position.z += 0.70 + gripper_length;
 		handle_l_.orientation.x = 0.0095722;
 		handle_l_.orientation.y = -0.0108288;
@@ -1247,7 +1247,7 @@ public:
 		handle_l_.orientation.w = 0.707722;
 
 		handle_r_.position.x += 0;
-		handle_r_.position.y -= 0.2125;
+		handle_r_.position.y -= 0.215;
 		handle_r_.position.z += 0.70 + gripper_length;
 		handle_r_.orientation.x = 0;
 		handle_r_.orientation.y = 0;
@@ -1561,22 +1561,23 @@ public:
 		pose.joint_states_l.clear();
 		pose.name = "packed-front-drop";
 	
-		pose.joint_states_r.push_back(0.30362);
-		pose.joint_states_r.push_back(-0.722747);
-		pose.joint_states_r.push_back(-2.33207);
-		pose.joint_states_r.push_back(3.05524);
-		pose.joint_states_r.push_back(5.01798);
+		pose.joint_states_r.push_back(0.312414);
+		pose.joint_states_r.push_back(-0.721236);
+		pose.joint_states_r.push_back(-2.3235);
+		pose.joint_states_r.push_back(3.04516);
+		pose.joint_states_r.push_back(5.02677);
 		pose.joint_states_r.push_back(-3.34172);
-		pose.joint_states_l.push_back(-0.305042);
-		pose.joint_states_l.push_back(-2.41893);
-		pose.joint_states_l.push_back(2.33248);
-		pose.joint_states_l.push_back(0.0843598);
-		pose.joint_states_l.push_back(1.26501);
-		pose.joint_states_l.push_back(3.37107);
+		pose.joint_states_l.push_back(-0.313846);
+		pose.joint_states_l.push_back(-2.42043);
+		pose.joint_states_l.push_back(2.32391);
+		pose.joint_states_l.push_back(0.0944263);
+		pose.joint_states_l.push_back(1.25621);
+		pose.joint_states_l.push_back(3.37109);
+
 
 		pose.pose.position.x = 0.82831;
 		pose.pose.position.y = 0;
-		pose.pose.position.z = 0.342241;
+		pose.pose.position.z = 0.347396;
 		stored_poses.push_back(pose);
 					
 		start_pose_ = pose;
