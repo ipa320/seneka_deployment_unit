@@ -675,6 +675,15 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates(){
 	states.push_back( createArmState("packed-front-drop",
 									0.155798, -0.754735, -2.22018, 2.97532, -1.41303, -3.34166, 
 									-0.157437, -2.387, 2.22061, 0.164381, 1.41261, 3.37076) );
+	states.push_back( createArmState("packed-front-tidy-1", 
+									-1.5, -0.754735, -2.22018, 2.97532, -1.41303, -2.9114,
+									1.5, -2.387, 2.22061, 0.164381, 1.41261, 2.911) );
+	states.push_back( createArmState("packed-front-tidy-2",
+									-1.5, -0.754735, -1.8, 2.97532, -1.41303, -2.9114,
+									1.5, -2.387, 1.8, 0.164381, 1.41261, 2.911));
+	states.push_back( createArmState("packed-front-tidy-3",
+									-1.5, -0.754735, -1.8, 2.97532, 3.141, -2.9114,
+									1.5, -2.387, 1.8, 0.164381, 3.141, 2.911) );
 		
 	
 	return states;
