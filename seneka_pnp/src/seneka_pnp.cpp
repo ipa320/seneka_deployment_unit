@@ -222,6 +222,53 @@ public:
 
     return ret;
   }
+  bool packedFrontToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+	  moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, merged_plan;
+	  dualArmJointState state;
+	  bool ret = false;
+	  
+	  //packed-front-tidy1
+	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-tidy-1", &state))
+		  return false;	  
+
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+
+	  if(ret){
+		  ret = false;
+		  //packed-front-tidy2
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-tidy-2", &state))
+			  return false;	  
+
+		  group_both->setJointValueTarget(state.both.position);	  
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  group_l->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
+		  
+		  if(ret){
+			  ret = false;
+			  //packed-front-tidy3
+			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-tidy-3", &state))
+				  return false;	  
+
+			  group_both->setJointValueTarget(state.both.position);	  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  group_l->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }
+			  
+			  if(ret){
+				  ret = toHome(group_l,group_r,group_both);				  
+			  }
+		  }
+	  }	    
+	  return ret;
+  }
   
   bool preGraspToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
@@ -1132,8 +1179,8 @@ public:
 	  else if(currentState.compare("packed-front") == 0){
 
 		  //Transitions
-		  if(transition.compare("toHome") == 0){
-			  if(toHome(group_l_,group_r_,group_both_)){
+		  if(transition.compare("packedFrontToHome") == 0){
+			  if(packedFrontToHome(group_l_,group_r_,group_both_)){
 				  return "home";
 			  } else {
 				  return "unknown_state";
