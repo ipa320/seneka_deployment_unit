@@ -53,9 +53,10 @@ E.g. for the Kinect use **/camera/rgb/**.
 ---------------------------------------------------------------------
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection nodes)
 * rostopic hz /fiducials/detect_fiducials (start marker detection)
-* roslaunch seneka_ugv_description ugv_bringup.launch robot_ip_l:=192.168.1.11 robot_ip_r:=192.168.1.12 (connection for two ur10's with static ip's. The pc needs a static ip in the same subnet)
+* roslaunch seneka_ugv_description ugv_bringup.launch robot_ip_r:=192.168.1.11 robot_ip_l:=192.168.1.12 (connection for two ur10's with static ip's. The pc needs a static ip in the same subnet)
 * roslaunch seneka_moveit_config move_group.launch (load the move group and moveit config)
 * roslaunch seneka_moveit_config moveit_rviz.launch (visualization of planed trajectories)
+* rosrun image_view image_view image:=/fiducials/image
 
 ##3. Pick up (development)
 ---------------------------------------------------------------------
