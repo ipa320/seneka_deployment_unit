@@ -1238,8 +1238,20 @@ public:
 	//computes the poses of the handles in reference to the marker position
 	void createGrabPoses(geometry_msgs::Pose &marker_pose) {
 
+//		tf::Quaternion qt_r = tf::createQuaternionFromRPY(0,0, PI);
+//		tf::Quaternion qt_l = tf::createQuaternionFromRPY(0,0,-PI);
+		
 		handle_l_ = marker_pose;
 		handle_r_ = marker_pose;
+		
+//		handle_l_.orientation.x += qt_l.getX();
+//		handle_l_.orientation.y += qt_l.getY();
+//		handle_l_.orientation.z += qt_l.getZ();
+//		handle_l_.orientation.w += qt_l.getW();
+//		handle_r_.orientation.x += qt_r.getX();
+//		handle_r_.orientation.y += qt_r.getY();
+//		handle_r_.orientation.z += qt_r.getZ();
+//		handle_r_.orientation.w += qt_r.getW();
 
 		handle_l_.position.x += 0;
 		handle_l_.position.y += 0.215 + gripper_depth;
@@ -1248,6 +1260,7 @@ public:
 		handle_l_.orientation.y = -0.0108288;
 		handle_l_.orientation.z = -0.706344;
 		handle_l_.orientation.w = 0.707722;
+		//handle_l_.orientation = marker_pose.orientation;
 
 		handle_r_.position.x += 0;
 		handle_r_.position.y -= 0.215 + gripper_depth;
@@ -1256,6 +1269,7 @@ public:
 		handle_r_.orientation.y = 0;
 		handle_r_.orientation.z = 0.706678;
 		handle_r_.orientation.w = 0.707535;
+		//handle_r_.orientation = marker_pose.orientation;
 		
 		tmp_pose_.pose = marker_pose;
 		tmp_pose_.handle_r = handle_r_;
