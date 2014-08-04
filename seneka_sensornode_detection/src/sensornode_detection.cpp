@@ -8,7 +8,11 @@
 #include <cob_object_detection_msgs/DetectObjects.h>
 
 #include <gazebo_msgs/GetModelState.h>
-#include "geometry_msgs/Quaternion.h"
+//#include <geometry_msgs/Quaternion.h>
+//#include <geometry_msgs/Pose.h>
+
+#include <seneka_sensornode_detection/setCameraPose.h>
+#include <seneka_sensornode_detection/getCameraPose.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -67,6 +71,7 @@ using namespace std;
 void sensornodeLocalCoordinates();
 void sensornodeGlobalCoordinates();
 bool loadParameters(std::vector<fiducialmarker>*,std::vector<handle>*, trigger_points*, pose*);
+void init();
 
 //---------------------------<coordinate transformations>---------------------------------------
 cv::Mat eulerToMatrix(double rot1, double rot2, double rot3);
@@ -87,11 +92,21 @@ ros::Timer tf_pub_timer_;
 tf::StampedTransform marker_tf_;
 
 //camera in quanjo system as vec7
-tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+//tf::Quaternion qt_ = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+
+geometry_msgs::Pose camera_pose_;
 //double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
 //double tmp[7] = { 1.05,0.015,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()}; on the front bar
-double tmp[7] = { 0.575,0.0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
-std::vector<double> camera7(&tmp[0], &tmp[0]+7);
+//double tmp_[7] = { 0.575,0.0,0.452,qt_.getW(),qt_.getX(),qt_.getY(),qt_.getZ()};
+//double tmp_[7] = { camera_pose_.position.x,
+//					camera_pose_.position.y,
+//					camera_pose_.position.z,
+//					camera_pose_.orientation.w,
+//					camera_pose_.orientation.x,
+//					camera_pose_.orientation.y,
+//					camera_pose_.orientation.z };
+//std::vector<double> camera7_(&tmp_[0], &tmp_[0]+7);
+ros::ServiceServer service_setCameraPose_, service_getCameraPose_;
 
 bool simulation_ = false;
 
@@ -103,6 +118,39 @@ bool simulation_ = false;
 //TODO: Compute sensorsonde pose from all markers. (Right now only marker 1 is used)
 
 
+void init(){
+	
+	geometry_msgs::Point rpy, rpy_in_rad;	
+	
+	//camera in quanjo system mockup
+	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+	camera_pose_.position.x = 0.575;
+	camera_pose_.position.y = 0.0;
+	camera_pose_.position.z = 0.452;
+	camera_pose_.orientation.w = qt.getW();
+	camera_pose_.orientation.x = qt.getX();
+	camera_pose_.orientation.y = qt.getY();
+	camera_pose_.orientation.z = qt.getZ();	
+	
+	//camera in quanjo system Ilmenau
+//	rpy.x = 0;
+//	rpy.y = 0;
+//	rpy.z = 0;	
+//	rpy_in_rad.x = rpy.x * PI / 180;
+//	rpy_in_rad.y = rpy.y * PI / 180;
+//	rpy_in_rad.z = rpy.z * PI / 180;	
+//	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2 + rpy_in_rad.x,
+//													0 + rpy_in_rad.y,
+//													-PI/2 + rpy_in_rad.z);	
+//	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+//	camera_pose_.position.x = 0.575;
+//	camera_pose_.position.y = 0.0;
+//	camera_pose_.position.z = 0.452;
+//	camera_pose_.orientation.w = qt.getW();
+//	camera_pose_.orientation.x = qt.getX();
+//	camera_pose_.orientation.y = qt.getY();
+//	camera_pose_.orientation.z = qt.getZ();
+}
 
 //Coordinate transformation for simulation in gazebo, Something is wrong with the trafo
 void getSensornodeStateGazebo(ros::NodeHandle& n){  
@@ -220,10 +268,15 @@ void sensornodeGlobalCoordinates(){
   transform.setOrigin( tf::Vector3(0,0,0) );
   transform.setRotation( tf::createQuaternionFromRPY(0,0,0) );
   br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world_dummy_link", "/quanjo_body"));
-
+  
   //Camera Position
-  transform.setOrigin( tf::Vector3(camera7[0],camera7[1],camera7[2]) );
-  transform.setRotation( tf::Quaternion(camera7[4],camera7[5],camera7[6],camera7[3]) );
+  transform.setOrigin( tf::Vector3(camera_pose_.position.x, 
+		  	  	  	  	  	  	   camera_pose_.position.y, 
+		  	  	  	  	  	  	   camera_pose_.position.z) );
+  transform.setRotation( tf::Quaternion(camera_pose_.orientation.x,
+		  	  	  	  	  	  	  	    camera_pose_.orientation.y,
+		  	  	  	  	  	  	  	    camera_pose_.orientation.z,
+		  	  	  	  	  	  	  	    camera_pose_.orientation.w) );
   br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/quanjo_body", "/quanjo_camera"));
   
 }
@@ -607,13 +660,48 @@ void multiplyFrame7(std::vector<double> q1,std::vector<double> q2, std::vector<d
   q->push_back(r1*z2 + x1*y2 - y1*x2 + z1*r2);   // z component
 }
 
+bool getCameraPose(seneka_sensornode_detection::getCameraPose::Request &req,
+		seneka_sensornode_detection::getCameraPose::Response &res){
+	
+	res.camera_pose = camera_pose_;
+	res.success = true;
+	
+	return true;
+}
+
+bool setCameraPose(seneka_sensornode_detection::setCameraPose::Request &req,
+		seneka_sensornode_detection::setCameraPose::Response &res){
+	
+	geometry_msgs::Point rpy_in_rad;
+	
+	rpy_in_rad.x = req.rpy.x * PI / 180;
+	rpy_in_rad.y = req.rpy.y * PI / 180;
+	rpy_in_rad.z = req.rpy.z * PI / 180;
+	
+	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2 + rpy_in_rad.x,
+													0 + rpy_in_rad.y ,
+													-PI/2 + rpy_in_rad.z);
+	
+	camera_pose_.position = req.position;
+	camera_pose_.orientation.w = qt.getW();
+	camera_pose_.orientation.x = qt.getX();
+	camera_pose_.orientation.y = qt.getY();
+	camera_pose_.orientation.z = qt.getZ();	
+	
+	return true;
+}
+
 //-----------------------------------main----------------------------------------------------------------------------
 int main( int argc, char** argv )
 {  
-  ros::init(argc, argv, "sensornode_detection");
+  ros::init(argc, argv, "seneka_sensornode_detection");
   ros::NodeHandle node;
  
+  init();
+  
   ros::Subscriber sub = node.subscribe("/fiducials/fiducial_detection_array", 1, getSensornodeStateCamera);
+  service_setCameraPose_ = node.advertiseService("setCameraPose", setCameraPose);
+  service_getCameraPose_ = node.advertiseService("getCameraPose", getCameraPose);
  
   if(!loadParameters(&fiducialmarkers,&handles,&trigger_offset,&grab_entry)){
     ROS_ERROR("Failed to load parameters. Check the path...");
