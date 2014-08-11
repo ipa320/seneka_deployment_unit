@@ -218,7 +218,7 @@ public:
 
 	moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, merged_plan;
 	dualArmJointState state;
-    bool ret = false;
+    bool ret = true;
     
     if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp", &state))
     	return false;
@@ -244,6 +244,7 @@ public:
 
     	group_both->setJointValueTarget(state.both.position);	  
     	if(seneka_pnp_tools::multiplan(group_both,&plan)){
+    		//sleep(10.0);
     		group_l->asyncExecute(plan);
     		ret = monitorArmMovement(true,true);
     	}

@@ -132,9 +132,9 @@ void init(){
 	camera_pose_.orientation.y = qt.getY();
 	camera_pose_.orientation.z = qt.getZ();	
 	
-	//camera in quanjo system Ilmenau
-//	rpy.x = 0;
-//	rpy.y = 0;
+//	//camera in quanjo system Ilmenau
+//	rpy.x = -44;
+//	rpy.y = 0.0;
 //	rpy.z = 0;	
 //	rpy_in_rad.x = rpy.x * PI / 180;
 //	rpy_in_rad.y = rpy.y * PI / 180;
@@ -142,10 +142,10 @@ void init(){
 //	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2 + rpy_in_rad.x,
 //													0 + rpy_in_rad.y,
 //													-PI/2 + rpy_in_rad.z);	
-//	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
-//	camera_pose_.position.x = 0.575;
-//	camera_pose_.position.y = 0.0;
-//	camera_pose_.position.z = 0.452;
+//	//tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+//	camera_pose_.position.x = 0.29;
+//	camera_pose_.position.y = -0.14;
+//	camera_pose_.position.z = 1.685;
 //	camera_pose_.orientation.w = qt.getW();
 //	camera_pose_.orientation.x = qt.getX();
 //	camera_pose_.orientation.y = qt.getY();
