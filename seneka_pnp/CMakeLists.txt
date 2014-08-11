@@ -19,21 +19,36 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   pluginlib	
   message_generation
+  genmsg
+  actionlib_msgs
+  actionlib
 )
 find_package(OpenCV REQUIRED)
 find_package(Eigen REQUIRED)
 
+
+add_action_files(
+  DIRECTORY 
+  action 
+  FILES 
+  quanjo_manipulation_action.action
+)
 add_service_files(
   FILES
   getState.srv
   setTransition.srv
   setStop.srv
 )
+add_message_files(
+  FILES
+  quanjo_manipulation.msg
+)
 generate_messages(
   DEPENDENCIES
   std_msgs
   actionlib_msgs
   control_msgs
+  actionlib_msgs
 )
 
 
@@ -59,6 +74,7 @@ catkin_package(
     moveit_core
     moveit_ros_planning_interface
     pluginlib
+    message_runtime
   DEPENDS
     OpenCV
     Eigen
