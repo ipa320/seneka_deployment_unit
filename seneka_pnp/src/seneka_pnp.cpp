@@ -49,6 +49,7 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <seneka_pnp/QuanjoManipulationAction.h>
+#include <seneka_pnp/quanjo_manipulation.h>
 
 #include <boost/thread/mutex.hpp>
 
@@ -92,7 +93,10 @@ private:
 
 public:
   //Constructor
-  SenekaPickAndPlace(ros::NodeHandle& nh){
+  SenekaPickAndPlace(ros::NodeHandle& nh, std::string name) :
+	  as_(nh, name, boost::bind(&SenekaPickAndPlace::quanjoArmSupervisorCB, this, _1), false),
+	  action_name_(name)
+  {
     node_handle_ = nh;
     init();
   }
@@ -103,6 +107,8 @@ public:
 
   void init(){
     
+	as_.start();
+	  
     //params
     transition_ = "";
     tje_lock_.lock();
@@ -125,6 +131,67 @@ public:
     loadMoveGroups();
     mainLoop();
   }  
+
+  //--------------------------------------------------------- ACTION ------------------------------------------------------------------
+  void quanjoArmSupervisorCB(const seneka_pnp::QuanjoManipulationGoalConstPtr &goal)
+  {
+	  bool success = true;
+
+//	  for(int i=1; i<=100; i++)
+//	  {
+//		  // check that preempt has not been requested by the client
+//		  if (as_.isPreemptRequested() || !ros::ok())
+//		  {
+//			  ROS_INFO("%s: Preempted", action_name_.c_str());
+//			  // set the action state to preempted
+//			  as_.setPreempted();
+//			  success = false;
+//			  break;
+//		  }
+//		  feedback_.percentage = i;
+//		  as_.publishFeedback(feedback_);		  
+//	  }
+	  
+	  seneka_pnp::QuanjoManipulationResult  manipulation;
+	  if(!currentState_.compare("home")){
+		  
+		  if(goal->goal.val == manipulation.result.GOAL_PICKUP){//GOAL_PICKUP
+			  ROS_INFO("Received goal pick up");
+			  if(success)
+				  success = toPreGrasp(group_l_,group_r_,group_both_);
+			  if(success)
+				  success = toPickedUp(group_l_,group_r_,group_both_);			
+			  if(success)
+				  success = toPrePack(group_l_,group_r_,group_both_);
+			  if(success)
+				  success = toPackedFront(group_l_,group_r_,group_both_);
+			  if(success)
+				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
+		  }
+		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY){
+			  ROS_INFO("GOAL_DEPLOY 2");
+		  }
+		  
+		  if(!success){
+			  result_.result.val = manipulation.result.RESULT_HARD_MANIPULATION_FAILURE;
+			  currentState_ = "unknown_state";
+			  success = false;
+		  }
+		  
+	  } else {
+		  result_.result.val = manipulation.result.RESULT_STARTSTATE_FAILURE;
+		  success = false;
+	  }
+	  
+	  if(success){
+		  result_.result.val = manipulation.result.RESULT_SUCCESS;
+	  }
+	  
+	  as_.setSucceeded(result_);
+	  //result_.result.val = quanjo_manipulation::RESULT_SUCCESS;
+  }
+  //--------------------------------------------------------- ACTION ------------------------------------------------------------------
+  
   
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
 
@@ -1389,7 +1456,7 @@ public:
     service_settransition_ = node_handle_.advertiseService("seneka_pnp/setTransition", &SenekaPickAndPlace::setTransition, this);
     service_setstop_ = node_handle_.advertiseService("seneka_pnp/setStop", &SenekaPickAndPlace::setStop, this);
     
-    QuanjoArmSupervisorAction supervisor(ros::this_node::getName(), this);
+    //QuanjoArmSupervisorAction supervisor(ros::this_node::getName(), this);
     
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
@@ -1412,7 +1479,8 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 
     /// Create SenekaPickAndPlace instance with mainLoop inside
-    SenekaPickAndPlace* seneka_pnp = new SenekaPickAndPlace(nh);
+    //SenekaPickAndPlace seneka_pnp(ros::this_node::getName());
+    SenekaPickAndPlace* seneka_pnp = new SenekaPickAndPlace(nh,ros::this_node::getName());
     
     delete seneka_pnp;
     return 0;
