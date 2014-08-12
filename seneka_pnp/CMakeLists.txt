@@ -20,7 +20,6 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib	
   message_generation
   genmsg
-  actionlib_msgs
   actionlib
 )
 find_package(OpenCV REQUIRED)
@@ -31,7 +30,7 @@ add_action_files(
   DIRECTORY 
   action 
   FILES 
-  quanjo_manipulation_action.action
+  QuanjoManipulation.action
 )
 add_service_files(
   FILES

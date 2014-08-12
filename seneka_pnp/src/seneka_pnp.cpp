@@ -47,6 +47,9 @@
 #include "actionlib_msgs/GoalStatusArray.h"
 #include "control_msgs/FollowJointTrajectoryActionResult.h"
 
+#include <actionlib/server/simple_action_server.h>
+#include <seneka_pnp/QuanjoManipulationAction.h>
+
 #include <boost/thread/mutex.hpp>
 
 class SenekaPickAndPlace
@@ -57,7 +60,6 @@ struct trajectory_execution_validation{
   bool finished;
   bool success;
 };
-
   
 private:
   ros::NodeHandle node_handle_;
@@ -80,6 +82,13 @@ private:
   trajectory_execution_validation tje_validation_;  
   boost::mutex tje_lock_;
   boost::mutex transition_lock_;
+
+  // NodeHandle instance must be created before this line. Otherwise strange error may occur.
+  actionlib::SimpleActionServer<seneka_pnp::QuanjoManipulationAction> as_; 
+  std::string action_name_;
+  // create messages that are used to published feedback/result
+  seneka_pnp::QuanjoManipulationFeedback feedback_;
+  seneka_pnp::QuanjoManipulationResult result_;
 
 public:
   //Constructor
@@ -116,7 +125,7 @@ public:
     loadMoveGroups();
     mainLoop();
   }  
-    
+  
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
 
   //TRANSITION: toHomeState
@@ -1379,7 +1388,9 @@ public:
     service_getstate_ = node_handle_.advertiseService("seneka_pnp/getState", &SenekaPickAndPlace::getState, this);
     service_settransition_ = node_handle_.advertiseService("seneka_pnp/setTransition", &SenekaPickAndPlace::setTransition, this);
     service_setstop_ = node_handle_.advertiseService("seneka_pnp/setStop", &SenekaPickAndPlace::setStop, this);
-
+    
+    QuanjoArmSupervisorAction supervisor(ros::this_node::getName(), this);
+    
     ros::AsyncSpinner spinner(4); // Use 4 threads
     spinner.start();
 
