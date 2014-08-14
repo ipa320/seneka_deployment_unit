@@ -135,7 +135,7 @@ void init(){
 			-PI/2 + rpy_in_rad.z);	
 	//tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
 	camera_pose_.position.x = 0.575;
-	camera_pose_.position.y = 0.0;
+	camera_pose_.position.y = -0.08;
 	camera_pose_.position.z = 0.452;
 	camera_pose_.orientation.w = qt.getW();
 	camera_pose_.orientation.x = qt.getX();

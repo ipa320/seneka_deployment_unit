@@ -206,7 +206,7 @@ public:
 			  if(success)
 				  success = deploySensornode(group_l_,group_r_,group_both_);
 			  if(success)
-				  success = deployedToHome(group_l_,group_r_,group_both_);
+				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
 		  
 		  if(!success){
@@ -317,7 +317,7 @@ public:
 	    return ret;	  
   }
 
-  bool deployedToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+  bool deployedFrontToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
 		moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, merged_plan;
 		dualArmJointState state;
@@ -635,14 +635,14 @@ public:
 	  return ret;
   }
   
-  bool packedFrontToPreGrasp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
-	  
-	  moveit::planning_interface::MoveGroup::Plan plan;
-	  dualArmJointState state;
-	  bool ret = false;
-	  
-	  return ret;
-  }
+//  bool packedFrontToPreGrasp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+//	  
+//	  moveit::planning_interface::MoveGroup::Plan plan;
+//	  dualArmJointState state;
+//	  bool ret = false;
+//	  
+//	  return ret;
+//  }
   
   bool homeToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 
@@ -1433,6 +1433,11 @@ public:
 
 	  double fraction_r = 0;
 	  double fraction_l = 0;
+
+	  group_r->setStartStateToCurrentState();      
+	  group_l->setStartStateToCurrentState();
+	  group_both->setStartStateToCurrentState();
+		
 	  uint attempts = 100;
 	  //-------RIGHT-------------------------
 	  for(uint i=0; fraction_r < 1.0 && i < attempts; i++){
@@ -1785,6 +1790,20 @@ public:
     	return "prepack-rear";
     }
 
+	//------DEPLOY-FRONT-------------------------------------------
+    else if(currentState.compare("deployed-front") == 0){
+
+    	//Transitions
+    	if(transition.compare("deployedFrontToHome") == 0){
+    		if(deployedFrontToHome(group_l_,group_r_,group_both_)){
+    			return "home";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}    
+
+    	return "deployed-front";    	
+    }
 
 
     //------UNKNOWN_STATE-------------------------------------------

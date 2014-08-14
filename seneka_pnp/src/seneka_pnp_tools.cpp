@@ -129,6 +129,8 @@ bool seneka_pnp_tools::multiplan(move_group_interface::MoveGroup* group, moveit:
 
 	uint maxattempts = 20;
 	uint attempt = 0;
+	
+	group->setStartStateToCurrentState();      
 
 	bool validplan = false;
 
@@ -630,9 +632,10 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates(){
 	
 	std::vector<dualArmJointState> states;
 	//the home state
+	//right arm coordinates first first
 	states.push_back( createArmState("home", 
-									-1.5705, 0, -2.5, 3.141, 3.141, -1.7,
-									1.5705, -3.141, 2.5, 0, 3.141, 1.7));
+									-1.5705, 0, -2.5, 3.141, 3.141, -1.7,//r
+									1.5705, -3.141, 2.5, 0, 3.141, 1.7));//l
 	states.push_back( createArmState("prepack-rear", 
 									1.55604, -0.348553, -1.12702, 1.50556, -0.0127962, 2.91043,
 									-1.558, -2.79, 1.12702, 1.52883, 0.012214, -2.74885) );
