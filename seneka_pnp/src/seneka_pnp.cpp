@@ -155,6 +155,8 @@ public:
 	  seneka_pnp::QuanjoManipulationResult  manipulation;
 	  if(!currentState_.compare("home")){
 		  
+		  ROS_INFO("dtghetteht");
+		  
 		  if(goal->goal.val == manipulation.result.GOAL_PICKUP){//GOAL_PICKUP
 			  
 			  ROS_INFO("Received goal pick up");
@@ -177,7 +179,7 @@ public:
 			  if(success)
 				  success = toDeployFrontPickedUp(group_l_,group_r_,group_both_);
 			  if(success)
-				  success = deploySensornode(group_l_,group_r_,group_both_);//TODO implemnt this
+				  success = deploySensornode(group_l_,group_r_,group_both_);
 			  if(success)
 				  success = deployedToHome(group_l_,group_r_,group_both_);
 		  }
@@ -189,6 +191,7 @@ public:
 		  }
 		  
 	  } else {
+		  ROS_INFO("NOT IN HOME STATE");
 		  result_.result.val = manipulation.result.RESULT_STARTSTATE_FAILURE;
 		  success = false;
 	  }
@@ -237,12 +240,50 @@ public:
     return ret;
   }
   
-  //TODO implement this
   bool deploySensornode(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
-	    moveit::planning_interface::MoveGroup::Plan plan;
+	    moveit::planning_interface::MoveGroup::Plan plan, mergedPlan;
 	    dualArmJointState state;
 	    bool ret = false;
+	    
+	    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+	    geometry_msgs::Pose current_pose_r = group_r->getCurrentPose().pose;
+	    geometry_msgs::Pose current_pose_l = group_l->getCurrentPose().pose;    
+	        
+	    geometry_msgs::Pose pose_l,pose_r;
+	    std::vector<double> joint_positions_l;
+	    std::vector<double> joint_positions_r;
+	    
+	    waypoints_l.clear();
+	    waypoints_r.clear();
+	    //------------pre-deploy-front-----------------
+	    if(!seneka_pnp_tools::getArmState(armstates_, "pre-deploy-front", &state))
+	    	return false;
+	    
+	    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+	    waypoints_r.push_back(pose_r);
+	    waypoints_l.push_back(pose_l);	        
+	    
+	    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+	    group_both->asyncExecute(mergedPlan);
+	    ret = monitorArmMovement(true,true);
+	    //------------pre-deploy-front-----------------
+	    
+	    if(ret){
+	    	ret = false;
+		    if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front", &state))
+		    	return false;
+		    
+		    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+	    	waypoints_l.clear();
+	        waypoints_r.clear();
+		    waypoints_r.push_back(pose_r);
+		    waypoints_l.push_back(pose_l);	        
+		    
+		    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		    group_both->asyncExecute(mergedPlan);
+		    ret = monitorArmMovement(true,true);	    			
+	    }
 	    
 	    return ret;	  
   }
@@ -357,14 +398,21 @@ public:
     if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
     	return false;
     
-    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
-    waypoints_r.push_back(pose_r);
-    waypoints_l.push_back(pose_l);
-        
+ 
     
-    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-    group_both->asyncExecute(mergedPlan);
-    ret = monitorArmMovement(true,true);
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+        
+	  //	seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+	  //	waypoints_r.push_back(pose_r);
+	  //	waypoints_l.push_back(pose_l);
+	  //    
+	  //    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+	  //    group_both->asyncExecute(mergedPlan);
+	  //    ret = monitorArmMovement(true,true);
     //------------packed-front-----------------
     
     //------------packed-front-drop-----------------

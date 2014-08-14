@@ -122,8 +122,18 @@ void init(){
 	
 	geometry_msgs::Point rpy, rpy_in_rad;	
 	
+	
 	//camera in quanjo system mockup
-	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
+	rpy.x = 3.0;
+	rpy.y = 1.0;
+	rpy.z = 5.0;	
+	rpy_in_rad.x = rpy.x * PI / 180;
+	rpy_in_rad.y = rpy.y * PI / 180;
+	rpy_in_rad.z = rpy.z * PI / 180;	
+	tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2 + rpy_in_rad.x,
+			0 + rpy_in_rad.y,
+			-PI/2 + rpy_in_rad.z);	
+	//tf::Quaternion qt = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
 	camera_pose_.position.x = 0.575;
 	camera_pose_.position.y = 0.0;
 	camera_pose_.position.z = 0.452;
