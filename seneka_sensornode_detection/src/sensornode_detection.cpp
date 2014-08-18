@@ -122,7 +122,6 @@ void init(){
 	
 	geometry_msgs::Point rpy, rpy_in_rad;	
 	
-	
 	//camera in quanjo system mockup
 	rpy.x = -21.0;
 	rpy.y = 0.0;
