@@ -30,6 +30,9 @@
 // Robot state publishing
 #include <moveit/robot_state/conversions.h>
 
+
+#include <tf/transform_datatypes.h>
+
 //services
 #include "seneka_interactive/setStartState.h"
 #include "seneka_interactive/setGoalState.h"
@@ -60,6 +63,8 @@ private:
 			service_printStatesToFile_, service_toggleArmFreeze_;
 	ros::ServiceServer service_setJointState_, service_getJointStates_, service_setConstraints_,
 			service_generateIK_, service_evaluateIK_;
+	
+	ros::Publisher vis_pub_;
 
 	ros::Publisher robot_state_publisher_l_, robot_state_publisher_r_;
 	interactive_markers::InteractiveMarkerServer* server_;
@@ -141,7 +146,8 @@ public:
 		service_evaluateIK_ = node_handle_.advertiseService(
 				"seneka_interactive/evaluateIK",
 				&SenekaInteractive::evaluateIK, this);
-
+		
+		vis_pub_ = node_handle_.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
 
 		tmp_pose_.name = "tmp_pose";
 
@@ -337,8 +343,7 @@ public:
 				if (service_response.error_code.val	== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 
 					for (uint i = 6; i < 12; i++) {
-//						S
-
+						
 						joint_values_r.push_back(
 								service_response.solution.joint_state.position[i]);
 						joint_names_r.push_back(
@@ -681,7 +686,9 @@ public:
 		createGrabPoses(marker_pose_);
 		marker_changed_ = true;
 	}
+	
 
+	
 	void interactiveMarker() {
 
 		// create an interactive marker server on the topic namespace simple_marker
@@ -766,11 +773,108 @@ public:
 		// tell the server to call processFeedback() when feedback arrives for it
 		server_->insert(int_marker,
 				boost::bind(&SenekaInteractive::processFeedback, this, _1));
-
-		// 'commit' changes and send to all clients
+		
+		
 		server_->applyChanges();
+			
+		handle_marker_r();
+		handle_marker_l();
 	}
+	
+	void handle_marker_r(){
+		
+		// create an interactive marker for our server_
+		  visualization_msgs::InteractiveMarker int_marker;
+		  int_marker.header.frame_id = "/world_dummy_link";
+		  int_marker.name = "right_handle";
+		  int_marker.description = "the right handle";
 
+		  // create a grey box marker
+		  visualization_msgs::Marker box_marker;
+		  box_marker.type = visualization_msgs::Marker::CUBE;
+		  box_marker.scale.x = 0.05;
+		  box_marker.scale.y = 0.4;
+		  box_marker.scale.z = 0.05;
+		  box_marker.color.r = 0.0;
+		  box_marker.color.g = 1;
+		  box_marker.color.b = 0.0;
+		  box_marker.color.a = 1.0;
+
+		  // create a non-interactive control which contains the box
+		  visualization_msgs::InteractiveMarkerControl box_control;
+		  box_control.always_visible = false;
+		  box_control.markers.push_back( box_marker );
+
+		  // add the control to the interactive marker
+		  int_marker.controls.push_back( box_control );
+
+		  // create a control which will move the box
+		  // this control does not contain any markers,
+		  // which will cause RViz to insert two arrows
+		  visualization_msgs::InteractiveMarkerControl rotate_control;
+		  rotate_control.name = "move_x";
+		  rotate_control.interaction_mode =
+		      visualization_msgs::InteractiveMarkerControl::NONE;
+
+
+		  // add the control to the interactive marker
+		  int_marker.controls.push_back(rotate_control);
+
+		  // add the interactive marker to our collection &
+		  // tell the server_ to call processFeedback() when feedback arrives for it
+		  server_->insert(int_marker);
+
+		  // 'commit' changes and send to all clients
+		  server_->applyChanges();
+	}
+	
+	void handle_marker_l(){
+		
+		// create an interactive marker for our server_
+		  visualization_msgs::InteractiveMarker int_marker;
+		  int_marker.header.frame_id = "/world_dummy_link";
+		  int_marker.name = "left_handle";
+		  int_marker.description = "the left handle";
+
+		  // create a grey box marker
+		  visualization_msgs::Marker box_marker;
+		  box_marker.type = visualization_msgs::Marker::CUBE;
+		  box_marker.scale.x = 0.05;
+		  box_marker.scale.y = 0.4;
+		  box_marker.scale.z = 0.05;
+		  box_marker.color.r = 0.0;
+		  box_marker.color.g = 1;
+		  box_marker.color.b = 0.0;
+		  box_marker.color.a = 1.0;
+
+		  // create a non-interactive control which contains the box
+		  visualization_msgs::InteractiveMarkerControl box_control;
+		  box_control.always_visible = false;
+		  box_control.markers.push_back( box_marker );
+
+		  // add the control to the interactive marker
+		  int_marker.controls.push_back( box_control );
+
+		  // create a control which will move the box
+		  // this control does not contain any markers,
+		  // which will cause RViz to insert two arrows
+		  visualization_msgs::InteractiveMarkerControl rotate_control;
+		  rotate_control.name = "move_x";
+		  rotate_control.interaction_mode =
+		      visualization_msgs::InteractiveMarkerControl::NONE;
+
+
+		  // add the control to the interactive marker
+		  int_marker.controls.push_back(rotate_control);
+
+		  // add the interactive marker to our collection &
+		  // tell the server_ to call processFeedback() when feedback arrives for it
+		  server_->insert(int_marker);
+
+		  // 'commit' changes and send to all clients
+		  server_->applyChanges();
+	}
+	
 	moveit_msgs::DisplayRobotState DisplayRobotStateFromJointStates(
 			const char *group, std::vector<double> joint_values) {
 
@@ -1237,39 +1341,99 @@ public:
 
 	//computes the poses of the handles in reference to the marker position
 	void createGrabPoses(geometry_msgs::Pose &marker_pose) {
-
-//		tf::Quaternion qt_r = tf::createQuaternionFromRPY(0,0, PI);
-//		tf::Quaternion qt_l = tf::createQuaternionFromRPY(0,0,-PI);
 		
+		//create rotation matrix from quaternion
+		tf::Quaternion qt(marker_pose.orientation.x, marker_pose.orientation.y, marker_pose.orientation.z, marker_pose.orientation.w);
+		tf::Matrix3x3 m(qt);
+						
+		//create handle pose in marker coordinate system
+		tf::Vector3 handle_offset_r(0, - (0.215 + gripper_depth), 0.70 + gripper_length);
+		tf::Vector3 handle_offset_l(0, 0.215 + gripper_depth, 0.70 + gripper_length);
+				
+		//multiply with rotation matrix
+		std::cout << handle_offset_r.y() << std::endl;
+		handle_offset_r = m * handle_offset_r;
+		handle_offset_l = m * handle_offset_l;
+		std::cout << handle_offset_r.y() << std::endl;
+		
+		//type conversion tf::Vector3 -> geometry_msgs::Vector3
+		geometry_msgs::Vector3 vec3_r, vec3_l;
+ 		vector3TFToMsg(handle_offset_r, vec3_r);
+ 		vector3TFToMsg(handle_offset_l, vec3_l);
+		
+ 		//add handle pose in reference system of marker
+ 		handle_r_ = marker_pose;	
 		handle_l_ = marker_pose;
-		handle_r_ = marker_pose;
+	
+		handle_r_.position.x += vec3_r.x;
+ 		handle_r_.position.y += vec3_r.y;
+ 		handle_r_.position.z += vec3_r.z;
+ 		
+ 		handle_l_.position.x += vec3_l.x;
+ 		handle_l_.position.y += vec3_l.y;
+ 		handle_l_.position.z += vec3_l.z;
+ 
+ 		
+ 		
+ 		
+ 		
+ 		
+ 		
+ 		//------- DEV --------
+ 		tf::Quaternion qt_boxmarker; 
+ 		tf::Quaternion qt_l90, qt_r90; 	
+ 		
+ 		//---right handle---
+ 		//fixed rotation	
+ 		qt_r90.setRPY(0,0,PI/2);
+ 		//box_marker to tf::Quaternion
+ 		tf::quaternionMsgToTF(marker_pose.orientation, qt_boxmarker); 		
+ 		//multiply
+ 		qt_boxmarker *= qt_r90; 		
+ 		//back trnsform
+ 		tf::quaternionTFToMsg(qt_boxmarker, handle_r_.orientation);
+ 		
+ 		
+ 		//---left handle---
+ 		//fixed rotation	
+ 		qt_l90.setRPY(0,0,-PI/2); 		
+ 		//box_marker to tf::Quaternion	
+ 		tf::quaternionMsgToTF(marker_pose.orientation, qt_boxmarker); 		
+ 		//multiply
+ 		qt_boxmarker *= qt_l90; 		
+ 		//back trnsform
+ 		tf::quaternionTFToMsg(qt_boxmarker, handle_l_.orientation);
+ 		//------- DEV --------
+
+ 		//working stuff
+// 		handle_l_.position.x += 0;
+// 		handle_l_.position.y += 0.215 + gripper_depth;
+// 		handle_l_.position.z += 0.70 + gripper_length;
+// 		handle_l_.orientation.x = 0.0095722;
+// 		handle_l_.orientation.y = -0.0108288;
+// 		handle_l_.orientation.z = -0.706344;
+// 		handle_l_.orientation.w = 0.707722;
+// 		handle_l_.orientation = marker_pose.orientation;
+
+//		handle_r_.position.x += 0;
+//		handle_r_.position.y -= 0.215 + gripper_depth;
+//		handle_r_.position.z += 0.70 + gripper_length;
+//		handle_r_.orientation.x = 0;
+//		handle_r_.orientation.y = 0;
+//		handle_r_.orientation.z = 0.706678;
+//		handle_r_.orientation.w = 0.707535;
+//		handle_r_.orientation = marker_pose.orientation;
 		
-//		handle_l_.orientation.x += qt_l.getX();
-//		handle_l_.orientation.y += qt_l.getY();
-//		handle_l_.orientation.z += qt_l.getZ();
-//		handle_l_.orientation.w += qt_l.getW();
-//		handle_r_.orientation.x += qt_r.getX();
-//		handle_r_.orientation.y += qt_r.getY();
-//		handle_r_.orientation.z += qt_r.getZ();
-//		handle_r_.orientation.w += qt_r.getW();
-
-		handle_l_.position.x += 0;
-		handle_l_.position.y += 0.215 + gripper_depth;
-		handle_l_.position.z += 0.70 + gripper_length;
-		handle_l_.orientation.x = 0.0095722;
-		handle_l_.orientation.y = -0.0108288;
-		handle_l_.orientation.z = -0.706344;
-		handle_l_.orientation.w = 0.707722;
-		//handle_l_.orientation = marker_pose.orientation;
-
-		handle_r_.position.x += 0;
-		handle_r_.position.y -= 0.215 + gripper_depth;
-		handle_r_.position.z += 0.70 + gripper_length;
-		handle_r_.orientation.x = 0;
-		handle_r_.orientation.y = 0;
-		handle_r_.orientation.z = 0.706678;
-		handle_r_.orientation.w = 0.707535;
-		//handle_r_.orientation = marker_pose.orientation;
+		visualization_msgs::InteractiveMarker marker;
+		server_->get("right_handle", marker);
+		marker.pose = handle_r_;
+		server_->insert(marker);
+		server_->applyChanges();
+	
+		server_->get("left_handle", marker);
+		marker.pose = handle_l_;
+		server_->insert(marker);
+		server_->applyChanges();
 		
 		tmp_pose_.pose = marker_pose;
 		tmp_pose_.handle_r = handle_r_;
@@ -1315,6 +1479,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559795;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 
 		//prepack-rear
@@ -1338,6 +1506,10 @@ public:
 		pose.pose.position.x = 1.38785;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559795;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 
 		//packed-rear-h1
@@ -1361,7 +1533,12 @@ public:
 		pose.pose.position.x = 0.495247;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.563951;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
+		
 
 		//packed-rear
 		pose.joint_states_r.clear();
@@ -1384,6 +1561,10 @@ public:
 		pose.pose.position.x = 0.251843;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//home
@@ -1407,6 +1588,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		
@@ -1431,6 +1616,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//pregrasp-rear-h2
@@ -1454,6 +1643,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		
@@ -1478,6 +1671,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		
@@ -1503,6 +1700,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//pregrasp
@@ -1526,6 +1727,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.663502;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//pregrasp-jointflip
@@ -1549,6 +1754,10 @@ public:
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.663502;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//prepack front
@@ -1571,6 +1780,10 @@ public:
 		pose.pose.position.x = 1.38785;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.585605;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//packed-front
@@ -1595,6 +1808,10 @@ public:
 		pose.pose.position.x = 0.860154;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.585605;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//packed-front-drop
@@ -1618,6 +1835,10 @@ public:
 		pose.pose.position.x = 0.860154;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.396825;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//packed-front-tidy-1
@@ -1641,6 +1862,10 @@ public:
 		pose.pose.position.x = 0;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//packed-front-tidy-2
@@ -1664,6 +1889,10 @@ public:
 		pose.pose.position.x = 0;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//packed-front-tidy-3
@@ -1687,6 +1916,10 @@ public:
 		pose.pose.position.x = 0;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
 		//pre-deploy-front
@@ -1710,6 +1943,10 @@ public:
 		pose.pose.position.x = 1.64856;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.392748;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 
 		//deploy-front
@@ -1733,6 +1970,10 @@ public:
 		pose.pose.position.x = 1.64856;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = -0.1888;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 
 		start_pose_ = pose;
