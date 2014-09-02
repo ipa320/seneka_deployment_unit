@@ -16,6 +16,7 @@
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 
 #include <SerializeIO.h>
 
@@ -70,6 +71,7 @@ using namespace std;
 
 void sensornodeLocalCoordinates();
 void sensornodeGlobalCoordinates();
+void senekaCalibrateCamera(geometry_msgs::Pose);
 bool loadParameters(std::vector<fiducialmarker>*,std::vector<handle>*, trigger_points*, pose*);
 void init();
 
@@ -90,6 +92,9 @@ pose3d sensornode_pose;
 boost::mutex tf_lock_;
 ros::Timer tf_pub_timer_;
 tf::StampedTransform marker_tf_;
+
+bool extrinsic_camera_calib_ = false;
+geometry_msgs::Pose calibrated_camera_pose_;
 
 //camera in quanjo system as vec7
 //tf::Quaternion qt_ = tf::createQuaternionFromRPY(-PI/2,0,-PI/2);
@@ -216,6 +221,15 @@ void getSensornodeStateCamera(const cob_object_detection_msgs::DetectionArray::C
   //TODO: Make use of all detected markers
   if(msg->detections.size() > 0){
 
+	if(extrinsic_camera_calib_){
+		
+		geometry_msgs::Pose markerpose;		
+		markerpose = msg->detections[0].pose.pose;		
+		senekaCalibrateCamera(markerpose);
+		
+		extrinsic_camera_calib_ = false;
+	}
+	  
     origin.x = msg->detections[0].pose.pose.position.x;
     origin.y = msg->detections[0].pose.pose.position.y;
     origin.z = msg->detections[0].pose.pose.position.z;
@@ -269,6 +283,39 @@ void getSensornodeStateCamera(const cob_object_detection_msgs::DetectionArray::C
     sensornodeLocalCoordinates();
   }   
 }
+
+//TODO: services for handling the calibration
+//test if its working this way...
+void senekaCalibrateCamera(geometry_msgs::Pose measured_marker){
+	
+	//measured marker fixed pose in robot system
+	//base system world_dummy_link
+	geometry_msgs::Pose fixed_marker;
+	fixed_marker.position.x = 0;
+	fixed_marker.position.y = 0;
+	fixed_marker.position.z = 0;
+	tf::Quaternion fixed_marker_qt; 	
+	fixed_marker_qt.setRPY(0,0,PI/2);
+	tf::quaternionTFToMsg(fixed_marker_qt, fixed_marker.orientation);
+	
+	//measured marker in camera system
+	tf::Quaternion measured_marker_qt; 
+	tf::quaternionMsgToTF(measured_marker.orientation, measured_marker_qt);
+	
+	//camera in robot system
+	geometry_msgs::Pose camera_rs;
+	camera_rs.position.x = measured_marker.position.x - fixed_marker.position.x;
+	camera_rs.position.y = measured_marker.position.y - fixed_marker.position.y;
+	camera_rs.position.z = measured_marker.position.z - fixed_marker.position.z;
+	
+	tf::Quaternion qt_rs;
+	qt_rs = fixed_marker_qt * measured_marker_qt.inverse();
+	qt_rs.normalize();	
+	tf::quaternionTFToMsg(qt_rs, camera_rs.orientation);
+	
+	calibrated_camera_pose_ = camera_rs;
+}	
+
 //------------------------------</Callbacks>----------------------------------------------------------
 void sensornodeGlobalCoordinates(){
  
