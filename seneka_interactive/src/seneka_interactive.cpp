@@ -909,6 +909,7 @@ public:
 				marker.pose = pose.pose;
 				server_->insert(marker);
 				server_->applyChanges();
+				marker_pose_ = marker.pose;
 				lock.lock();
 				createGrabPoses(marker.pose);
 				lock.unlock();
@@ -945,6 +946,7 @@ public:
 				marker.pose = pose.pose;
 				server_->insert(marker);
 				server_->applyChanges();
+				marker_pose_ = marker.pose;
 				lock.lock();
 				createGrabPoses(marker.pose);
 				lock.unlock();
