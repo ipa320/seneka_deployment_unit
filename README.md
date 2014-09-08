@@ -62,6 +62,10 @@ E.g. for the Kinect use **/camera/rgb/**.
 ---------------------------------------------------------------------
 * rosrun seneka_pnp seneka_pick_and_place
 
+To start pickup/deploy front you can use a action (pickup => val=1, deploy => val=2)
+
+* rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal  
+
 This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
 There are multiple sleep commands in the code to enable visual trajectory checking with rviz before executing the trajectory.
 
