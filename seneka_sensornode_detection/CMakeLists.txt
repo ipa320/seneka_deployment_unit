@@ -28,6 +28,8 @@ add_service_files(
   FILES
   setCameraPose.srv
   getCameraPose.srv
+  calibrateCamera.srv
+  getExtCalibration.srv
 )
 
 generate_messages(
