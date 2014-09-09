@@ -109,6 +109,9 @@ dualArmJointState createArmState(const char*,
 //crawls a vector for a state with specific name
 bool getArmState(std::vector<dualArmJointState>&, const char*, dualArmJointState*);
 
+//computes the correct yaw angle for grabbing the sonde
+bool sensornodeYawRotation(geometry_msgs::Pose);
+
 }
 
 #endif
