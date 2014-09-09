@@ -778,8 +778,6 @@ bool seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
 	double roll, pitch, yaw;
 	m.getRPY(roll, pitch, yaw);
 
-	std::cout << "Roll: " << roll << "\n";
-	std::cout << "Pitch: " << pitch << "\n";
 	std::cout << "Yaw: " << yaw * 180 / M_PI << "\n";
 
 	return false;
