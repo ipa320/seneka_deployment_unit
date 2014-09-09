@@ -29,10 +29,12 @@ Getting started:
 
 ##Required:
 ---------
-* git clone https://github.com/ipa-mig/universal_robot  [rosbuild] (use the seneka_groovy_dev branch) 
-* git clone https://github.com/ipa320/cob_perception_common  [catkin] (make sure you are using the groovy_dev_catkin branch) 
-* git clone https://github.com/ipa320/cob_object_perception  [rosbuild]
-* git clone https://github.com/ipa320/seneka_deployment_unit  [catkin]
+**.. for running the real robot**
+
+* git clone https://github.com/equanox/universal_robot  (use the **ros-industrial-hydro-devel-backported-groovy** branch) 
+* git clone https://github.com/ipa320/cob_perception_common (make sure you are using the **groovy_dev_catkin** branch) 
+* git clone https://github.com/ipa320/cob_object_perception (**groovy** branch) [rosbuild]
+* git clone https://github.com/ipa320/seneka_deployment_unit (use the **switch_to_ros-industrial-hydro** branch)
 
 ##1. Configuration
 ---------------------------------------------------------------------

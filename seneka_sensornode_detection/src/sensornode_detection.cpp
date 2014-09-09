@@ -205,66 +205,66 @@ void getSensornodeStateCamera(const cob_object_detection_msgs::DetectionArray::C
   //TODO: Make use of all detected markers
   if(msg->detections.size() > 0){
 
-	if(extrinsic_camera_calib_){
-		
-		geometry_msgs::Pose markerpose;		
-		markerpose = msg->detections[0].pose.pose;		
-		senekaCalibrateCamera(markerpose);
-		
-		extrinsic_camera_calib_ = false;
-	}
-	  
-    origin.x = msg->detections[0].pose.pose.position.x;
-    origin.y = msg->detections[0].pose.pose.position.y;
-    origin.z = msg->detections[0].pose.pose.position.z;
-    
-    rotation.w = msg->detections[0].pose.pose.orientation.w;
-    rotation.x = msg->detections[0].pose.pose.orientation.x;
-    rotation.y = msg->detections[0].pose.pose.orientation.y;
-    rotation.z = msg->detections[0].pose.pose.orientation.z;
+	  if(extrinsic_camera_calib_){
 
-    transform.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
-    transform.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
-    br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/quanjo_camera", "/seneka_marker"));
+		  geometry_msgs::Pose markerpose;		
+		  markerpose = msg->detections[0].pose.pose;		
+		  senekaCalibrateCamera(markerpose);
 
-    //-> Transform each marker pose to object pose
-    for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
-      //for loop j to iterate through container
-      if(msg->detections[0].id == fiducialmarkers[i].id){
+		  extrinsic_camera_calib_ = false;
+	  }
 
-	//transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
-        //tm = transformation matrix, q = quaternion7
-	//m = marker, sn = sensornode, hl = handle, ca = camera
-	cv::Mat tm_m_sn = eulerToMatrix(fiducialmarkers[i].rot.x,fiducialmarkers[i].rot.y,fiducialmarkers[i].rot.z);
-        cv::Mat tmp = cv::Mat(tm_m_sn.t());//transposed
-	tm_m_sn = cv::Mat(3,4, CV_64FC1);
-	//create homogenous coordinates
-	for (int k=0; k<3; k++)
-	  for (int l=0; l<3; l++)
-	    tm_m_sn.at<double>(k,l) = tmp.at<double>(k,l);
-	tm_m_sn.at<double>(0,3) = -fiducialmarkers[i].trans.x;
-	tm_m_sn.at<double>(1,3) = -fiducialmarkers[i].trans.y;
-	tm_m_sn.at<double>(2,3) = -fiducialmarkers[i].trans.z;
+	  //only the first detected marker is used
+	  origin.x = msg->detections[0].pose.pose.position.x;
+	  origin.y = msg->detections[0].pose.pose.position.y;
+	  origin.z = msg->detections[0].pose.pose.position.z;    
+	  rotation.w = msg->detections[0].pose.pose.orientation.w;
+	  rotation.x = msg->detections[0].pose.pose.orientation.x;
+	  rotation.y = msg->detections[0].pose.pose.orientation.y;
+	  rotation.z = msg->detections[0].pose.pose.orientation.z;
 
-	std::vector<double> q_sn_m = FrameToVec7(tm_m_sn);	
-	  
-	transform.setOrigin( tf::Vector3(q_sn_m[0], q_sn_m[1], q_sn_m[2]));
-	transform.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
-	br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/seneka_marker", "/sensornode"));
+	  transform.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
+	  transform.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
+	  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/quanjo_camera", "/seneka_marker"));
 
-	//!!not good to do it this way!!
-	sensornode_pose.translation.x = q_sn_m[0];
-	sensornode_pose.translation.y = q_sn_m[1];
-	sensornode_pose.translation.z = q_sn_m[2];
+	  //-> Transform each marker pose to object pose
+	  for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
+		  //for loop j to iterate through container
+		  if(msg->detections[0].id == fiducialmarkers[i].id){
 
-	sensornode_pose.rotation.w = q_sn_m[3];
-	sensornode_pose.rotation.x = q_sn_m[4];
-	sensornode_pose.rotation.y = q_sn_m[5];
-	sensornode_pose.rotation.z = q_sn_m[6];
-      }      
-    }
+			  //transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
+			  //tm = transformation matrix, q = quaternion7
+			  //m = marker, sn = sensornode, hl = handle, ca = camera
+			  cv::Mat tm_m_sn = eulerToMatrix(fiducialmarkers[i].rot.x,fiducialmarkers[i].rot.y,fiducialmarkers[i].rot.z);
+			  cv::Mat tmp = cv::Mat(tm_m_sn.t());//transposed
+			  tm_m_sn = cv::Mat(3,4, CV_64FC1);
+			  //create homogenous coordinates
+			  for (int k=0; k<3; k++)
+				  for (int l=0; l<3; l++)
+					  tm_m_sn.at<double>(k,l) = tmp.at<double>(k,l);
+			  tm_m_sn.at<double>(0,3) = -fiducialmarkers[i].trans.x;
+			  tm_m_sn.at<double>(1,3) = -fiducialmarkers[i].trans.y;
+			  tm_m_sn.at<double>(2,3) = -fiducialmarkers[i].trans.z;
 
-    sensornodeLocalCoordinates();
+			  std::vector<double> q_sn_m = FrameToVec7(tm_m_sn);	
+
+			  transform.setOrigin( tf::Vector3(q_sn_m[0], q_sn_m[1], q_sn_m[2]));
+			  transform.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
+			  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/seneka_marker", "/sensornode"));
+
+			  //!!not good to do it this way!!
+			  sensornode_pose.translation.x = q_sn_m[0];
+			  sensornode_pose.translation.y = q_sn_m[1];
+			  sensornode_pose.translation.z = q_sn_m[2];
+
+			  sensornode_pose.rotation.w = q_sn_m[3];
+			  sensornode_pose.rotation.x = q_sn_m[4];
+			  sensornode_pose.rotation.y = q_sn_m[5];
+			  sensornode_pose.rotation.z = q_sn_m[6];
+		  }      
+	  }
+
+	  sensornodeLocalCoordinates();
   }   
 }
 
