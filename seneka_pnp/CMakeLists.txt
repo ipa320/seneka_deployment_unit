@@ -95,10 +95,6 @@ add_executable(seneka_pick_and_place
   src/seneka_pnp.cpp
   src/SerializeIO.cpp
 )
-add_executable(seneka_teach
-  src/seneka_teach.cpp
-  src/SerializeIO.cpp
-)
 
 ## Specify libraries to link a library or executable target against
 add_library(seneka_pnp_tools src/seneka_pnp_tools.cpp)
@@ -108,8 +104,3 @@ target_link_libraries(seneka_pick_and_place
   ${catkin_LIBRARIES}
   seneka_pnp_tools
 )
-target_link_libraries(seneka_teach 
-  ${OpenCV_LIBS}
-  ${catkin_LIBRARIES}
-)
-
