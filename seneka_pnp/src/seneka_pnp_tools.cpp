@@ -159,7 +159,7 @@ move_group_interface::MoveGroup::Plan seneka_pnp_tools::mergePlan(
 	size_t i;
 	for (i = 0;
 			(i < mergedPlan.trajectory_.joint_trajectory.points.size())
-													&& (i < plan2.trajectory_.joint_trajectory.points.size());
+																			&& (i < plan2.trajectory_.joint_trajectory.points.size());
 			i++) {
 
 		mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
