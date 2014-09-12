@@ -159,7 +159,7 @@ move_group_interface::MoveGroup::Plan seneka_pnp_tools::mergePlan(
 	size_t i;
 	for (i = 0;
 			(i < mergedPlan.trajectory_.joint_trajectory.points.size())
-					&& (i < plan2.trajectory_.joint_trajectory.points.size());
+													&& (i < plan2.trajectory_.joint_trajectory.points.size());
 			i++) {
 
 		mergedPlan.trajectory_.joint_trajectory.points[i].accelerations.insert(
@@ -244,7 +244,7 @@ moveit::planning_interface::MoveGroup::Plan seneka_pnp_tools::scaleTrajSpeed(
 			points[i].velocities[j] = points[i].velocities[j] * factor;
 		for (uint j = 0; j < points[i].accelerations.size(); j++)
 			points[i].velocities[j] = points[i].accelerations[j] * factor
-					* factor;
+			* factor;
 
 		points[i].time_from_start = points[i].time_from_start * (1 / factor);
 	}
