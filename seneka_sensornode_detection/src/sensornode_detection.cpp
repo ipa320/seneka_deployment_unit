@@ -87,8 +87,8 @@ std::vector<fiducialmarker> fiducialmarkers;
 std::vector<handle> handles;
 trigger_points trigger_offset;
 pose grab_entry;
-double gripper_length = 0.255; 
-double gripper_depth = 0.00;
+double gripper_length = 0.26; 
+double gripper_depth = 0.01;
 pose3d sensornode_pose;
 
 boost::mutex tf_lock_;
