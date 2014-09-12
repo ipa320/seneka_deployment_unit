@@ -1902,6 +1902,12 @@ public:
     ros::Rate loop_rate(1);
     while(ros::ok()){
       
+      //test sensornode yaw axis 
+      sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
+      if(tmp_node.success)
+    	  seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
+      //test sensornode yaw axis
+      
       currentState_ = stateMachine(currentState_);
       ROS_INFO("Current state: %s",currentState_.c_str());
       loop_rate.sleep();

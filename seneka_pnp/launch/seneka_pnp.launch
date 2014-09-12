@@ -3,7 +3,7 @@
 
   <!-- Debug -->
   <!-- The initial state of the state-machine-->
-  <arg name="start_state" />
+  <arg name="start_state" default="home"/>
 
   <param name="/seneka_pnp/start_state" type="str" value="$(arg start_state)"/>
 
