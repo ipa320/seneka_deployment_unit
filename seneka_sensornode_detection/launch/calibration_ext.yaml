@@ -1,11 +1,11 @@
 #camera calibration
-external_calibration_position_x: 0.0118412082925
-external_calibration_position_y: 0.0103386573427 
-external_calibration_position_z: 1.36308258433
-external_calibration_orientation_w: -0.396264712872
-external_calibration_orientation_x: 0.583955872885
-external_calibration_orientation_y: -0.584308844251
-external_calibration_orientation_z: 0.400690641751
+external_calibration_position_x: 0.0137963193004
+external_calibration_position_y: 0.023921027024
+external_calibration_position_z: 1.35703597183
+external_calibration_orientation_w: 0.396452286392
+external_calibration_orientation_x: -0.592204776407
+external_calibration_orientation_y: 0.580311772661
+external_calibration_orientation_z: -0.394153946989
 
 #fixed marker pose
 reference_position_x: 0.93
