@@ -162,7 +162,7 @@ public:
 
 		//in m
 		gripper_length = 0.26;
-		gripper_depth = 0.01;
+		gripper_depth = 0.00;
 		
 		ik_solutions_iterator_r_ = 0;
 		ik_solutions_iterator_l_ = 0;
@@ -1824,17 +1824,17 @@ public:
 		pose.joint_states_l.clear();
 		pose.name = "packed-front-drop";
 		
-		pose.joint_states_r.push_back(-0.341849);
-		pose.joint_states_r.push_back(-0.973698);
-		pose.joint_states_r.push_back(-2.15841);
-		pose.joint_states_r.push_back(3.13227);
-		pose.joint_states_r.push_back(-1.91187);
+		pose.joint_states_r.push_back(-0.327705);
+		pose.joint_states_r.push_back(-0.987667);
+		pose.joint_states_r.push_back(-2.15275);
+		pose.joint_states_r.push_back(3.14058);
+		pose.joint_states_r.push_back(-1.89772);
 		pose.joint_states_r.push_back(-3.34154);
-		pose.joint_states_l.push_back(0.340039);
-		pose.joint_states_l.push_back(-2.16759);
-		pose.joint_states_l.push_back(2.15838);
-		pose.joint_states_l.push_back(0.0093861);
-		pose.joint_states_l.push_back(1.91162);
+		pose.joint_states_l.push_back(0.325923);
+		pose.joint_states_l.push_back(-2.15361);
+		pose.joint_states_l.push_back(2.15271);
+		pose.joint_states_l.push_back(0.00107013);
+		pose.joint_states_l.push_back(1.8975);
 		pose.joint_states_l.push_back(3.34165);
 		
 		pose.pose.position.x = 0.860154;
