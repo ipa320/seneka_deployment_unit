@@ -1769,18 +1769,19 @@ public:
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
 		pose.name = "prepack";
-		pose.joint_states_r.push_back(-1.06935);
-		pose.joint_states_r.push_back(-1.70806);
-		pose.joint_states_r.push_back(-1.08);//5.20262
-		pose.joint_states_r.push_back(2.788);//-3.49373
-		pose.joint_states_r.push_back(-2.63818);//-2.63818
-		pose.joint_states_r.push_back(-3.339);//2.94232
-		pose.joint_states_l.push_back(1.0674);
-		pose.joint_states_l.push_back(-1.43427);
-		pose.joint_states_l.push_back(1.08065);//-5.20135
-		pose.joint_states_l.push_back(0.348302);
-		pose.joint_states_l.push_back(2.63745);
-		pose.joint_states_l.push_back(3.36682);
+		
+		pose.joint_states_r.push_back(-1.12281);
+		pose.joint_states_r.push_back(-1.86896);
+		pose.joint_states_r.push_back(-0.884882);
+		pose.joint_states_r.push_back(2.75421);
+		pose.joint_states_r.push_back(-2.69283);
+		pose.joint_states_r.push_back(-3.34126);
+		pose.joint_states_l.push_back(1.12093);
+		pose.joint_states_l.push_back(-1.27239);
+		pose.joint_states_l.push_back(0.884651);
+		pose.joint_states_l.push_back(0.388099);
+		pose.joint_states_l.push_back(2.6925);
+		pose.joint_states_l.push_back(3.34191);
 
 		pose.pose.position.x = 1.38785;
 		pose.pose.position.y = 0;
@@ -1795,20 +1796,19 @@ public:
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
 		pose.name = "packed-front";
-	
-		pose.joint_states_r.push_back(0.535087);
-		pose.joint_states_r.push_back(-0.777577);
-		pose.joint_states_r.push_back(-1.87292);
-		pose.joint_states_r.push_back(2.65096);
-		pose.joint_states_r.push_back(-1.03374);
-		pose.joint_states_r.push_back(-3.34183);
-		pose.joint_states_l.push_back(-0.535293);
-		pose.joint_states_l.push_back(-2.36387);
-		pose.joint_states_l.push_back(1.87334);
-		pose.joint_states_l.push_back(0.488212);
-		pose.joint_states_l.push_back(1.03476);
-		pose.joint_states_l.push_back(3.37163);
-
+		
+		pose.joint_states_r.push_back(-0.168124);
+		pose.joint_states_r.push_back(-0.965007);
+		pose.joint_states_r.push_back(-1.83176);
+		pose.joint_states_r.push_back(2.79693);
+		pose.joint_states_r.push_back(-1.73814);
+		pose.joint_states_r.push_back(-3.34157);
+		pose.joint_states_l.push_back(0.166341);
+		pose.joint_states_l.push_back(-2.17628);
+		pose.joint_states_l.push_back(1.83174);
+		pose.joint_states_l.push_back(0.344692);
+		pose.joint_states_l.push_back(1.73792);
+		pose.joint_states_l.push_back(3.34162);
 
 		pose.pose.position.x = 0.860154;
 		pose.pose.position.y = 0;
@@ -1824,19 +1824,19 @@ public:
 		pose.joint_states_l.clear();
 		pose.name = "packed-front-drop";
 		
-		pose.joint_states_r.push_back(0.155798);
-		pose.joint_states_r.push_back(-0.754735);
-		pose.joint_states_r.push_back(-2.22018);
-		pose.joint_states_r.push_back(2.97532);
-		pose.joint_states_r.push_back(-1.41303);
-		pose.joint_states_r.push_back(-3.34166);
-		pose.joint_states_l.push_back(-0.157437);
-		pose.joint_states_l.push_back(-2.387);
-		pose.joint_states_l.push_back(2.22061);
-		pose.joint_states_l.push_back(0.164381);
-		pose.joint_states_l.push_back(1.41261);
-		pose.joint_states_l.push_back(3.37076);
-
+		pose.joint_states_r.push_back(-0.341849);
+		pose.joint_states_r.push_back(-0.973698);
+		pose.joint_states_r.push_back(-2.15841);
+		pose.joint_states_r.push_back(3.13227);
+		pose.joint_states_r.push_back(-1.91187);
+		pose.joint_states_r.push_back(-3.34154);
+		pose.joint_states_l.push_back(0.340039);
+		pose.joint_states_l.push_back(-2.16759);
+		pose.joint_states_l.push_back(2.15838);
+		pose.joint_states_l.push_back(0.0093861);
+		pose.joint_states_l.push_back(1.91162);
+		pose.joint_states_l.push_back(3.34165);
+		
 		pose.pose.position.x = 0.860154;
 		pose.pose.position.y = 0;
 		pose.pose.position.z = 0.396825;
