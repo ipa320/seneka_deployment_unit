@@ -1131,18 +1131,34 @@ public:
 	  dualArmJointState state;
 	  bool ret = false;
 	  
-      //------------to packed-rear-h1-----------------
-//	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-h1", &state))
-//	      	return false;
-//	  
-//	  group_both->setJointValueTarget(state.both.position);	  
-//	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-//		  sleep(5.0);
-//		  group_both->asyncExecute(plan);
-//		  ret = monitorArmMovement(true,true);
-//	  }
+      
 	  
-	  ret = true;
+      //------------to packed-rear-----------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+	      	return false;
+	  
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  sleep(10.0);
+		  group_both->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  
+	  if(ret){
+
+		  //------------to packed-rear-h1-----------------
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-h1", &state))
+			  return false;
+
+		  group_both->setJointValueTarget(state.both.position);	  
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  sleep(5.0);
+			  group_both->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
+
+	  }
+	  
 	  if(ret){
 		  ret = false;
 	      //------------to prepack-rear-----------------
@@ -1253,10 +1269,13 @@ public:
   
   bool toPrePackRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
+	  std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;	        
+	  geometry_msgs::Pose pose_l,pose_r;
+	  
 	  moveit::planning_interface::MoveGroup::Plan plan;
 	  dualArmJointState state;
 	  bool ret = false;
-	  	  	         
+
       //------------to prepack-rear-----------------
 	  if(!seneka_pnp_tools::getArmState(armstates_, "prepack-rear", &state))
 	      	return false;
@@ -1282,18 +1301,35 @@ public:
 		  }		  
 		  
 		  //------------to packed-rear------------------
-//		  if(ret){
-//			  ret = false;
-//			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
-//				  return false;
-//			  	  
-//			  group_both->setJointValueTarget(state.both.position);			  
-//			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-//				  sleep(5.0);
-//				  group_both->asyncExecute(plan);
-//				  ret = monitorArmMovement(true,true);
-//			  }		  
-//		  }
+		  if(ret){
+			  ret = false;
+			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+				  return false;
+			  	  
+			  group_both->setJointValueTarget(state.both.position);			  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  sleep(5.0);
+				  group_both->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }		  
+			  
+			  //------------to packed-rear-drop------------------
+			  if(ret){
+				  ret = false;
+				  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-drop", &state))
+					  return false;
+				  	  
+				    waypoints_r.clear();
+				    waypoints_l.clear();
+				    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+				    waypoints_r.push_back(pose_r);
+				    waypoints_l.push_back(pose_l);	        
+				    
+				    plan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+				    group_both->asyncExecute(plan);
+				    ret = monitorArmMovement(true,true);
+			  }
+		  }
 	  }
 	  
 	  return ret;
