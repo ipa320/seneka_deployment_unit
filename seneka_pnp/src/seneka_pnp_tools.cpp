@@ -768,3 +768,36 @@ bool seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
 	return false;
 }
 
+bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
+	
+	double valuedo = -0.01;
+	
+	ros::ServiceClient service_client;
+	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("compensateInaccuracy");
+	
+	seneka_sensornode_detection::compensateInaccuracy::Request service_request;
+	seneka_sensornode_detection::compensateInaccuracy::Response service_response;
+
+	service_request.gripper_depth_offset = valuedo;
+	
+	service_client.call(service_request,service_response);
+
+	return true;
+}
+
+bool seneka_pnp_tools::compensateInaccuracyUNDO(ros::NodeHandle nh){
+	
+	double valueundo = 0.01;
+	
+	ros::ServiceClient service_client;
+	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("compensateInaccuracy");
+	
+	seneka_sensornode_detection::compensateInaccuracy::Request service_request;
+	seneka_sensornode_detection::compensateInaccuracy::Response service_response;
+
+	service_request.gripper_depth_offset = valueundo;
+	
+	service_client.call(service_request,service_response);
+
+	return true;
+}

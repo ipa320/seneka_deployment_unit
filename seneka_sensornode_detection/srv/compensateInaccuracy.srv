@@ -1,0 +1,4 @@
+float64  gripper_depth_offset
+------------
+bool success
+float64 gripper_depth_offset
