@@ -776,8 +776,11 @@ public:
 	    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
 	    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
 
-	    tje_lock_.lock(); 
+	    tje_lock_.lock();
+	    seneka_pnp_tools::compensateInaccuracyDO(node_handle_);
+	    sleep(3);
 	    sensornode node = seneka_pnp_tools::getSensornodePose();
+	    seneka_pnp_tools::compensateInaccuracyUNDO(node_handle_);
 	    tje_lock_.unlock(); 
 	    if(!node.success)
 	    	return false;

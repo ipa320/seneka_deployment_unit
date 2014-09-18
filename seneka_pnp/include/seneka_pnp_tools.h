@@ -25,6 +25,8 @@
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
+#include "seneka_sensornode_detection/compensateInaccuracy.h"
+
 #include <tf/transform_listener.h>
 
 struct handhold{
@@ -112,6 +114,9 @@ bool getArmState(std::vector<dualArmJointState>&, const char*, dualArmJointState
 //computes the correct yaw angle for grabbing the sonde
 bool sensornodeYawRotation(geometry_msgs::Pose);
 
+//invokes a service call to compensate the inaccuracy whe grabbing for pickup rear pose
+bool compensateInaccuracyDO(ros::NodeHandle);
+bool compensateInaccuracyUNDO(ros::NodeHandle);
 }
 
 #endif

@@ -15,6 +15,7 @@
 #include <seneka_sensornode_detection/getCameraPose.h>
 #include <seneka_sensornode_detection/calibrateCamera.h>
 #include <seneka_sensornode_detection/getExtCalibration.h>
+#include <seneka_sensornode_detection/compensateInaccuracy.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -102,18 +103,7 @@ bool extrinsic_camera_calib_ = false;
 
 geometry_msgs::Pose reference_pose_;
 geometry_msgs::Pose camera_pose_;
-//double tmp[7] = { 0.935,0,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()};
-//double tmp[7] = { 1.05,0.015,0.452,qt.getW(),qt.getX(),qt.getY(),qt.getZ()}; on the front bar
-//double tmp_[7] = { 0.575,0.0,0.452,qt_.getW(),qt_.getX(),qt_.getY(),qt_.getZ()};
-//double tmp_[7] = { camera_pose_.position.x,
-//					camera_pose_.position.y,
-//					camera_pose_.position.z,
-//					camera_pose_.orientation.w,
-//					camera_pose_.orientation.x,
-//					camera_pose_.orientation.y,
-//					camera_pose_.orientation.z };
-//std::vector<double> camera7_(&tmp_[0], &tmp_[0]+7);
-ros::ServiceServer service_setCameraPose_, service_getCameraPose_, service_calibrateCamera_, service_getExtCalibration_;
+ros::ServiceServer service_setCameraPose_, service_getCameraPose_, service_calibrateCamera_, service_getExtCalibration_, service_compensateInaccuracy_ ;
 
 bool simulation_ = false;
 
@@ -754,6 +744,23 @@ bool getExtCalibration(seneka_sensornode_detection::getExtCalibration::Request &
 	return res.success;
 }
 
+bool compensateInaccuracy (seneka_sensornode_detection::compensateInaccuracy::Request &req,
+		seneka_sensornode_detection::compensateInaccuracy::Response &res){
+
+//	for(uint i=0; i < trigger_offset.size(); i++){
+//		
+//		trigger_offset[i].up.trans.x = trigger_offset[i]..up.x + req.gripper_depth_offset;
+//		trigger_offset[i].down.trans.x = trigger_offset[i].down.x + req.gripper_depth_offset;
+//	}
+	
+	trigger_offset.up.x = trigger_offset.up.x + req.gripper_depth_offset;
+	trigger_offset.down.x = trigger_offset.down.x + req.gripper_depth_offset;
+	
+	res.gripper_depth_offset = req.gripper_depth_offset;
+	res.success = true;
+	
+	return res.success;
+}
 //-----------------------------------main----------------------------------------------------------------------------
 int main( int argc, char** argv )
 {  
@@ -767,6 +774,7 @@ int main( int argc, char** argv )
   service_getCameraPose_ = node.advertiseService("getCameraPose", getCameraPose);
   service_calibrateCamera_ = node.advertiseService("calibrateCamera", calibrateCamera);
   service_getExtCalibration_ = node.advertiseService("getExtCalibration", getExtCalibration);
+  service_compensateInaccuracy_ = node.advertiseService("compensateInaccuracy", compensateInaccuracy);
  
   if(!loadParameters(&fiducialmarkers,&handles,&trigger_offset,&grab_entry)){
     ROS_ERROR("Failed to load parameters. Check the path...");
