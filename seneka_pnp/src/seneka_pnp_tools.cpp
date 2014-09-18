@@ -773,7 +773,7 @@ bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
 	double valuedo = -0.01;
 	
 	ros::ServiceClient service_client;
-	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("compensateInaccuracy");
+	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("/sensornode_detection/compensateInaccuracy");
 	
 	seneka_sensornode_detection::compensateInaccuracy::Request service_request;
 	seneka_sensornode_detection::compensateInaccuracy::Response service_response;
@@ -782,7 +782,7 @@ bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
 	
 	service_client.call(service_request,service_response);
 
-	return true;
+	return service_response.success;
 }
 
 bool seneka_pnp_tools::compensateInaccuracyUNDO(ros::NodeHandle nh){
@@ -790,7 +790,7 @@ bool seneka_pnp_tools::compensateInaccuracyUNDO(ros::NodeHandle nh){
 	double valueundo = 0.01;
 	
 	ros::ServiceClient service_client;
-	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("compensateInaccuracy");
+	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("/sensornode_detection/compensateInaccuracy");
 	
 	seneka_sensornode_detection::compensateInaccuracy::Request service_request;
 	seneka_sensornode_detection::compensateInaccuracy::Response service_response;
@@ -799,5 +799,5 @@ bool seneka_pnp_tools::compensateInaccuracyUNDO(ros::NodeHandle nh){
 	
 	service_client.call(service_request,service_response);
 
-	return true;
+	return service_response.success;
 }

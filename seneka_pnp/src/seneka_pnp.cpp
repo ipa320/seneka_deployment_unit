@@ -776,13 +776,22 @@ public:
 	    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
 	    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
 
+	    bool checkInaccuracy = false;
+	    sensornode node;
+	    
 	    tje_lock_.lock();
-	    seneka_pnp_tools::compensateInaccuracyDO(node_handle_);
-	    sleep(3);
-	    sensornode node = seneka_pnp_tools::getSensornodePose();
-	    seneka_pnp_tools::compensateInaccuracyUNDO(node_handle_);
+	    checkInaccuracy = seneka_pnp_tools::compensateInaccuracyDO(node_handle_);
+	    tje_lock_.unlock();
+	    
+	    tje_lock_.lock();
+	    node = seneka_pnp_tools::getSensornodePose();
 	    tje_lock_.unlock(); 
-	    if(!node.success)
+	    
+	    tje_lock_.lock();
+	    checkInaccuracy = seneka_pnp_tools::compensateInaccuracyUNDO(node_handle_);
+	    tje_lock_.unlock();
+	    
+	    if(!node.success || !checkInaccuracy)
 	    	return false;
 	    
 	    std::vector<double> joint_values_r,joint_values_l;
