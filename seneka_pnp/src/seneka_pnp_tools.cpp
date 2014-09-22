@@ -696,6 +696,16 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 			);
 	states.push_back(createArmState("packed-rear-drop", 1.58224, -1.15317, -2.25563, 3.39586, 0.0122261, 2.95453, -1.58336, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817)
 			);
+
+	states.push_back(createArmState("packed-rear-tidy-1", 1.75, -1.15317, -2.25563, 3.39267, 0.0122261, 2.95453, -1.75, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817));
+	states.push_back(createArmState("packed-rear-tidy-2", 1.75, -1.15317, -2.25563, 3.39267, -1.25, 2.95453, -1.75, -1.99447, 2.25903, -0.27799, 1.2, -2.92817));
+	states.push_back(createArmState("packed-rear-tidy-3", 1.75, -0.47, -2.25563, 3.39267, -1.25, 4, -1.75, -2.7, 2.25903, -0.27799, 1.2, -4));
+	states.push_back(createArmState("packed-rear-tidy-4", 1.75, -1.45, -0.5, 1.5, -1.25, 4, -1.75, -1.7, 0.5, 1.5, 1.2, -4));
+	states.push_back(createArmState("packed-rear-tidy-5", -1.75, -1.45, -0.5, 1.5, -1.25, 2, 1.75, -1.7, 0.5, 1.5, 1.2, -2));
+	states.push_back(createArmState("packed-rear-tidy-6", -1.5, -0.3, -2, 3.141, 0, 2, 1.5, -2.8, 2, 0, 0, -2));
+	states.push_back(createArmState("packed-rear-tidy-7", -1.5, -0.3, -2, 3.141, 0, -1.7, 1.5, -2.8, 2, 0, 0, 1.7));
+	states.push_back(createArmState("packed-rear-tidy-8", -1.5, -0.3, -2, 3.141, 3.141, -1.7, 1.5, -2.8, 2, 0, 3.141, 1.7));
+	
 	states.push_back(
 			createArmState("pregrasp", -1.9705, -2.441, -0.8, 3.2, 3.241, -3.3,
 					1.9705, -0.7, 0.8, 0, 3.041, 3.3));
