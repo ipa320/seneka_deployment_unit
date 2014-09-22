@@ -269,6 +269,241 @@ public:
     return ret;
   }
   
+  bool packedRearToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
+	  bool ret = false;
+	  
+	  //---------packed-rear-tidy1------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-1", &state))
+		  return false;	  
+
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	
+	  //---------packed-rear-tidy-2------------
+	  if(ret){
+		  ret = false;
+	
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-2", &state))
+			  return false;	  
+
+		  group_both->setJointValueTarget(state.both.position);	  
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  group_l->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
+		  
+		  //---------packed-rear-tidy-3------------
+		  if(ret){
+			  ret = false;
+
+			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-3", &state))
+				  return false;	  
+
+			  group_both->setJointValueTarget(state.both.position);	  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  group_l->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }
+			  
+			  //---------packed-rear-tidy-4------------
+			  if(ret){
+				  ret = false;
+
+				  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-4", &state))
+					  return false;	  
+
+				  group_both->setJointValueTarget(state.both.position);	  
+				  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+					  group_l->asyncExecute(plan);
+					  ret = monitorArmMovement(true,true);
+				  }
+				  
+				  //---------packed-rear-tidy-5------------
+				  if(ret){
+					  ret = false;
+
+					  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-5", &state))
+						  return false;	  
+
+					  group_both->setJointValueTarget(state.both.position);	  
+					  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+						  group_l->asyncExecute(plan);
+						  ret = monitorArmMovement(true,true);
+					  }
+					  
+					  //---------packed-rear-tidy-6------------
+					  if(ret){
+						  ret = false;
+
+						  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-6", &state))
+							  return false;	  
+
+						  group_both->setJointValueTarget(state.both.position);	  
+						  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+							  group_l->asyncExecute(plan);
+							  ret = monitorArmMovement(true,true);
+						  }
+						  
+						  //---------packed-rear-tidy-7------------
+						  if(ret){
+							  ret = false;
+
+							  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-7", &state))
+								  return false;	  
+
+							  group_both->setJointValueTarget(state.both.position);	  
+							  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+								  group_l->asyncExecute(plan);
+								  ret = monitorArmMovement(true,true);
+							  }
+							  
+							  //---------packed-rear-tidy-8------------
+							  if(ret){
+								  ret = false;
+
+								  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-8", &state))
+									  return false;	  
+
+								  group_both->setJointValueTarget(state.both.position);	  
+								  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+									  group_l->asyncExecute(plan);
+									  ret = monitorArmMovement(true,true);
+								  }
+							  }//8
+						  }//7
+					  }//6
+				  }//5
+			  }//4
+		  }//3
+	  }//2
+	  
+	  return ret;
+  }	
+  
+  bool homeToPackedRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  moveit::planning_interface::MoveGroup::Plan plan;
+	  dualArmJointState state;
+	  bool ret = false;
+	  
+	  //---------packed-rear-tidy8------------
+	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-8", &state))
+		  return false;	  
+
+	  group_both->setJointValueTarget(state.both.position);	  
+	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+		  group_l->asyncExecute(plan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	
+	  //---------packed-rear-tidy-7------------
+	  if(ret){
+		  ret = false;
+	
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-7", &state))
+			  return false;	  
+
+		  group_both->setJointValueTarget(state.both.position);	  
+		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+			  group_l->asyncExecute(plan);
+			  ret = monitorArmMovement(true,true);
+		  }
+		  
+		  //---------packed-rear-tidy-6------------
+		  if(ret){
+			  ret = false;
+
+			  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-6", &state))
+				  return false;	  
+
+			  group_both->setJointValueTarget(state.both.position);	  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  group_l->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }
+			  
+			  //---------packed-rear-tidy-5------------
+			  if(ret){
+				  ret = false;
+
+				  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-5", &state))
+					  return false;	  
+
+				  group_both->setJointValueTarget(state.both.position);	  
+				  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+					  group_l->asyncExecute(plan);
+					  ret = monitorArmMovement(true,true);
+				  }
+				  
+				  //---------packed-rear-tidy-4------------
+				  if(ret){
+					  ret = false;
+
+					  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-4", &state))
+						  return false;	  
+
+					  group_both->setJointValueTarget(state.both.position);	  
+					  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+						  group_l->asyncExecute(plan);
+						  ret = monitorArmMovement(true,true);
+					  }
+					  
+					  //---------packed-rear-tidy-3------------
+					  if(ret){
+						  ret = false;
+
+						  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-3", &state))
+							  return false;	  
+
+						  group_both->setJointValueTarget(state.both.position);	  
+						  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+							  group_l->asyncExecute(plan);
+							  ret = monitorArmMovement(true,true);
+						  }
+						  
+						  //---------packed-rear-tidy-2------------
+						  if(ret){
+							  ret = false;
+
+							  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-2", &state))
+								  return false;	  
+
+							  group_both->setJointValueTarget(state.both.position);	  
+							  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+								  group_l->asyncExecute(plan);
+								  ret = monitorArmMovement(true,true);
+							  }
+							  
+							  //---------packed-rear-tidy-1------------
+							  if(ret){
+								  ret = false;
+
+								  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-tidy-1", &state))
+									  return false;	  
+
+								  group_both->setJointValueTarget(state.both.position);	  
+								  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+									  group_l->asyncExecute(plan);
+									  ret = monitorArmMovement(true,true);
+								  }
+							  }//1
+						  }//2
+					  }//3
+				  }//4
+			  }//5
+		  }//6
+	  }//7
+	  
+	  return ret;
+  }	
+  
+  
   bool deploySensornode(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
 	    moveit::planning_interface::MoveGroup::Plan plan, mergedPlan;
@@ -1668,6 +1903,13 @@ public:
 				  return "unknown_state";
 			  }
 		  }  
+		  if(transition.compare("homeToPackedRear") == 0){
+			  if(homeToPackedRear(group_l_,group_r_,group_both_)){
+				  return "packed-rear";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }  
 		  return "home";
 	  }
 
@@ -1743,6 +1985,14 @@ public:
 		  if(transition.compare("packedRearToPreGraspRear") == 0){
 			  if(packedRearToPreGraspRear(group_l_,group_r_,group_both_)){
 				  return "pregrasp-rear";
+			  } else {
+				  return "unknown_state";
+			  }
+		  }     
+		  
+		  if(transition.compare("packedRearToHome") == 0){
+			  if(packedRearToHome(group_l_,group_r_,group_both_)){
+				  return "home";
 			  } else {
 				  return "unknown_state";
 			  }
