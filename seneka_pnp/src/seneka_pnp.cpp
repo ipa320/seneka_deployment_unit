@@ -269,6 +269,7 @@ public:
     return ret;
   }
   
+  //packed-rear -> home
   bool packedRearToHome(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
 	  moveit::planning_interface::MoveGroup::Plan plan;
@@ -375,6 +376,11 @@ public:
 									  group_l->asyncExecute(plan);
 									  ret = monitorArmMovement(true,true);
 								  }
+								  
+								  //---------home------------
+							      if(ret){
+							    	ret = toHome(group_l,group_r,group_both);		
+							      }	
 							  }//8
 						  }//7
 					  }//6
@@ -386,6 +392,7 @@ public:
 	  return ret;
   }	
   
+  //home -> packed-rear-drop
   bool homeToPackedRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
 	  moveit::planning_interface::MoveGroup::Plan plan;
@@ -492,6 +499,20 @@ public:
 									  group_l->asyncExecute(plan);
 									  ret = monitorArmMovement(true,true);
 								  }
+								  
+								  //---------packed-rear-drop------------
+								  if(ret){
+									  ret = false;
+
+									  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-drop", &state))
+										  return false;	  
+
+									  group_both->setJointValueTarget(state.both.position);	  
+									  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+										  group_l->asyncExecute(plan);
+										  ret = monitorArmMovement(true,true);
+									  }
+								  }//drop
 							  }//1
 						  }//2
 					  }//3
