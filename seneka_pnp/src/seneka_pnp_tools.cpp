@@ -685,17 +685,19 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 
 	std::vector < dualArmJointState > states;
 	//the home state
-	states.push_back(
-			createArmState("home", -1.5705, 0, -2.5, 3.141, 3.141, -1.7, 1.5705,
-					-3.141, 2.5, 0, 3.141, 1.7));
-	states.push_back(createArmState("prepack-rear", 1.56475, -0.37355, -0.934844, 1.33843, -0.00526746, 2.91156, -1.56666, -2.77179, 0.952993, 1.85097, 0.00491897, -2.97376)
-			);
-	states.push_back(createArmState("packed-rear-h1", 1.59366, -0.861927, -2.03566, 2.89088, 0.0236453, 2.94829, -1.59398, -2.28216, 2.03645, 0.238648, -0.0224017, -2.93453)
-			);
-	states.push_back(createArmState("packed-rear", 1.58117, -1.17341, -1.97047, 3.1297, 0.0111507, 2.95578, -1.58218, -1.97401, 1.97396, -0.0148622, -0.0106062, -2.92669)
-			);
-	states.push_back(createArmState("packed-rear-drop", 1.58224, -1.15317, -2.25563, 3.39586, 0.0122261, 2.95453, -1.58336, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817)
-			);
+	states.push_back(createArmState("home", -1.5705, 0, -2.5, 3.141, 3.141, -1.7, 1.5705, -3.141, 2.5, 0, 3.141, 1.7));
+	
+	states.push_back(createArmState("pregrasp-rear", 1.3, -0.6, 0.5, 0, -0.0127962, 3.05, -1.3, -2.5, -0.5, 3.141, 0.012214, -3.141));
+	states.push_back(createArmState("pregrasp-rear-h1", -1.5705, -1.6, -2.5, 3.141,	3.141, -1.7, 1.5705, -1.5, 2.5, 0, 3.141, 1.7));
+	states.push_back(createArmState("pregrasp-rear-h2", -1.5705, -1.6, 0, 3.141, 3.141,	-1.7, 1.5705, -1.5, 0, 0, 3.141, 1.7));
+	states.push_back(createArmState("pregrasp-rear-h3", 1.5, -1.6, 0, 3.141, 3.141, -1.7, -1.5, -1.5, 0, 0, 3.141, 1.7));
+	states.push_back(createArmState("pregrasp-rear-h4", 1.5, -1.0, 0, 3.141, 3.141, -1.7, -1.5, -2.1, 0, 0, 3.141, 1.7));
+	states.push_back(createArmState("pregrasp-rear-h5", 1.5, -1.0, 0, 3.141, 0, -1.7, -1.5, -2.1, 0, 0, 0, 1.7));
+
+	states.push_back(createArmState("prepack-rear", 1.56475, -0.37355, -0.934844, 1.33843, -0.00526746, 2.91156, -1.56666, -2.77179, 0.952993, 1.85097, 0.00491897, -2.97376));
+	states.push_back(createArmState("packed-rear-h1", 1.59366, -0.861927, -2.03566, 2.89088, 0.0236453, 2.94829, -1.59398, -2.28216, 2.03645, 0.238648, -0.0224017, -2.93453));
+	states.push_back(createArmState("packed-rear", 1.58117, -1.17341, -1.97047, 3.1297, 0.0111507, 2.95578, -1.58218, -1.97401, 1.97396, -0.0148622, -0.0106062, -2.92669));
+	states.push_back(createArmState("packed-rear-drop", 1.58224, -1.15317, -2.25563, 3.39586, 0.0122261, 2.95453, -1.58336, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817));
 
 	states.push_back(createArmState("packed-rear-tidy-1", 1.75, -1.15317, -2.25563, 3.39267, 0.0122261, 2.95453, -1.75, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817));
 	states.push_back(createArmState("packed-rear-tidy-2", 1.75, -1.15317, -2.25563, 3.39267, -1.25, 2.95453, -1.75, -1.99447, 2.25903, -0.27799, 1.2, -2.92817));
@@ -706,47 +708,20 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 	states.push_back(createArmState("packed-rear-tidy-7", -1.5, -0.3, -2, 3.141, 0, -1.7, 1.5, -2.8, 2, 0, 0, 1.7));
 	states.push_back(createArmState("packed-rear-tidy-8", -1.5, -0.3, -2, 3.141, 3.141, -1.7, 1.5, -2.8, 2, 0, 3.141, 1.7));
 	
-	states.push_back(
-			createArmState("pregrasp", -1.9705, -2.441, -0.8, 3.2, 3.241, -3.3,
-					1.9705, -0.7, 0.8, 0, 3.041, 3.3));
-	states.push_back(
-			createArmState("pregrasp-jointflip", -1.9705, -2.441, -0.8, 3.2,
-					-3.041, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
-	states.push_back(
-			createArmState("pregrasp-rear", 1.3, -0.6, 0.5, 0, -0.0127962, 3.05,
-					-1.3, -2.5, -0.5, 3.141, 0.012214, -3.141));
-	states.push_back(
-			createArmState("pregrasp-rear-h1", -1.5705, -1.6, -2.5, 3.141,
-					3.141, -1.7, 1.5705, -1.5, 2.5, 0, 3.141, 1.7));
-	states.push_back(
-			createArmState("pregrasp-rear-h2", -1.5705, -1.6, 0, 3.141, 3.141,
-					-1.7, 1.5705, -1.5, 0, 0, 3.141, 1.7));
-	states.push_back(
-			createArmState("pregrasp-rear-h3", 1.5, -1.6, 0, 3.141, 3.141, -1.7,
-					-1.5, -1.5, 0, 0, 3.141, 1.7));
-	states.push_back(
-			createArmState("pregrasp-rear-h4", 1.5, -1.0, 0, 3.141, 3.141, -1.7,
-					-1.5, -2.1, 0, 0, 3.141, 1.7));
-	states.push_back(
-			createArmState("pregrasp-rear-h5", 1.5, -1.0, 0, 3.141, 0, -1.7,
-					-1.5, -2.1, 0, 0, 0, 1.7));
+	states.push_back(createArmState("deploy-rear", 1.56588, -0.99264, 1.1422, -0.111279, -0.00414274, 2.90332, -1.56759, -2.1331, -1.16742, 3.3402, 0.00398801, -2.98127));
+	states.push_back(createArmState("deploy-rear-drop", 1.56623, -0.673796, 1.21241, -0.496834, -0.00379266, 2.89981, -1.56782, -2.45347, -1.24077, 3.73626, 0.00375942, -2.98361));
+	states.push_back(createArmState("deploy-rear-drop-free", 1.4, -0.673796, 1.21241, -0.496834, -0.00379266, 2.89981, -1.4, -2.45347, -1.24077, 3.73626, 0.00375942, -2.98361));
+
+	states.push_back(createArmState("pregrasp", -1.9705, -2.441, -0.8, 3.2, 3.241, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
+	states.push_back(createArmState("pregrasp-jointflip", -1.9705, -2.441, -0.8, 3.2, -3.041, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
 	
 	states.push_back(createArmState("prepack", -1.12281, -1.86896, -0.884882, 2.75421, -2.69283, -3.34126, 1.12093, -1.27239, 0.884651, 0.388099, 2.6925, 3.34191));
 	states.push_back(createArmState("packed-front", -0.168124, -0.965007, -1.83176, 2.79693, -1.73814, -3.34157, 0.166341, -2.17628, 1.83174, 0.344692, 1.73792, 3.34162));
 	states.push_back(createArmState("packed-front-drop", -0.327705, -0.987667, -2.15275, 3.14058, -1.89772, -3.34154, 0.325923, -2.15361, 2.15271, 0.00107013, 1.8975, 3.34165));
 	
-	states.push_back(
-			createArmState("packed-front-tidy-1", -1.5, -0.754735, -2.22018,
-					2.97532, -1.41303, -2.9114, 1.5, -2.387, 2.22061, 0.164381,
-					1.41261, 2.911));
-	states.push_back(
-			createArmState("packed-front-tidy-2", -1.5, -0.754735, -1.8,
-					2.97532, -1.41303, -2.9114, 1.5, -2.387, 1.8, 0.164381,
-					1.41261, 2.911));
-	states.push_back(
-			createArmState("packed-front-tidy-3", -1.5, -0.754735, -1.8,
-					2.97532, 3.141, -2.9114, 1.5, -2.387, 1.8, 0.164381, 3.141,
-					2.911));
+	states.push_back(createArmState("packed-front-tidy-1", -1.5, -0.754735, -2.22018, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 2.22061, 0.164381, 1.41261, 2.911));
+	states.push_back(createArmState("packed-front-tidy-2", -1.5, -0.754735, -1.8, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 1.8, 0.164381, 1.41261, 2.911));
+	states.push_back(createArmState("packed-front-tidy-3", -1.5, -0.754735, -1.8, 2.97532, 3.141, -2.9114, 1.5, -2.387, 1.8, 0.164381, 3.141, 2.911));
 	states.push_back(createArmState("pre-deploy-front", -1.19165, -2.03979, -0.95167, 2.99189, -2.76167, -3.34119, 1.18987, -1.10155, 0.951376, 0.150599, 2.76145, 3.34199));
 	states.push_back(createArmState("deploy-front", -1.23269, -2.41069, -1.2687, 3.67987, -2.80271, -3.34114, 1.23109, -0.730686, 1.26839, -0.537223, 2.80267, 3.34204));
 

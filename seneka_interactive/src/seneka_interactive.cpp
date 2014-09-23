@@ -2231,6 +2231,89 @@ public:
 		pose.pose.orientation.z = 0;
 		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);		
+		
+		//deploy-rear
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "deploy-rear";
+
+		pose.joint_states_r.push_back(1.56588);
+		pose.joint_states_r.push_back(-0.99264);
+		pose.joint_states_r.push_back(1.1422);
+		pose.joint_states_r.push_back(-0.111279);
+		pose.joint_states_r.push_back(-0.00414274);
+		pose.joint_states_r.push_back(2.90332);
+		pose.joint_states_l.push_back(-1.56759);
+		pose.joint_states_l.push_back(-2.1331);
+		pose.joint_states_l.push_back(-1.16742);
+		pose.joint_states_l.push_back(3.3402);
+		pose.joint_states_l.push_back(0.00398801);
+		pose.joint_states_l.push_back(-2.98127);
+
+		pose.pose.position.x = 1.49593;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.18204;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);	
+		
+		
+		//deploy-rear-drop
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "deploy-rear-drop";
+
+		pose.joint_states_r.push_back(1.56623);
+		pose.joint_states_r.push_back(-0.673796);
+		pose.joint_states_r.push_back(1.21241);
+		pose.joint_states_r.push_back(-0.496834);
+		pose.joint_states_r.push_back(-0.00379266);
+		pose.joint_states_r.push_back(2.89981);
+		pose.joint_states_l.push_back(-1.56782);
+		pose.joint_states_l.push_back(-2.45347);
+		pose.joint_states_l.push_back(-1.24077);
+		pose.joint_states_l.push_back(3.73626);
+		pose.joint_states_l.push_back(0.00375942);
+		pose.joint_states_l.push_back(-2.98361);
+
+		pose.pose.position.x = 1.49593;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = -0.1638;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);	
+		
+		
+		//deploy-rear-drop-free
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "deploy-rear-drop-free";
+
+		pose.joint_states_r.push_back(1.4);
+		pose.joint_states_r.push_back(-0.673796);
+		pose.joint_states_r.push_back(1.21241);
+		pose.joint_states_r.push_back(-0.496834);
+		pose.joint_states_r.push_back(-0.00379266);
+		pose.joint_states_r.push_back(2.89981);
+		pose.joint_states_l.push_back(-1.4);
+		pose.joint_states_l.push_back(-2.45347);
+		pose.joint_states_l.push_back(-1.24077);
+		pose.joint_states_l.push_back(3.73626);
+		pose.joint_states_l.push_back(0.00375942);
+		pose.joint_states_l.push_back(-2.98361);
+
+		pose.pose.position.x = 1.49593;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = -0.1638;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);	
 
 		start_pose_ = pose;
 	}

@@ -1,7 +1,9 @@
 int32 val
 #goal
-int32 GOAL_PICKUP=1
-int32 GOAL_DEPLOY=2
+int32 GOAL_PICKUP_FRONT=1
+int32 GOAL_DEPLOY_FRONT=2
+int32 GOAL_PICKUP_REAR=11
+int32 GOAL_DEPLOY_REAR=12
 #result
 int32 RESULT_SUCCESS=3 #everything went fine
 int32 RESULT_DETECTION_FAILED=4 #could not detect the sensornode
