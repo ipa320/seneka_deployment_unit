@@ -2286,6 +2286,34 @@ public:
 		pose.pose.orientation.z = 0;
 		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);	
+		
+		
+		//deploy-rear-drop-free
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "deploy-rear-drop-free";
+
+		pose.joint_states_r.push_back(1.4);
+		pose.joint_states_r.push_back(-0.673796);
+		pose.joint_states_r.push_back(1.21241);
+		pose.joint_states_r.push_back(-0.496834);
+		pose.joint_states_r.push_back(-0.00379266);
+		pose.joint_states_r.push_back(2.89981);
+		pose.joint_states_l.push_back(-1.4);
+		pose.joint_states_l.push_back(-2.45347);
+		pose.joint_states_l.push_back(-1.24077);
+		pose.joint_states_l.push_back(3.73626);
+		pose.joint_states_l.push_back(0.00375942);
+		pose.joint_states_l.push_back(-2.98361);
+
+		pose.pose.position.x = 1.49593;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = -0.1638;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);	
 
 		start_pose_ = pose;
 	}
