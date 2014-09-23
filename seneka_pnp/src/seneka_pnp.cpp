@@ -197,6 +197,8 @@ public:
 			  if(success)
 				  success = toPickedUpRear(group_l_,group_r_,group_both_);
 			  if(success)
+				  success = toPrePackRear(group_l_,group_r_,group_both_);
+			  if(success)
 				  success = toPackedRear(group_l_,group_r_,group_both_);
 			  if(success)
 				  success = packedRearDrop(group_l_,group_r_,group_both_);
