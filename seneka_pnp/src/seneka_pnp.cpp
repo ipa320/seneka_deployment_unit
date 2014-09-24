@@ -228,8 +228,7 @@ public:
 			  if(success)
 				  success = preGraspRearToHome(group_l_,group_r_,group_both_);
 			  
-		  }
-		  
+		  }		  
 		  
 		  if(!success){
 			  result_.result.val = manipulation.result.RESULT_HARD_MANIPULATION_FAILURE;
@@ -287,6 +286,8 @@ public:
     return ret;
   }
   
+  //----------------------------------------------------- CRITICAL MOVES --------------------------------------------------------
+  
   //packed-rear-drop -> packed-rear
   bool deployRearPickUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
@@ -334,7 +335,7 @@ public:
 	  waypoints_r.push_back(pose_r);
 	  waypoints_l.push_back(pose_l);	        
 
-	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r, waypoints_l, 0.01);
 	  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true);
 	  
@@ -364,9 +365,201 @@ public:
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true);
-	  
+
 	  return ret;
   }
+
+  //pickup rear
+  bool toPickedUpRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+	  bool ret = true;
+	  ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+
+	  unsigned int used_handle_r = 2;//use the real handle id 1-6
+	  unsigned int used_handle_l = 5;//use the real handle id 1-6
+	  used_handle_r--;
+	  used_handle_l--;
+
+	  moveit::planning_interface::MoveGroup::Plan mergedPlan;
+
+	  group_r->setStartStateToCurrentState();      
+	  group_l->setStartStateToCurrentState();
+	  group_both->setStartStateToCurrentState();
+
+	  std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+	  geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
+	  geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
+
+	  tje_lock_.lock();
+	  seneka_pnp_tools::compensateInaccuracyDO(node_handle_);
+	  sleep(3);
+	  sensornode node = seneka_pnp_tools::getSensornodePose();
+	  seneka_pnp_tools::compensateInaccuracyUNDO(node_handle_);
+	  tje_lock_.unlock(); 
+	  if(!node.success)
+		  return false;
+
+	  std::vector<double> joint_values_r,joint_values_l;
+	  std::vector<std::string> joint_names_r,joint_names_l;
+
+	  joint_values_r = group_r->getCurrentJointValues();
+	  joint_values_l = group_l->getCurrentJointValues();
+	  joint_names_r = group_r->getJoints();
+	  joint_names_l = group_l->getJoints();
+
+	  for(uint i = 0; i < joint_values_r.size(); i++ )
+		  ROS_INFO("%f",joint_values_r[i]);
+	  for(uint i = 0; i < joint_values_l.size(); i++ )
+		  ROS_INFO("%f",joint_values_l[i]);
+
+
+	  moveit_msgs::Constraints constraint_r = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_r, joint_values_r, 2);
+	  moveit_msgs::Constraints constraint_l = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_l, joint_values_l, 2);
+	  //------------------------Pickup Position/Orientation -------------------------------------------------
+	  std::vector<double> joint_positions_r = group_r->getCurrentJointValues();
+	  std::vector<double> joint_positions_l = group_l->getCurrentJointValues();
+
+	  target_pose_r = group_r->getCurrentPose().pose;
+	  target_pose_l = group_l->getCurrentPose().pose;	 
+
+	  target_pose_r.position = node.handholds[used_handle_r].entry.position;
+	  target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+	  target_pose_l.position = node.handholds[used_handle_l].entry.position;
+	  target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+
+	  dual_arm_joints goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+
+	  group_both->setJointValueTarget(goal_joints.both);	    
+	  if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);
+	  }
+
+	  //------------------------PICK UP REAR-----------------------------------------------------------------------------
+	  if(ret){
+		  ret = false;	
+		  joint_positions_r = group_r->getCurrentJointValues();
+		  joint_positions_l = group_l->getCurrentJointValues();
+
+		  target_pose_r.position = node.handholds[used_handle_r].down.position;
+		  target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+		  target_pose_l.position = node.handholds[used_handle_l].down.position;
+		  target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+
+		  goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+
+		  group_both->setJointValueTarget(goal_joints.both);
+		  if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+			  group_both->asyncExecute(mergedPlan);
+			  ret = monitorArmMovement(true,true);
+		  }
+
+		  if(ret){
+			  ret = false;
+			  joint_positions_r = group_r->getCurrentJointValues();
+			  joint_positions_l = group_l->getCurrentJointValues();
+
+			  target_pose_r.position = node.handholds[used_handle_r].up.position;
+			  target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+			  target_pose_l.position = node.handholds[used_handle_l].up.position;
+			  target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+
+			  goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+
+			  group_both->setJointValueTarget(goal_joints.both);
+			  if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+				  group_both->asyncExecute(mergedPlan);
+				  ret = monitorArmMovement(true,true);
+			  } 	  	    	  
+		  }
+	  }
+
+	  return ret;
+  }
+  
+  //pickup front
+  bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+
+    bool ret = true;
+    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    
+    unsigned int used_handle_r = 2;//use the real handle id 1-6
+    unsigned int used_handle_l = 5;//use the real handle id 1-6
+    used_handle_r--;
+    used_handle_l--;
+
+    moveit::planning_interface::MoveGroup::Plan mergedPlan;
+
+    group_r->setStartStateToCurrentState();      
+    group_l->setStartStateToCurrentState();
+    group_both->setStartStateToCurrentState();
+
+    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
+    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
+
+    //get sensornode pose
+    tje_lock_.lock(); 
+    sensornode node = seneka_pnp_tools::getSensornodePose();
+    tje_lock_.unlock(); 
+    if(!node.success)
+    	return false;
+    ROS_INFO("handholds:%d", (int)node.handholds.size());
+      
+    //------------------------Pickup Position/Orientation -------------------------------------------------
+    waypoints_r.clear();
+    waypoints_l.clear();
+    target_pose_r.position = node.handholds[used_handle_r].entry.position;
+    waypoints_r.push_back(target_pose_r);
+    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+    waypoints_r.push_back(target_pose_r);
+    waypoints_r.push_back(target_pose_r);
+    waypoints_r.push_back(target_pose_r);
+    waypoints_r.push_back(target_pose_r);
+
+    target_pose_l.position = node.handholds[used_handle_l].entry.position;
+    waypoints_l.push_back(target_pose_l);
+    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+    waypoints_l.push_back(target_pose_l);
+    waypoints_l.push_back(target_pose_l); 
+    waypoints_l.push_back(target_pose_l);
+    waypoints_l.push_back(target_pose_l);
+
+    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+    
+    group_both->asyncExecute(mergedPlan);
+    ret = monitorArmMovement(true,true);  
+
+
+    //------------------------PICK UP-----------------------------------------------------------------------------
+    if(ret){
+      waypoints_r.clear();
+      waypoints_l.clear();
+
+      target_pose_r = group_r->getCurrentPose().pose;
+      target_pose_l = group_l->getCurrentPose().pose;
+
+      target_pose_r.position = node.handholds[used_handle_r].down.position;
+      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+      waypoints_r.push_back(target_pose_r);
+      target_pose_r.position = node.handholds[used_handle_r].up.position;
+      waypoints_r.push_back(target_pose_r);
+
+      target_pose_l.position = node.handholds[used_handle_l].down.position;
+      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+      waypoints_l.push_back(target_pose_l);
+      target_pose_l.position = node.handholds[used_handle_l].up.position;
+      waypoints_l.push_back(target_pose_l);
+      
+      mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+      group_both->asyncExecute(mergedPlan);
+      ret = monitorArmMovement(true,true);
+    }
+
+    return ret;    
+  }
+
+  //----------------------------------------------------- CRITICAL MOVES --------------------------------------------------------
   
   //deploy-rear-drop -> pregrasp-rear
   bool deployRearToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
@@ -1193,195 +1386,6 @@ public:
 	  }
 
 	  return ret;
-  }
-
-  //HERE_PI
-  bool toPickedUpRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
-	  
-	    bool ret = true;
-	    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-	    
-	    unsigned int used_handle_r = 2;//use the real handle id 1-6
-	    unsigned int used_handle_l = 5;//use the real handle id 1-6
-	    used_handle_r--;
-	    used_handle_l--;
-
-	    moveit::planning_interface::MoveGroup::Plan mergedPlan;
-
-	    group_r->setStartStateToCurrentState();      
-	    group_l->setStartStateToCurrentState();
-	    group_both->setStartStateToCurrentState();
-
-	    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
-	    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
-	    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
-
-	    tje_lock_.lock();
-	    seneka_pnp_tools::compensateInaccuracyDO(node_handle_);
-	    sleep(3);
-	    sensornode node = seneka_pnp_tools::getSensornodePose();
-	    seneka_pnp_tools::compensateInaccuracyUNDO(node_handle_);
-	    tje_lock_.unlock(); 
-	    if(!node.success)
-	    	return false;
-	    
-	    std::vector<double> joint_values_r,joint_values_l;
-	    std::vector<std::string> joint_names_r,joint_names_l;
-	    
-	    joint_values_r = group_r->getCurrentJointValues();
-	    joint_values_l = group_l->getCurrentJointValues();
-	    joint_names_r = group_r->getJoints();
-	    joint_names_l = group_l->getJoints();
-		  
-	    for(uint i = 0; i < joint_values_r.size(); i++ )
-	    	 ROS_INFO("%f",joint_values_r[i]);
-	    for(uint i = 0; i < joint_values_l.size(); i++ )
-	    	ROS_INFO("%f",joint_values_l[i]);
-	    
-    
-	    moveit_msgs::Constraints constraint_r = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_r, joint_values_r, 2);
-	    moveit_msgs::Constraints constraint_l = seneka_pnp_tools::generateIKConstraints("copy all", joint_names_l, joint_values_l, 2);
-	    //------------------------Pickup Position/Orientation -------------------------------------------------
-	    std::vector<double> joint_positions_r = group_r->getCurrentJointValues();
-	    std::vector<double> joint_positions_l = group_l->getCurrentJointValues();
-	    
-	    target_pose_r = group_r->getCurrentPose().pose;
-	    target_pose_l = group_l->getCurrentPose().pose;	 
-	    
-	    target_pose_r.position = node.handholds[used_handle_r].entry.position;
-	    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-	    target_pose_l.position = node.handholds[used_handle_l].entry.position;
-	    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-	    
-	    dual_arm_joints goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
-	    
-	    group_both->setJointValueTarget(goal_joints.both);	    
-	    if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-	       	group_both->asyncExecute(mergedPlan);
-	      	ret = monitorArmMovement(true,true);
-	    }
-	    	   	    
-	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
-	    if(ret){
-	      ret = false;	
-	      joint_positions_r = group_r->getCurrentJointValues();
-	      joint_positions_l = group_l->getCurrentJointValues();
-	      
-	      target_pose_r.position = node.handholds[used_handle_r].down.position;
-	      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-	      target_pose_l.position = node.handholds[used_handle_l].down.position;
-	      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-
-	      goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
-
-	      group_both->setJointValueTarget(goal_joints.both);
-	      if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-	    	  group_both->asyncExecute(mergedPlan);
-	    	  ret = monitorArmMovement(true,true);
-	      }
-	      
-	      if(ret){
-	    	  ret = false;
-		      joint_positions_r = group_r->getCurrentJointValues();
-		      joint_positions_l = group_l->getCurrentJointValues();
-		      
-		      target_pose_r.position = node.handholds[used_handle_r].up.position;
-		      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-		      target_pose_l.position = node.handholds[used_handle_l].up.position;
-		      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-
-		      goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
-
-		      group_both->setJointValueTarget(goal_joints.both);
-		      if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
-		    	  group_both->asyncExecute(mergedPlan);
-		    	  ret = monitorArmMovement(true,true);
-		      } 	  	    	  
-	      }
-	    }
-	   
-	    return ret;
-  }
-  
-  bool toPickedUp(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
-
-    bool ret = true;
-    ros::Publisher display_publisher = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-    
-    unsigned int used_handle_r = 2;//use the real handle id 1-6
-    unsigned int used_handle_l = 5;//use the real handle id 1-6
-    used_handle_r--;
-    used_handle_l--;
-
-    moveit::planning_interface::MoveGroup::Plan mergedPlan;
-
-    group_r->setStartStateToCurrentState();      
-    group_l->setStartStateToCurrentState();
-    group_both->setStartStateToCurrentState();
-
-    std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
-    geometry_msgs::Pose target_pose_r = group_r->getCurrentPose().pose;
-    geometry_msgs::Pose target_pose_l = group_l->getCurrentPose().pose;
-
-    //get sensornode pose
-    tje_lock_.lock(); 
-    sensornode node = seneka_pnp_tools::getSensornodePose();
-    tje_lock_.unlock(); 
-    if(!node.success)
-    	return false;
-    ROS_INFO("handholds:%d", (int)node.handholds.size());
-      
-    //------------------------Pickup Position/Orientation -------------------------------------------------
-    waypoints_r.clear();
-    waypoints_l.clear();
-    target_pose_r.position = node.handholds[used_handle_r].entry.position;
-    waypoints_r.push_back(target_pose_r);
-    target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-    waypoints_r.push_back(target_pose_r);
-    waypoints_r.push_back(target_pose_r);
-    waypoints_r.push_back(target_pose_r);
-    waypoints_r.push_back(target_pose_r);
-
-    target_pose_l.position = node.handholds[used_handle_l].entry.position;
-    waypoints_l.push_back(target_pose_l);
-    target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-    waypoints_l.push_back(target_pose_l);
-    waypoints_l.push_back(target_pose_l); 
-    waypoints_l.push_back(target_pose_l);
-    waypoints_l.push_back(target_pose_l);
-
-    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-    
-    group_both->asyncExecute(mergedPlan);
-    ret = monitorArmMovement(true,true);  
-
-
-    //------------------------PICK UP-----------------------------------------------------------------------------
-    if(ret){
-      waypoints_r.clear();
-      waypoints_l.clear();
-
-      target_pose_r = group_r->getCurrentPose().pose;
-      target_pose_l = group_l->getCurrentPose().pose;
-
-      target_pose_r.position = node.handholds[used_handle_r].down.position;
-      target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
-      waypoints_r.push_back(target_pose_r);
-      target_pose_r.position = node.handholds[used_handle_r].up.position;
-      waypoints_r.push_back(target_pose_r);
-
-      target_pose_l.position = node.handholds[used_handle_l].down.position;
-      target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
-      waypoints_l.push_back(target_pose_l);
-      target_pose_l.position = node.handholds[used_handle_l].up.position;
-      waypoints_l.push_back(target_pose_l);
-      
-      mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-      group_both->asyncExecute(mergedPlan);
-      ret = monitorArmMovement(true,true);
-    }
-
-    return ret;    
   }
 
   bool toPrePack(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
