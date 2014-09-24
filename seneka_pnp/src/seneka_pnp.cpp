@@ -438,7 +438,21 @@ public:
 //	  //check for external force and replan..
 //	  if(!ret && extforceflag){
 //		  smoothSetPayload(mass_/2);
-//		  //REPLAN
+//		  
+//		  waypoints_l.clear();
+//		  waypoints_r.clear();
+//
+//		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-drop", &state))
+//			  return false;
+//
+//		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+//		  waypoints_r.push_back(pose_r);
+//		  waypoints_l.push_back(pose_l);	        
+//
+//		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+//		  group_both->asyncExecute(mergedPlan);
+//		  ret = monitorArmMovement(true,true,true);
+//
 //	  }
 
 	  return ret;
@@ -685,34 +699,34 @@ public:
 		  extforce_lock_.unlock();
 		  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 
-//		  //check for external force and replan..
-//		  if(!ret && extforceflag){
-//
-//			  waypoints_r.clear();
-//			  waypoints_l.clear();
-//
-//			  target_pose_r = group_r->getCurrentPose().pose;
-//			  target_pose_l = group_l->getCurrentPose().pose;
-//
-//			  target_pose_r.position.x = node.handholds[used_handle_r].up.position.x;
-//			  target_pose_r.position.y = node.handholds[used_handle_r].up.position.y;
-//			  target_pose_r.position.z = node.handholds[used_handle_r].up.position.z;
-//			  waypoints_r.push_back(target_pose_r);
-//
-//			  target_pose_l.position.x = node.handholds[used_handle_l].up.position.x;
-//			  target_pose_l.position.y = node.handholds[used_handle_l].up.position.y;
-//			  target_pose_l.position.z = node.handholds[used_handle_l].up.position.z;
-//			  waypoints_l.push_back(target_pose_l);
-//
-//
-//		      smoothSetPayload(mass_/2);
+		  //check for external force and replan..
+		  if(!ret && extforceflag){
+
+			  waypoints_r.clear();
+			  waypoints_l.clear();
+
+			  target_pose_r = group_r->getCurrentPose().pose;
+			  target_pose_l = group_l->getCurrentPose().pose;
+
+			  target_pose_r.position.x = node.handholds[used_handle_r].up.position.x;
+			  target_pose_r.position.y = node.handholds[used_handle_r].up.position.y;
+			  target_pose_r.position.z = node.handholds[used_handle_r].up.position.z;
+			  waypoints_r.push_back(target_pose_r);
+
+			  target_pose_l.position.x = node.handholds[used_handle_l].up.position.x;
+			  target_pose_l.position.y = node.handholds[used_handle_l].up.position.y;
+			  target_pose_l.position.z = node.handholds[used_handle_l].up.position.z;
+			  waypoints_l.push_back(target_pose_l);
+
+
+		      smoothSetPayload(mass_/2);
 		  
-//			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
-//			  if(trajexec_)
-//				  group_both->asyncExecute(mergedPlan);
-//			  ret = monitorArmMovement(true,true);
-//		  }
-//		  ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
+			  if(trajexec_)
+				  group_both->asyncExecute(mergedPlan);
+			  ret = monitorArmMovement(true,true);
+		  }
+		  ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 	  }
 
 	  return ret;
