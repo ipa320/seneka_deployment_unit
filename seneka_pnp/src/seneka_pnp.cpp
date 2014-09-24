@@ -338,7 +338,32 @@ public:
 
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	  group_both->asyncExecute(mergedPlan);
-	  ret = monitorArmMovement(true,true);
+	  ret = monitorArmMovement(true,true); 
+	  //ret = monitorArmMovement(true,true,true); 
+	  
+//	  extforce_lock_.lock();
+//	  bool extforceflag = extforceflag_;
+//	  extforce_lock_.unlock();
+//	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+//
+//	  //check for external force and replan..
+//	  if(!ret && extforceflag){
+//		  smoothSetPayload(mass_/2);
+//		  
+//		  waypoints_l.clear();
+//		  waypoints_r.clear();
+//
+//		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+//			  return false;
+//
+//		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+//		  waypoints_r.push_back(pose_r);
+//		  waypoints_l.push_back(pose_l);	        
+//
+//		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+//		  group_both->asyncExecute(mergedPlan);
+//		  ret = monitorArmMovement(true,true); 		  
+//	  }
 	  
 	  return ret;
   }
@@ -367,6 +392,17 @@ public:
 	  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true);
 	  
+//	  extforce_lock_.lock();
+//	  bool extforceflag = extforceflag_;
+//	  extforce_lock_.unlock();
+//	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+//
+//	  //check for external force and replan..
+//	  if(!ret && extforceflag){
+//		  smoothSetPayload(mass_/2);
+//		  //REPLAN
+//	  }
+	  
 	  return ret;
   }
   
@@ -393,6 +429,17 @@ public:
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true);
+	  
+//	  extforce_lock_.lock();
+//	  bool extforceflag = extforceflag_;
+//	  extforce_lock_.unlock();
+//	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+//
+//	  //check for external force and replan..
+//	  if(!ret && extforceflag){
+//		  smoothSetPayload(mass_/2);
+//		  //REPLAN
+//	  }
 
 	  return ret;
   }
@@ -472,6 +519,8 @@ public:
 	    }
 
 	    //------------------------PICK UP REAR-----------------------------------------------------------------------------
+	    
+	    //down pose
 	    if(ret){
 	    	ret = false;	
 	    	joint_positions_r = group_r->getCurrentJointValues();
@@ -490,6 +539,7 @@ public:
 	    		ret = monitorArmMovement(true,true);
 	    	}
 
+	    	//up pose
 	    	if(ret){
 	    		//setting mass before pickup
 	    		smoothSetPayload(mass_/2);
@@ -508,8 +558,19 @@ public:
 	    		group_both->setJointValueTarget(goal_joints.both);
 	    		if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
 	    			group_both->asyncExecute(mergedPlan);
-	    			ret = monitorArmMovement(true,true);
-	    		} 	  	    	  
+	    			ret = monitorArmMovement(true,true,true);
+	    		} 	  	    
+	    		
+//	  		  extforce_lock_.lock();
+//	  		  bool extforceflag = extforceflag_;
+//	  		  extforce_lock_.unlock();
+//	  		  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+//
+//	  		  //check for external force and replan..
+//	  		  if(!ret && extforceflag){
+//	  			smoothSetPayload(mass_/2);
+//	    		//REPLAN
+//	  		  }
 	    	}
 	    }
 
@@ -644,19 +705,8 @@ public:
 //			  waypoints_l.push_back(target_pose_l);
 //
 //
-//			  //set the payload through service call
-//			  ros::ServiceClient client_r = node_handle_.serviceClient<ur_driver::URSetPayload>("/right_arm_controller/ur_driver/setPayload");
-//			  ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
-//			  ur_driver::URSetPayload srv_r, srv_l;
-//
-//			  srv_r.request.payload = mass_/2;
-//			  srv_l.request.payload = mass_/2;
-//
-//			  if (!client_r.call(srv_r))
-//				  return false;
-//			  if (!client_l.call(srv_l))
-//				  return false;
-//
+//		      smoothSetPayload(mass_/2);
+		  
 //			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
 //			  if(trajexec_)
 //				  group_both->asyncExecute(mergedPlan);
