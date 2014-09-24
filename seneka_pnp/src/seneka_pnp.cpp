@@ -169,6 +169,8 @@ public:
 			  if(success)
 				  success = toPackedFront(group_l_,group_r_,group_both_);
 			  if(success)
+				  success = packedFrontDrop(group_l_,group_r_,group_both_);
+			  if(success)
 				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){
@@ -560,6 +562,36 @@ public:
     return ret;    
   }
 
+  bool packedFrontDrop(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
+	  
+	  moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, mergedPlan;
+	  dualArmJointState state;
+	  bool ret = false;
+
+	  std::vector<geometry_msgs::Pose> waypoints_r,waypoints_l;
+	  geometry_msgs::Pose pose_l,pose_r;
+
+	  waypoints_l.clear();
+	  waypoints_r.clear();
+
+	  //------------packed-front-drop-----------------
+	  if(ret){
+		  ret = false;
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);
+
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  //------------packed-front-drop-----------------
+	  return ret;
+  }
   //----------------------------------------------------- CRITICAL MOVES --------------------------------------------------------
   
   //deploy-rear-drop -> pregrasp-rear
@@ -1459,24 +1491,6 @@ public:
     group_both->asyncExecute(mergedPlan);
     ret = monitorArmMovement(true,true);
     //------------packed-front-----------------
-    
-    //------------packed-front-drop-----------------
-    if(ret){
-    	ret = false;
-        if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
-        	return false;
-        
-        seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
-        waypoints_r.push_back(pose_r);
-        waypoints_l.push_back(pose_l);
-            
-        
-        mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-        group_both->asyncExecute(mergedPlan);
-        ret = monitorArmMovement(true,true);
-    }
-    //------------packed-front-drop-----------------
-    return ret;
   }
   
   bool packedRearToPreGraspRear(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
