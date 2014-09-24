@@ -747,8 +747,29 @@ public:
 	  waypoints_r.clear();
 
 	  //------------packed-front-drop-----------------
-	  if(ret){
-		  ret = false;
+	  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
+		  return false;
+
+	  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+	  waypoints_r.push_back(pose_r);
+	  waypoints_l.push_back(pose_l);
+
+
+	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+	  group_both->asyncExecute(mergedPlan);
+	  ret = monitorArmMovement(true,true,true);	  
+	  //------------packed-front-drop-----------------
+	  
+	  extforce_lock_.lock();
+	  bool extforceflag = extforceflag_;
+	  extforce_lock_.unlock();
+	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+
+	  //check for external force and replan..
+	  if(!ret && extforceflag){
+		  
+		  smoothSetPayload(mass_/2);
+		  
 		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
 			  return false;
 
@@ -761,7 +782,7 @@ public:
 		  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true);
 	  }
-	  //------------packed-front-drop-----------------
+	  
 	  return ret;
   }
 
