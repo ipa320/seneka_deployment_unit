@@ -755,7 +755,7 @@ bool seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
 
 bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
 	
-	double valuedo = -0.0075;
+	double valuedo = -0.009;
 	
 	ros::ServiceClient service_client;
 	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("/sensornode_detection/compensateInaccuracy");
@@ -772,7 +772,7 @@ bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
 
 bool seneka_pnp_tools::compensateInaccuracyUNDO(ros::NodeHandle nh){
 	
-	double valueundo = 0.0075;
+	double valueundo = 0.009;
 	
 	ros::ServiceClient service_client;
 	service_client = nh.serviceClient < seneka_sensornode_detection::compensateInaccuracy > ("/sensornode_detection/compensateInaccuracy");
