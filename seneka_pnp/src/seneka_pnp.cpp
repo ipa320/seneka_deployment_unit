@@ -130,7 +130,7 @@ public:
     tje_lock_.unlock();
     
     mass_ = 15;
-    unloadmass_ = 4;
+    unloadmass_ = 0;
     
     extforce_lock_.lock();
     extforceflag_ = false;
@@ -151,7 +151,7 @@ public:
     service_gazebo_get = node_handle_.serviceClient<gazebo_msgs::GetModelState> ("/gazebo/get_model_state");
     
     //set initial payload
-    smoothSetPayload(0.0);
+    smoothSetPayload(unloadmass_);
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
@@ -766,7 +766,7 @@ public:
 	  extforce_lock_.lock();
 	  bool extforceflag = extforceflag_;
 	  extforce_lock_.unlock();
-	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+	  ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 
 	  //check for external force and replan..
 	  if(!ret && extforceflag){
@@ -780,10 +780,32 @@ public:
 		  waypoints_r.push_back(pose_r);
 		  waypoints_l.push_back(pose_l);
 
-
 		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 		  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true);
+	  }
+	  
+	  //check if really in goal state
+	  uint maxtrys = 0;
+	  ret = seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_,group_r_, group_l_, group_both_);
+	  for(uint i=0;  i < maxtrys && !ret ; i++){
+		  
+		  smoothSetPayload(unloadmass_/2);
+		  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);	
+		  
+		  ret = seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_,group_r_, group_l_, group_both_);
 	  }
 	  
 	  return ret;
@@ -900,6 +922,8 @@ public:
 //	  uint maxtrys = 0;
 //	  ret = seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_,group_r_, group_l_, group_both_);
 //	  for(uint i=0;  i < maxtrys && !ret ; i++){
+//		  
+//		  smoothSetPayload(unloadmass_/2);
 //		  
 //		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front", &state))
 //			  return false;
