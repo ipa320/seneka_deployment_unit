@@ -684,7 +684,7 @@ dualArmJointState seneka_pnp_tools::createArmState(const char* state_name,
 std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 
 	std::vector < dualArmJointState > states;
-	//the home state
+	//the home state                        r1                                    l1            
 	states.push_back(createArmState("home", -1.5705, 0, -2.5, 3.141, 3.141, -1.7, 1.5705, -3.141, 2.5, 0, 3.141, 1.7));
 	
 	states.push_back(createArmState("pregrasp-rear", 1.3, -0.6, 0.5, 0, -0.0127962, 3.05, -1.3, -2.5, -0.5, 3.141, 0.012214, -3.141));
@@ -786,3 +786,40 @@ bool seneka_pnp_tools::compensateInaccuracyUNDO(ros::NodeHandle nh){
 
 	return service_response.success;
 }
+
+bool seneka_pnp_tools::checkGoalDistance(const char* goalstate, std::vector<dualArmJointState>& armstates,
+										  move_group_interface::MoveGroup* group_r, 
+										  move_group_interface::MoveGroup* group_l, 
+										  move_group_interface::MoveGroup* group_both)
+{
+	
+	double distance = 0;
+	double maxdistance = 0.2;
+	dualArmJointState armstate;
+	
+	std::vector<double> actual_state_r, actual_state_l, stored_state_r, stored_state_l;
+	getArmState(armstates, goalstate, &armstate);
+		
+	actual_state_r = group_r->getCurrentJointValues();
+	actual_state_l = group_l->getCurrentJointValues();
+	
+	stored_state_r = armstate.right.position;
+	stored_state_l = armstate.left.position;
+	
+	distance += seneka_pnp_tools::getStateDistance(stored_state_r, actual_state_r);
+	distance += seneka_pnp_tools::getStateDistance(stored_state_l, actual_state_l);
+	
+//	for(uint i=0; i<actual_state_r.size(); i++){
+//		std::cout << actual_state_r[i] << std::endl;
+//		std::cout << stored_state_r[i] << std::endl;
+//		std::cout << "--------------------------" << std::endl;
+//	}
+	
+	ROS_INFO("DISTANCE TO GIVEN STATE: %f \n", distance);
+	
+	if(distance > maxdistance)
+		return false;
+		
+	return true;
+}
+

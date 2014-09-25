@@ -117,6 +117,11 @@ bool sensornodeYawRotation(geometry_msgs::Pose);
 //invokes a service call to compensate the inaccuracy whe grabbing for pickup rear pose
 bool compensateInaccuracyDO(ros::NodeHandle);
 bool compensateInaccuracyUNDO(ros::NodeHandle);
+
+//checks distance to goal state
+//used for critical states
+bool checkGoalDistance(const char*, std::vector<dualArmJointState>&, move_group_interface::MoveGroup*, move_group_interface::MoveGroup*, move_group_interface::MoveGroup*);
+
 }
 
 #endif

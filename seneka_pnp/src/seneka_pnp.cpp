@@ -73,7 +73,7 @@ private:
   bool extforceflag_;
   
   bool trajexec_;
-  double mass_;
+  double mass_, unloadmass_;
 
   ros::Subscriber subscr_;
   std::vector<dualArmJointState> armstates_;
@@ -129,7 +129,8 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 4;
+    mass_ = 15;
+    unloadmass_ = 4;
     
     extforce_lock_.lock();
     extforceflag_ = false;
@@ -180,7 +181,7 @@ public:
 	  seneka_pnp::QuanjoManipulationResult  manipulation;
 	  if(!currentState_.compare("home")){
 		  		  
-		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT){//GOAL_PICKUP
+		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT){//GOAL_PICKUP_FRONT
 			  
 			  ROS_INFO("Received goal pick up front");
 			  if(success)
@@ -196,7 +197,7 @@ public:
 			  if(success)
 				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
 		  }
-		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){
+		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
 			  
 			  ROS_INFO("Received goal deploy front");
 			  if(success)
@@ -770,7 +771,7 @@ public:
 	  //check for external force and replan..
 	  if(!ret && extforceflag){
 		  
-		  smoothSetPayload(mass_/2);
+		  smoothSetPayload(unloadmass_/2);
 		  
 		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-front-drop", &state))
 			  return false;
@@ -805,15 +806,41 @@ public:
 	    	return false;
 
 	    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+	    waypoints_l.clear();
+	    waypoints_r.clear();
 	    waypoints_r.push_back(pose_r);
 	    waypoints_l.push_back(pose_l);
 
 
 	    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	    group_both->asyncExecute(mergedPlan);
-	    ret = monitorArmMovement(true,true);
+	    ret = monitorArmMovement(true,true,true);
+
+	    extforce_lock_.lock();
+	    bool extforceflag = extforceflag_;
+	    extforce_lock_.unlock();
+	    //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+
+	    //check for external force and replan..
+	    if(!ret && extforceflag){
+	    	
+	    	smoothSetPayload(mass_/2);
+	    	
+		    if(!seneka_pnp_tools::getArmState(armstates_, "packed-front", &state))
+		    	return false;
+
+		    seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		    waypoints_l.clear();
+		    waypoints_r.clear();
+		    waypoints_r.push_back(pose_r);
+		    waypoints_l.push_back(pose_l);
+
+		    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		    group_both->asyncExecute(mergedPlan);
+		    ret = monitorArmMovement(true,true);    	
+	    }
 	    
-	    //critical stuff
+	    return ret;
   }
   
   
@@ -843,8 +870,54 @@ public:
 
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	  group_both->asyncExecute(mergedPlan);
-	  ret = monitorArmMovement(true,true);	    			
+	  ret = monitorArmMovement(true,true,true);	    
+	  
+	  extforce_lock_.lock();
+	  bool extforceflag = extforceflag_;
+	  extforce_lock_.unlock();
+	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 
+	  //check for external force and replan..
+	  if(!ret && extforceflag){
+		  smoothSetPayload(unloadmass_/2);
+		  //REPLAN
+		  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);	 
+	  }
+	  
+//	  //check if really in goal state
+//	  uint maxtrys = 0;
+//	  ret = seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_,group_r_, group_l_, group_both_);
+//	  for(uint i=0;  i < maxtrys && !ret ; i++){
+//		  
+//		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front", &state))
+//			  return false;
+//
+//		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+//		  waypoints_l.clear();
+//		  waypoints_r.clear();
+//		  waypoints_r.push_back(pose_r);
+//		  waypoints_l.push_back(pose_l);	        
+//
+//		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+//		  group_both->asyncExecute(mergedPlan);
+//		  ret = monitorArmMovement(true,true);	
+//		  
+//		  ret = seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_,group_r_, group_l_, group_both_);
+//	  }
+	  
+	  return ret;
   }
   //----------------------------------------------------- CRITICAL MOVES --------------------------------------------------------
   
@@ -1910,7 +1983,6 @@ public:
   
   //--------------------------------------------------------- Transitions------------------------------------------------------------------
 
-  //HERE  
   bool extForceDetection(const geometry_msgs::Wrench::ConstPtr& msg){
 	  
 	  double force_z = std::sqrt(msg->force.z * msg->force.z);
@@ -1959,7 +2031,7 @@ public:
     tje_lock_.lock();
     tje_validation_.dual_flag = 0;
     tje_validation_.finished = false;
-    tje_validation_.success = true;//muste be true
+    tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
     extforce_lock_.lock();
