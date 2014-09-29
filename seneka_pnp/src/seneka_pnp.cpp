@@ -129,7 +129,7 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 15;
+    mass_ = 25;
     unloadmass_ = 0;
     
     extforce_lock_.lock();
@@ -435,30 +435,52 @@ public:
 	  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true);
 	  
-//	  extforce_lock_.lock();
-//	  bool extforceflag = extforceflag_;
-//	  extforce_lock_.unlock();
-//	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
-//
-//	  //check for external force and replan..
-//	  if(!ret && extforceflag){
-//		  smoothSetPayload(mass_/2);
-//		  
-//		  waypoints_l.clear();
-//		  waypoints_r.clear();
-//
-//		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-drop", &state))
-//			  return false;
-//
-//		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
-//		  waypoints_r.push_back(pose_r);
-//		  waypoints_l.push_back(pose_l);	        
-//
-//		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-//		  group_both->asyncExecute(mergedPlan);
-//		  ret = monitorArmMovement(true,true,true);
-//
-//	  }
+	  extforce_lock_.lock();
+	  bool extforceflag = extforceflag_;
+	  extforce_lock_.unlock();
+	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+
+	  //check for external force and replan..
+	  if(!ret && extforceflag){
+		  
+		  smoothSetPayload(unloadmass_/2);
+		  
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-drop", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);
+
+	  }
+	  
+	  //check distance to goal and replan 
+	  if(!seneka_pnp_tools::checkGoalDistance("packed-rear-drop", armstates_,group_r_, group_l_, group_both_)){
+		  
+		  smoothSetPayload(unloadmass_/2);
+		  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear-drop", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);	
+		  
+		  ret = seneka_pnp_tools::checkGoalDistance("packed-rear-drop", armstates_, group_r_, group_l_, group_both_);
+	  }
 
 	  return ret;
   }
@@ -560,8 +582,6 @@ public:
 
 	    	//up pose
 	    	if(ret){
-	    		//setting mass before pickup
-	    		smoothSetPayload(mass_/2);
 
 	    		ret = false;
 	    		joint_positions_r = group_r->getCurrentJointValues();
@@ -579,21 +599,37 @@ public:
 	    			group_both->asyncExecute(mergedPlan);
 	    			ret = monitorArmMovement(true,true,true);
 	    		} 	  	    
-	    		
-//	  		  extforce_lock_.lock();
-//	  		  bool extforceflag = extforceflag_;
-//	  		  extforce_lock_.unlock();
-//	  		  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
-//
-//	  		  //check for external force and replan..
-//	  		  if(!ret && extforceflag){
-//	  			smoothSetPayload(mass_/2);
-//	    		//REPLAN
-//	  		  }
+
+	    		extforce_lock_.lock();
+	    		bool extforceflag = extforceflag_;
+	    		extforce_lock_.unlock();
+	    		//ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+
+	    		//check for external force and replan..
+	    		if(!ret && extforceflag){
+	    			
+	    			smoothSetPayload(mass_/2);
+	    			//REPLAN
+	    			
+		    		joint_positions_r = group_r->getCurrentJointValues();
+		    		joint_positions_l = group_l->getCurrentJointValues();
+
+		    		target_pose_r.position = node.handholds[used_handle_r].up.position;
+		    		target_pose_r.orientation = node.handholds[used_handle_r].entry.orientation;
+		    		target_pose_l.position = node.handholds[used_handle_l].up.position;
+		    		target_pose_l.orientation = node.handholds[used_handle_l].entry.orientation;
+
+		    		goal_joints = seneka_pnp_tools::generateIkSolutions(node_handle_, joint_positions_r, joint_positions_l, target_pose_r, target_pose_l, constraint_r, constraint_l);
+	    			
+		    		group_both->setJointValueTarget(goal_joints.both);
+		    		if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+		    			group_both->asyncExecute(mergedPlan);
+		    			ret = monitorArmMovement(true,true);
+		    		} 	    			
+	    		}	    		
 	    	}
 	    }
-
-	   
+   
 	    return ret;
   }
   
@@ -777,6 +813,8 @@ public:
 			  return false;
 
 		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
 		  waypoints_r.push_back(pose_r);
 		  waypoints_l.push_back(pose_l);
 
@@ -785,10 +823,8 @@ public:
 		  ret = monitorArmMovement(true,true);
 	  }
 	  
-	  //check if really in goal state
-	  uint maxtrys = 0;
-	  ret = seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_,group_r_, group_l_, group_both_);
-	  for(uint i=0;  i < maxtrys && !ret ; i++){
+	  //check distance to goal and replan 
+	  if(!seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_,group_r_, group_l_, group_both_)){
 		  
 		  smoothSetPayload(unloadmass_/2);
 		  
@@ -805,7 +841,7 @@ public:
 		  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true);	
 		  
-		  ret = seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_,group_r_, group_l_, group_both_);
+		  ret = seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_, group_r_, group_l_, group_both_);
 	  }
 	  
 	  return ret;
@@ -860,6 +896,27 @@ public:
 		    mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 		    group_both->asyncExecute(mergedPlan);
 		    ret = monitorArmMovement(true,true);    	
+	    }
+
+	    //check distance to goal and replan 
+	    if(!seneka_pnp_tools::checkGoalDistance("packed-front", armstates_,group_r_, group_l_, group_both_)){
+
+	    	smoothSetPayload(mass_/2);
+
+	    	if(!seneka_pnp_tools::getArmState(armstates_, "packed-front", &state))
+	    		return false;
+
+	    	seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+	    	waypoints_l.clear();
+	    	waypoints_r.clear();
+	    	waypoints_r.push_back(pose_r);
+	    	waypoints_l.push_back(pose_l);	        
+
+	    	mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+	    	group_both->asyncExecute(mergedPlan);
+	    	ret = monitorArmMovement(true,true);	
+
+	    	ret = seneka_pnp_tools::checkGoalDistance("packed-front", armstates_, group_r_, group_l_, group_both_);
 	    }
 	    
 	    return ret;
@@ -918,29 +975,27 @@ public:
 		  ret = monitorArmMovement(true,true);	 
 	  }
 	  
-//	  //check if really in goal state
-//	  uint maxtrys = 0;
-//	  ret = seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_,group_r_, group_l_, group_both_);
-//	  for(uint i=0;  i < maxtrys && !ret ; i++){
-//		  
-//		  smoothSetPayload(unloadmass_/2);
-//		  
-//		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front", &state))
-//			  return false;
-//
-//		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
-//		  waypoints_l.clear();
-//		  waypoints_r.clear();
-//		  waypoints_r.push_back(pose_r);
-//		  waypoints_l.push_back(pose_l);	        
-//
-//		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-//		  group_both->asyncExecute(mergedPlan);
-//		  ret = monitorArmMovement(true,true);	
-//		  
-//		  ret = seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_,group_r_, group_l_, group_both_);
-//	  }
-	  
+	  //check distance to goal and replan 
+	  if(!seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_,group_r_, group_l_, group_both_)){
+
+		  smoothSetPayload(unloadmass_/2);
+
+		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);	
+
+		  ret = seneka_pnp_tools::checkGoalDistance("deploy-front", armstates_, group_r_, group_l_, group_both_);
+	  }
+	    
 	  return ret;
   }
   //----------------------------------------------------- CRITICAL MOVES --------------------------------------------------------
@@ -1486,10 +1541,10 @@ public:
     group_r->setJointValueTarget(state.right.position);
     group_l->setJointValueTarget(state.left.position);   
         
-    if(!group_l->plan(lplan))
+    if(!seneka_pnp_tools::multiplan(group_r,&rplan))
       return false;
       
-    if(!group_r->plan(rplan))
+    if(!seneka_pnp_tools::multiplan(group_l,&lplan))
       return false;
 
     merged_plan = seneka_pnp_tools::mergePlan(lplan,rplan);
