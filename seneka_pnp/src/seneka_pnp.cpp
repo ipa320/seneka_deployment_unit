@@ -343,32 +343,53 @@ public:
 
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	  group_both->asyncExecute(mergedPlan);
-	  ret = monitorArmMovement(true,true); 
+	  ret = monitorArmMovement(true,true,true); 
 	  //ret = monitorArmMovement(true,true,true); 
 	  
-//	  extforce_lock_.lock();
-//	  bool extforceflag = extforceflag_;
-//	  extforce_lock_.unlock();
-//	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
-//
-//	  //check for external force and replan..
-//	  if(!ret && extforceflag){
-//		  smoothSetPayload(mass_/2);
-//		  
-//		  waypoints_l.clear();
-//		  waypoints_r.clear();
-//
-//		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
-//			  return false;
-//
-//		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
-//		  waypoints_r.push_back(pose_r);
-//		  waypoints_l.push_back(pose_l);	        
-//
-//		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
-//		  group_both->asyncExecute(mergedPlan);
-//		  ret = monitorArmMovement(true,true); 		  
-//	  }
+	  extforce_lock_.lock();
+	  bool extforceflag = extforceflag_;
+	  extforce_lock_.unlock();
+	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+
+	  //check for external force and replan..
+	  if(!ret && extforceflag){
+		  smoothSetPayload(mass_/2);
+		  
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true); 		  
+	  }
+	  
+	  //check distance to goal and replan 
+	  if(!seneka_pnp_tools::checkGoalDistance("packed-rear", armstates_,group_r_, group_l_, group_both_)){
+		  
+		  smoothSetPayload(mass_/2);
+		  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "packed-rear", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);	
+		  
+		  ret = seneka_pnp_tools::checkGoalDistance("packed-rear", armstates_, group_r_, group_l_, group_both_);
+	  }
 	  
 	  return ret;
   }
@@ -395,18 +416,50 @@ public:
 
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r, waypoints_l, 0.01);
 	  group_both->asyncExecute(mergedPlan);
-	  ret = monitorArmMovement(true,true);
+	  ret = monitorArmMovement(true,true,true);
 	  
-//	  extforce_lock_.lock();
-//	  bool extforceflag = extforceflag_;
-//	  extforce_lock_.unlock();
-//	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
-//
-//	  //check for external force and replan..
-//	  if(!ret && extforceflag){
-//		  smoothSetPayload(mass_/2);
-//		  //REPLAN
-//	  }
+	  extforce_lock_.lock();
+	  bool extforceflag = extforceflag_;
+	  extforce_lock_.unlock();
+	  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
+
+	  //check for external force and replan..
+	  if(!ret && extforceflag){
+		  
+		  smoothSetPayload(unloadmass_/2);
+		  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-rear-drop", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r, waypoints_l, 0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);
+	  }
+	  
+	  //check distance to goal and replan 
+	  if(!seneka_pnp_tools::checkGoalDistance("deploy-rear-drop", armstates_,group_r_, group_l_, group_both_)){
+		  
+		  smoothSetPayload(unloadmass_/2);
+		  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "deploy-rear-drop", &state))
+			  return false;
+
+		  seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+		  waypoints_l.clear();
+		  waypoints_r.clear();
+		  waypoints_r.push_back(pose_r);
+		  waypoints_l.push_back(pose_l);	        
+
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  group_both->asyncExecute(mergedPlan);
+		  ret = monitorArmMovement(true,true);	
+		  
+		  ret = seneka_pnp_tools::checkGoalDistance("deploy-rear-drop", armstates_, group_r_, group_l_, group_both_);
+	  }
 	  
 	  return ret;
   }
@@ -433,7 +486,7 @@ public:
 
 	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
 	  group_both->asyncExecute(mergedPlan);
-	  ret = monitorArmMovement(true,true);
+	  ret = monitorArmMovement(true,true,true);
 	  
 	  extforce_lock_.lock();
 	  bool extforceflag = extforceflag_;
@@ -596,6 +649,8 @@ public:
 
 	    		group_both->setJointValueTarget(goal_joints.both);
 	    		if(seneka_pnp_tools::multiplan(group_both,&mergedPlan)){
+	    			
+	    			mergedPlan = seneka_pnp_tools::scaleTrajSpeed(mergedPlan,0.5);//scale trajectory
 	    			group_both->asyncExecute(mergedPlan);
 	    			ret = monitorArmMovement(true,true,true);
 	    		} 	  	    
@@ -2679,9 +2734,9 @@ public:
     while(ros::ok()){
       
       //test sensornode yaw axis 
-      sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
-      if(tmp_node.success)
-    	  seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
+//      sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
+//      if(tmp_node.success)
+//    	  seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
       //test sensornode yaw axis
       
       currentState_ = stateMachine(currentState_);
