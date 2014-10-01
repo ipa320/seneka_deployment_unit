@@ -17,6 +17,7 @@ const unsigned int SIMULATE_CARTESIAN_PATH = 0;
 const unsigned int SIMULATE_JOINT_TARGET = 1; 
 const unsigned int SIMULATE_POSE_TARGET = 2; 
 const unsigned int SIMULATE_FROM_REALWORLD = 3; 
+const unsigned int SIMULATE_PICKUP_PROCESS = 4; 
 
 struct simulation_order{
 	bool simulate;

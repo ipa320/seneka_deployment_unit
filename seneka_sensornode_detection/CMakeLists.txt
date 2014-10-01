@@ -31,6 +31,7 @@ add_service_files(
   calibrateCamera.srv
   getExtCalibration.srv
   compensateInaccuracy.srv
+  setSensornodePose.srv
 )
 
 generate_messages(
