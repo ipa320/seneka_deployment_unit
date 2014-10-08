@@ -163,7 +163,7 @@ public:
 
 		//in m
 		gripper_length = 0.26;
-		gripper_depth = 0.01;// for rear position use 0.01
+		gripper_depth = 0.00;// for rear position use 0.01
 		
 		ik_solutions_iterator_r_ = 0;
 		ik_solutions_iterator_l_ = 0;
@@ -405,6 +405,7 @@ public:
 			else if(option == SIMULATE_POSE_TARGET) feedback = simulatePoseTarget();
 			else if(option == SIMULATE_FROM_REALWORLD) feedback = simulateFromRealWorld(start_pose_);
 			else if(option == SIMULATE_PICKUP_PROCESS) feedback = simulatePickupProcess(start_pose_);
+			else if(option == BENCHMARK) feedback = mybenchmark();
 			else ROS_INFO("This option is not available");//Nothing to do
 			
 			if(feedback) success_counter++;
@@ -447,6 +448,40 @@ public:
 		return true;
 	}
 	
+	bool mybenchmark(){
+		
+		ROS_INFO("BENCHMARK");
+		
+		unsigned int trys = 0;
+		unsigned int success = 0;
+		
+		for(int i=145; i <= 160; i = i + 15){
+			for(int j=-5; j <= 5; j = j + 10){
+				
+				double ii = (double) i /100;
+				double jj = (double) j /100;
+				
+				ROS_INFO("ii: %f    jj: %f \n", ii, jj);
+				trys++;
+				lock.lock();
+				if(!setSensornodePose(ii, jj, 0.0, 0.0, 0.0, 0.0)){
+					lock.unlock();									
+					continue;
+				}
+				lock.unlock();
+				
+				setStartState("pregrasp-rear-new");
+				if(simulatePickupProcess(start_pose_))
+					success++;
+			}
+		}
+		
+		ROS_INFO("Trys: %d \n", trys);
+		ROS_INFO("Success: %d \n", success);
+		
+		return true;
+	}
+	
 	//HERE
 	//simulates from pregrasp to pickedup
 	bool simulatePickupProcess(node_pose start_pose){
@@ -459,11 +494,11 @@ public:
 		used_handle_r--;
 		used_handle_l--;
 		
-		//set Sensornode pose
-		lock.lock();//---
-		if(!setSensornodePose(1.6, 0.0, 0.0, 0.0, 0.0, 0.0))
-			return false;
-		lock.unlock();//---
+//		//set Sensornode pose
+//		lock.lock();//---
+//		if(!setSensornodePose(1.6, 0.0, 0.0, 0.0, 0.0, 0.0))
+//			return false;
+//		lock.unlock();//---
 				
 		lock.lock();
 		sensornode rwnode = seneka_pnp_tools::getSensornodePose();
@@ -580,7 +615,7 @@ public:
 					dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;
 
 					if(simulateJointTarget(start_pose, dual_arm_pose)){
-
+						
 						start_pose = tmp_pose_;
 						setGoalState("prepack-rear");
 						if(simulateJointTarget(start_pose, goal_pose_)){
@@ -614,6 +649,7 @@ public:
 		group_both.setStartState(*kinematic_state);
 		group_both.setGoalOrientationTolerance(0.01);
 		group_both.setGoalPositionTolerance(0.01);
+		group_both.setPlannerId("RRTConnectkConfigDefault");
 		group_both.setPlanningTime(15.0);
 		
 		group_both.setPoseTarget(goal_pose_.handle_r, "right_arm_ee_link");
@@ -682,6 +718,7 @@ public:
 		group_both.setStartState(*kinematic_state);
 		group_both.setGoalOrientationTolerance(0.01);
 		group_both.setGoalPositionTolerance(0.01);
+		group_both.setPlannerId("RRTConnectkConfigDefault");
 		group_both.setPlanningTime(15.0);
 
 		std::vector<double> joints_combined;
@@ -1247,6 +1284,9 @@ public:
 		}
 		else if(!req.option.compare("pickup")){
 			simulate_.option = SIMULATE_PICKUP_PROCESS;
+		}
+		else if(!req.option.compare("benchmark")){
+			simulate_.option = BENCHMARK;
 		}
 		else{
 			res.msg = "Sry this is not known. The possible options are \n [cartesian] \n [jointtarget] \n [posetarget]";
