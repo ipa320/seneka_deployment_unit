@@ -455,8 +455,8 @@ public:
 		unsigned int trys = 0;
 		unsigned int success = 0;
 		
-		for(int i=145; i <= 160; i = i + 15){
-			for(int j=-5; j <= 5; j = j + 10){
+		for(int i=145; i <= 160; i = i + 5){
+			for(int j=-20; j <= 20; j = j + 10){
 				
 				double ii = (double) i /100;
 				double jj = (double) j /100;
@@ -470,7 +470,7 @@ public:
 				}
 				lock.unlock();
 				
-				setStartState("pregrasp-rear-new");
+				setStartState("pregrasp-rear");
 				if(simulatePickupProcess(start_pose_))
 					success++;
 			}
@@ -762,7 +762,7 @@ public:
 	//Simulates the planning with cartesian path between a start state and the goal position
 	bool simulateCartesianPath(node_pose start_pose, node_pose goal_pose) {
 
-		double visualizationtime = 5;
+		double visualizationtime = 0;
 
 		move_group_interface::MoveGroup group_r("right_arm_group");
 		move_group_interface::MoveGroup group_l("left_arm_group");
@@ -802,7 +802,7 @@ public:
 		//-------RIGHT-------------------------
 		for (uint i = 0; fraction_r < 1.0 && i < attempts; i++) {
 			fraction_r = group_r.computeCartesianPath(waypoints_r, 0.01, // eef_step
-					100.0,   // jump_threshold
+					10.0,   // jump_threshold
 					trajectory_r);
 		}
 		linear_plan_r.trajectory_ = trajectory_r;
@@ -811,7 +811,7 @@ public:
 		//-------LEFT-------------------------
 		for (uint i = 0; fraction_l < 1.0 && i < attempts; i++) {
 			fraction_l = group_l.computeCartesianPath(waypoints_l, 0.01, // eef_step
-					100.0,   // jump_threshold
+					10.0,   // jump_threshold
 					trajectory_l);
 		}
 		linear_plan_l.trajectory_ = trajectory_l;
