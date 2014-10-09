@@ -13,15 +13,8 @@ PACKAGES:
 
 Functionality packages:
 -----------------------
-* seneka_pnp -> pick and place planner for picking up the sensorsonde
-* seneka_sensornode_detection -> Brings up the cob_fiducial node and manages the detection process. It also publish all the necessary tf positions of the sensorsonde
-				
-Description packages:
------------------------
-* seneka_ugv_description -> Quanjo description files and gazebo_bringup + seneka_bringup
-* seneka_moveit_config -> moveit config for Quanjo
-* seneka_msgs -> not used
-* universal_robot -> configured universal robot stack for seneka project
+* seneka_pnp -> pick and place state machine for picking up the sensorsonde
+* seneka_sensornode_detection -> Brings up the cob_fiducial node and manages the detection process. It also publish all the necessary tf positions of the sensorsonde.
 
 
 Getting started:
@@ -33,8 +26,19 @@ Getting started:
 
 * git clone https://github.com/equanox/universal_robot  (use the **ros-industrial-hydro-devel-backported-groovy** branch) 
 * git clone https://github.com/ipa320/cob_perception_common (make sure you are using the **groovy_dev_catkin** branch) 
-* git clone https://github.com/ipa320/cob_object_perception (**groovy** branch) [rosbuild]
-* git clone https://github.com/ipa320/seneka_deployment_unit (use the **switch_to_ros-industrial-hydro** branch)
+* git clone https://github.com/equanox/cob_object_perception (**seneka_fiducials** branch) [rosbuild]
+* git clone https://github.com/ipa320/seneka_deployment_unit (use the **groovy-dev* branch)
+
+
+##Additional Installation
+* sudo apt-get install ros-groovy-pr2
+* sudo apt-get install ros-groovy-pr2-simulator
+* sudo apt-get install ros-groovy-pr2-controllers
+* gazebo_msgs
+* sudo apt-get install ros-groovy-freenect-stack
+* on ubuntu 12.04 ( sudo modprobe -r gspca_kinect )
+* on ubuntu 12.04 ( echo 'blacklist gspca_kinect' | sudo tee -a /etc/modprobe.d/blacklist.conf )
+* git clone https://github.com/Equanox/moveit_ros **groovy-devel** branch, for lma_kinematics 
 
 ##1. Configuration
 ---------------------------------------------------------------------
@@ -45,6 +49,8 @@ E.g. for the Kinect use **/camera/rgb/**.
 * Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file). See http://wiki.ros.org/cob_fiducials for details.
 
 ---------------------------------------------------------------------
+**These steps are only necessary if you use the ipa320 stack of cob_object_perception**
+
 * All the coordinate systems of the sensorsonde (marker,handle, grabpoints) can be adjusted in **../seneka_deployment_unit/seneka_sensornode_detection/common/sensorsonde_coordinates.def**. Right now only fiducial1 has valid coordinates.
 
 * gripper length and camera position is hardcoded in **../seneka_deployment_unit/seneka_sensornode_detection/src/sensornode_detection.cpp**
@@ -69,21 +75,15 @@ To start pickup/deploy front you can use a action (pickup => val=1, deploy => va
 * rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal  
 
 This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
-There are multiple sleep commands in the code to enable visual trajectory checking with rviz before executing the trajectory.
-
-At first the node is planning a path to pickup the sensorsonde. 
-
-Second the arms move through the waypoints saved in **..seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def**.
 
 ##5. TODO
 ---------------------------------------------------------------------
 * Right now only the marker with id 1 is used for the detection!
-* Pick and Deploy Rear Pose
-* Switch to cammera with shutter
+* Switch to camera with shutter
 * Documentation
 
 ---------------------------------------------------------------------
 
 * Author: Matthias Nösner 
-* Readme updated: 24.02.2014
+* Readme updated: 09.10.2014
 
