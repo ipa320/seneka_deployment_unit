@@ -130,10 +130,10 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 15;
+    mass_ = 4;
     unloadmass_ = 0;    
     
-    safety_duration_ = 5.0;
+    safety_duration_ = 0.0;
     
     extforce_lock_.lock();
     extforceflag_ = false;
@@ -2661,6 +2661,23 @@ public:
 
     	return "deployed-front";    	
     }
+	  
+	//------packed-rear-drop-------------------------------------------
+    else if(currentState.compare("packed-rear-drop") == 0){
+
+    	//Transitions
+    	if(transition.compare("packedRearDropToHome") == 0){
+    		if(packedRearDropToHome(group_l_,group_r_,group_both_)){
+    			return "home";
+    		} else {
+    			return "unknown_state";
+    		}
+    	}    
+
+    	return "packed-rear-drop";    	
+    }
+	  
+
 
 
     //------UNKNOWN_STATE-------------------------------------------

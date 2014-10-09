@@ -795,7 +795,7 @@ bool seneka_pnp_tools::checkGoalDistance(const char* goalstate, std::vector<dual
 {
 	
 	double distance = 0;
-	double maxdistance = 0.2;
+	double maxdistance = 0.5;
 	dualArmJointState armstate;
 	
 	std::vector<double> actual_state_r, actual_state_l, stored_state_r, stored_state_l;
@@ -818,7 +818,7 @@ bool seneka_pnp_tools::checkGoalDistance(const char* goalstate, std::vector<dual
 	
 	ROS_INFO("DISTANCE TO GIVEN STATE: %f \n", distance);
 	
-	if(distance > maxdistance)
+	if((int)distance*1000 > (int)maxdistance*1000)
 		return false;
 		
 	return true;
