@@ -47,6 +47,7 @@
 #include "seneka_interactive/generateIK.h"
 #include "seneka_interactive/evaluateIK.h"
 
+#include <seneka_sensornode_detection/setSensornodePose.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/bind.hpp>
@@ -162,7 +163,7 @@ public:
 
 		//in m
 		gripper_length = 0.26;
-		gripper_depth = 0.01;// for rear position use 0.01
+		gripper_depth = 0.00;// for rear position use 0.01
 		
 		ik_solutions_iterator_r_ = 0;
 		ik_solutions_iterator_l_ = 0;
@@ -221,7 +222,7 @@ public:
 		return distance;
 	}
 
-	node_pose generateIkSolutions(node_pose start_pose, node_pose goal_pose, bool equaljointstates, bool freezeikleft, bool freezeikright) {
+	node_pose generateIkSolutions(node_pose start_pose, node_pose goal_pose, bool equaljointstates, bool freezeikleft, bool freezeikright ) {
 
 		solutions_from_ik_iteration_r_.clear();
 		solutions_from_ik_iteration_l_.clear();
@@ -258,10 +259,12 @@ public:
 			service_request.ik_request.group_name = "left_arm_group";
 			service_request.ik_request.pose_stamped.pose = target_pose_l;
 			service_request.ik_request.constraints = constraints_l_;
+			service_request.ik_request.robot_state.joint_state.name = node.joint_names_l;
+			service_request.ik_request.robot_state.joint_state.position = node.joint_states_l;
 
 
 			uint samples;
-			equaljointstates ? samples = 300 : samples = 1;
+			equaljointstates ? samples = 1500 : samples = 1;
 
 			std::vector<double> referencejoints;
 			referencejoints = node.joint_states_l;
@@ -319,11 +322,13 @@ public:
 		if (!freezeikright) {
 			service_request.ik_request.group_name = "right_arm_group";
 			service_request.ik_request.pose_stamped.pose = target_pose_r;
+			service_request.ik_request.robot_state.joint_state.name = node.joint_names_r;
+			service_request.ik_request.robot_state.joint_state.position = node.joint_states_r;
 			//if(result)
 			service_request.ik_request.constraints = constraints_r_;
 
 			uint samples;
-			equaljointstates ? samples = 300 : samples = 1;
+			equaljointstates ? samples = 1500 : samples = 1;
 
 			std::vector<double> referencejoints;
 			referencejoints = node.joint_states_r;
@@ -381,7 +386,6 @@ public:
 		return node;
 	}
 		
-	//HERE
 	/* simulates from start to goal state using different planning techniques
 	 * option = 0: linear path planning using CartesianPath
 	 * option = 1:
@@ -400,6 +404,8 @@ public:
 			else if(option == SIMULATE_JOINT_TARGET) feedback = simulateJointTarget(start_pose_, goal_pose_);
 			else if(option == SIMULATE_POSE_TARGET) feedback = simulatePoseTarget();
 			else if(option == SIMULATE_FROM_REALWORLD) feedback = simulateFromRealWorld(start_pose_);
+			else if(option == SIMULATE_PICKUP_PROCESS) feedback = simulatePickupProcess(start_pose_);
+			else if(option == BENCHMARK) feedback = mybenchmark();
 			else ROS_INFO("This option is not available");//Nothing to do
 			
 			if(feedback) success_counter++;
@@ -410,6 +416,140 @@ public:
 		ROS_INFO("The success rate was %f %% doing %u iterations", percentage, iterations);
 	}
 	
+	bool setSensornodePose(double x, double y, double z, double roll, double pitch, double yaw){
+		
+		tf::Quaternion qt;
+		qt = tf::createQuaternionFromRPY(0+roll,PI/6+pitch,0+yaw);
+		
+		geometry_msgs::Pose pose;
+		pose.position.x = x;
+		pose.position.y = y;
+		pose.position.z = z;
+		
+		tf::quaternionTFToMsg(qt, pose.orientation);
+//		pose.orientation.x = 0;
+//		pose.orientation.y = 0;
+//		pose.orientation.z = 0;
+//		pose.orientation.w = 1;
+		
+		ros::ServiceClient service_client;
+		service_client = node_handle_.serviceClient < seneka_sensornode_detection::setSensornodePose > ("/sensornode_detection/setSensornodePose");
+		
+		seneka_sensornode_detection::setSensornodePose::Request service_request;
+		seneka_sensornode_detection::setSensornodePose::Response service_response;
+		
+		service_request.pose = pose;
+		
+		service_client.call(service_request, service_response);
+		
+		if(!service_response.success)
+			return false;
+		
+		return true;
+	}
+	
+	bool mybenchmark(){
+		
+		ROS_INFO("BENCHMARK");
+		
+		unsigned int trys = 0;
+		unsigned int success = 0;
+		
+		for(int i=145; i <= 160; i = i + 5){
+			for(int j=-20; j <= 20; j = j + 10){
+				
+				double ii = (double) i /100;
+				double jj = (double) j /100;
+				
+				ROS_INFO("ii: %f    jj: %f \n", ii, jj);
+				trys++;
+				lock.lock();
+				if(!setSensornodePose(ii, jj, 0.0, 0.0, 0.0, 0.0)){
+					lock.unlock();									
+					continue;
+				}
+				lock.unlock();
+				
+				setStartState("pregrasp-rear");
+				if(simulatePickupProcess(start_pose_))
+					success++;
+			}
+		}
+		
+		ROS_INFO("Trys: %d \n", trys);
+		ROS_INFO("Success: %d \n", success);
+		
+		return true;
+	}
+	
+	//HERE
+	//simulates from pregrasp to pickedup
+	bool simulatePickupProcess(node_pose start_pose){
+		
+		ROS_INFO("PICKUP");
+		node_pose tmp_pose = start_pose;
+		
+		unsigned int used_handle_r = 2;//use the real handle id 1-6
+		unsigned int used_handle_l = 5;//use the real handle id 1-6
+		used_handle_r--;
+		used_handle_l--;
+		
+//		//set Sensornode pose
+//		lock.lock();//---
+//		if(!setSensornodePose(1.6, 0.0, 0.0, 0.0, 0.0, 0.0))
+//			return false;
+//		lock.unlock();//---
+				
+		lock.lock();
+		sensornode rwnode = seneka_pnp_tools::getSensornodePose();
+		lock.unlock();
+		
+		node_pose dual_arm_pose;
+		
+		if(rwnode.success){
+
+			dual_arm_pose.pose = rwnode.pose;
+			dual_arm_pose.joint_names_r = start_pose.joint_names_r;
+			dual_arm_pose.joint_names_l = start_pose.joint_names_l;
+			dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].entry;
+			dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].entry;			
+			
+			if(simulateCartesianPath(start_pose, dual_arm_pose)){
+				
+				tmp_pose = tmp_pose_;
+				dual_arm_pose.joint_names_r = start_pose.joint_names_r;
+				dual_arm_pose.joint_names_l = start_pose.joint_names_l;
+				dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].down;
+				dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].down;	
+
+				if(simulateCartesianPath(tmp_pose, dual_arm_pose)){
+
+					tmp_pose = tmp_pose_;
+					dual_arm_pose.joint_states_r = tmp_pose.joint_states_r;
+					dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;		
+					dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].up;
+					dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].up;
+					
+					if(simulateCartesianPath(tmp_pose, dual_arm_pose)){
+						tmp_pose = tmp_pose_;
+						setGoalState("prepack-rear");					
+						if(simulateJointTarget(tmp_pose, goal_pose_)){
+
+							return true;					
+						}
+					}				
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+//	bool createSafeTrajectory(node_pose start_pose,  node_pose goal_pose){
+//		
+//		
+//	}
+	
 	//simulates from pregrasp to pickedup
 	bool simulateFromRealWorld(node_pose start_pose){
 		
@@ -417,6 +557,11 @@ public:
 		unsigned int used_handle_l = 5;//use the real handle id 1-6
 		used_handle_r--;
 		used_handle_l--;
+		
+		lock.lock();
+		if(!setSensornodePose(1.6, 0.1, 0.0, 0.0, 0.0, 0.0))
+			return false;
+		lock.unlock();
 		
 		lock.lock();
 		sensornode rwnode = seneka_pnp_tools::getSensornodePose();
@@ -428,38 +573,59 @@ public:
 			dual_arm_pose.pose = rwnode.pose;
 			dual_arm_pose.joint_names_r = start_pose.joint_names_r;
 			dual_arm_pose.joint_names_r = start_pose.joint_names_l;
-			dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].down;
-			dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].down;
+			dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].entry;
+			dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].entry;
 			
 			//generate ik from handhold position
 			lock.lock();
-			node_pose tmp_pose = generateIkSolutions(start_pose, dual_arm_pose, true,freeze_ik_left_,freeze_ik_right_);
+			node_pose tmp_pose = generateIkSolutions(start_pose, dual_arm_pose, true, freeze_ik_left_, freeze_ik_right_);
 			lock.unlock();
 			dual_arm_pose.joint_states_r = tmp_pose.joint_states_r;
-			dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;			
+			dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;
 			
 			//move to down pose with jointtarget
 			if(simulateJointTarget(start_pose, dual_arm_pose)){
+		
+				start_pose = tmp_pose_;
+				dual_arm_pose.joint_names_r = start_pose.joint_names_r;
+				dual_arm_pose.joint_names_r = start_pose.joint_names_l;
+				dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].down;
+				dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].down;
 				
-				start_pose = dual_arm_pose;
-				dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].up;
-				dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].up;
-				if(simulateCartesianPath(start_pose, dual_arm_pose)){
-					tmp_pose = tmp_pose_;
-					setGoalState("prepack-rear");
-					if(simulateJointTarget(tmp_pose, goal_pose_)){
-						tmp_pose = tmp_pose_;
-						setGoalState("packed-rear-h1");
-						if(simulateJointTarget(tmp_pose, goal_pose_)){
-							tmp_pose = tmp_pose_;
-							setGoalState("packed-rear");
-							simulateJointTarget(tmp_pose, goal_pose_);	
+				lock.lock();
+				tmp_pose = generateIkSolutions(tmp_pose, dual_arm_pose, true, freeze_ik_left_, freeze_ik_right_);
+				lock.unlock();		
+				
+				dual_arm_pose.joint_states_r = tmp_pose.joint_states_r;
+				dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;
+			
+				if(simulateJointTarget(start_pose, dual_arm_pose)){
+
+					start_pose = tmp_pose_;
+					dual_arm_pose.joint_names_r = start_pose.joint_names_r;
+					dual_arm_pose.joint_names_r = start_pose.joint_names_l;
+					dual_arm_pose.handle_r = rwnode.handholds[used_handle_r].up;
+					dual_arm_pose.handle_l = rwnode.handholds[used_handle_l].up;
+
+					lock.lock();
+					tmp_pose = generateIkSolutions(tmp_pose, dual_arm_pose, true, freeze_ik_left_, freeze_ik_right_);
+					lock.unlock();			
+					
+					dual_arm_pose.joint_states_r = tmp_pose.joint_states_r;
+					dual_arm_pose.joint_states_l = tmp_pose.joint_states_l;
+
+					if(simulateJointTarget(start_pose, dual_arm_pose)){
+						
+						start_pose = tmp_pose_;
+						setGoalState("prepack-rear");
+						if(simulateJointTarget(start_pose, goal_pose_)){
+							return true;
 						}
 					}
 				}
 			}		
 		}		
-		return true;
+		return false;
 	}
 	
 	bool simulatePoseTarget(){
@@ -483,6 +649,7 @@ public:
 		group_both.setStartState(*kinematic_state);
 		group_both.setGoalOrientationTolerance(0.01);
 		group_both.setGoalPositionTolerance(0.01);
+		group_both.setPlannerId("RRTConnectkConfigDefault");
 		group_both.setPlanningTime(15.0);
 		
 		group_both.setPoseTarget(goal_pose_.handle_r, "right_arm_ee_link");
@@ -551,6 +718,7 @@ public:
 		group_both.setStartState(*kinematic_state);
 		group_both.setGoalOrientationTolerance(0.01);
 		group_both.setGoalPositionTolerance(0.01);
+		group_both.setPlannerId("RRTConnectkConfigDefault");
 		group_both.setPlanningTime(15.0);
 
 		std::vector<double> joints_combined;
@@ -634,7 +802,7 @@ public:
 		//-------RIGHT-------------------------
 		for (uint i = 0; fraction_r < 1.0 && i < attempts; i++) {
 			fraction_r = group_r.computeCartesianPath(waypoints_r, 0.01, // eef_step
-					1000.0,   // jump_threshold
+					10.0,   // jump_threshold
 					trajectory_r);
 		}
 		linear_plan_r.trajectory_ = trajectory_r;
@@ -643,7 +811,7 @@ public:
 		//-------LEFT-------------------------
 		for (uint i = 0; fraction_l < 1.0 && i < attempts; i++) {
 			fraction_l = group_l.computeCartesianPath(waypoints_l, 0.01, // eef_step
-					1000.0,   // jump_threshold
+					10.0,   // jump_threshold
 					trajectory_l);
 		}
 		linear_plan_l.trajectory_ = trajectory_l;
@@ -1114,11 +1282,19 @@ public:
 		else if(!req.option.compare("realworld")){
 			simulate_.option = SIMULATE_FROM_REALWORLD;
 		}
+		else if(!req.option.compare("pickup")){
+			simulate_.option = SIMULATE_PICKUP_PROCESS;
+		}
+		else if(!req.option.compare("benchmark")){
+			simulate_.option = BENCHMARK;
+		}
 		else{
 			res.msg = "Sry this is not known. The possible options are \n [cartesian] \n [jointtarget] \n [posetarget]";
 			simulate_.simulate = false;
 		}
 		return true;
+		
+		
 	}
 
 	bool toggleArmFreeze(seneka_interactive::toggleArmFreeze::Request &req,
@@ -1487,6 +1663,33 @@ public:
 		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 
+		//pregrasp-rear-new
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "pregrasp-rear-new";
+
+		pose.joint_states_r.push_back(1.3);
+		pose.joint_states_r.push_back(-1.2);
+		pose.joint_states_r.push_back(1.5);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(-0.0127962);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_l.push_back(-1.3);
+		pose.joint_states_l.push_back(-2);
+		pose.joint_states_l.push_back(-1.5);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(0.012214);
+		pose.joint_states_l.push_back(0);
+
+		pose.pose.position.x = 4;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);
+
 		//prepack-rear
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
@@ -1738,6 +1941,34 @@ public:
 		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
+		
+		//pregrasp-rear-h5
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "pregrasp-rear-h5";
+
+		pose.joint_states_r.push_back(1.5);
+		pose.joint_states_r.push_back(-1.0);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(-1.7);
+		pose.joint_states_l.push_back(-1.5);
+		pose.joint_states_l.push_back(-2.1);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(1.7);
+
+		pose.pose.position.x = 3;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);
+		
 		//pregrasp
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
@@ -1755,6 +1986,34 @@ public:
 		pose.joint_states_l.push_back(0.0);
 		pose.joint_states_l.push_back(3.041);
 		pose.joint_states_l.push_back(3.3);
+
+		pose.pose.position.x = 3;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.663502;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);
+		
+		//pregrasp
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "pregrasp-h1";
+
+		pose.joint_states_r.push_back(-1.5705);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(-2.3);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(-1.7);
+		pose.joint_states_l.push_back(1.5705);
+		pose.joint_states_l.push_back(-3.141);
+		pose.joint_states_l.push_back(2.3);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(3.141);
+		pose.joint_states_l.push_back(1.7);
+		
 
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;

@@ -16,6 +16,7 @@
 #include <seneka_sensornode_detection/calibrateCamera.h>
 #include <seneka_sensornode_detection/getExtCalibration.h>
 #include <seneka_sensornode_detection/compensateInaccuracy.h>
+#include <seneka_sensornode_detection/setSensornodePose.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -103,9 +104,11 @@ bool extrinsic_camera_calib_ = false;
 
 geometry_msgs::Pose reference_pose_;
 geometry_msgs::Pose camera_pose_;
-ros::ServiceServer service_setCameraPose_, service_getCameraPose_, service_calibrateCamera_, service_getExtCalibration_, service_compensateInaccuracy_ ;
+ros::ServiceServer service_setCameraPose_, service_getCameraPose_, service_calibrateCamera_,
+				   service_getExtCalibration_, service_compensateInaccuracy_, service_setSensornodePose_ ;
 
-bool simulation_ = false;
+bool simulation_ = true;
+geometry_msgs::Pose sensornodeSimulatedPose_;
 
 //------------------------------<Callbacks>----------------------------------------------------------
 //The sensorsondeCoordinateManager manages and publishes all coordinate transform for the sensorsonde
@@ -134,6 +137,15 @@ void init(ros::NodeHandle nh){
 	nh.getParam("reference_orientation_x", reference_pose_.orientation.x);
 	nh.getParam("reference_orientation_y", reference_pose_.orientation.y);
 	nh.getParam("reference_orientation_z", reference_pose_.orientation.z);
+	
+	sensornodeSimulatedPose_.position.x = 5;
+	sensornodeSimulatedPose_.position.y = 0;
+	sensornodeSimulatedPose_.position.z = 0;
+	
+	sensornodeSimulatedPose_.orientation.x = 0;
+	sensornodeSimulatedPose_.orientation.y = 0;
+	sensornodeSimulatedPose_.orientation.z = 0;
+	sensornodeSimulatedPose_.orientation.w = 1;	
 }
 
 //Coordinate transformation for simulation in gazebo, Something is wrong with the trafo
@@ -254,9 +266,32 @@ void getSensornodeStateCamera(const cob_object_detection_msgs::DetectionArray::C
 			  sensornode_pose.rotation.z = q_sn_m[6];
 		  }      
 	  }
-
 	  sensornodeLocalCoordinates();
   }   
+}
+
+void setSensornodePose(geometry_msgs::Pose pose){
+
+	tf::Quaternion qt_static;
+	qt_static = tf::createQuaternionFromRPY(PI/2,0,-PI/2);
+	//qt_static(tf::Scalar(0.0), tf::Scalar(0.707), tf::Scalar(0.707), tf::Scalar(0.0));
+	qt_static.normalize();
+	
+	tf::Quaternion qt;
+	tf::quaternionMsgToTF(pose.orientation, qt);	
+	
+	qt = qt_static * qt;
+	
+	tf::quaternionTFToMsg(qt, pose.orientation);
+
+	static tf::TransformBroadcaster br;
+	tf::Transform transform;
+
+	transform.setOrigin( tf::Vector3(pose.position.x, pose.position.y, pose.position.z));
+	transform.setRotation( tf::Quaternion(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w));
+	br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/quanjo_body", "/sensornode"));
+
+	sensornodeLocalCoordinates();
 }
 
 //calibrate the external camera position in robot system
@@ -761,6 +796,16 @@ bool compensateInaccuracy (seneka_sensornode_detection::compensateInaccuracy::Re
 	
 	return res.success;
 }
+
+bool setSensornodePose (seneka_sensornode_detection::setSensornodePose::Request &req,
+		seneka_sensornode_detection::setSensornodePose::Response &res){
+	
+	sensornodeSimulatedPose_ = req.pose;
+	
+	res.success = true;
+	return res.success;
+}
+
 //-----------------------------------main----------------------------------------------------------------------------
 int main( int argc, char** argv )
 {  
@@ -775,7 +820,8 @@ int main( int argc, char** argv )
   service_calibrateCamera_ = node.advertiseService("calibrateCamera", calibrateCamera);
   service_getExtCalibration_ = node.advertiseService("getExtCalibration", getExtCalibration);
   service_compensateInaccuracy_ = node.advertiseService("compensateInaccuracy", compensateInaccuracy);
- 
+  service_setSensornodePose_ = node.advertiseService("setSensornodePose", setSensornodePose);
+  
   if(!loadParameters(&fiducialmarkers,&handles,&trigger_offset,&grab_entry)){
     ROS_ERROR("Failed to load parameters. Check the path...");
     return 0;
@@ -784,8 +830,9 @@ int main( int argc, char** argv )
   }
 
   while(ros::ok() && simulation_){
-    getSensornodeStateGazebo(node);
-    ros::spinOnce();
+	  //getSensornodeStateGazebo(node);
+	  setSensornodePose(sensornodeSimulatedPose_);
+	  ros::spinOnce();
   }
  
   ros::spin();

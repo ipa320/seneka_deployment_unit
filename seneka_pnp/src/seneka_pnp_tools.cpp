@@ -713,6 +713,7 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 	states.push_back(createArmState("deploy-rear-drop-free", 1.4, -0.673796, 1.21241, -0.496834, -0.00379266, 2.89981, -1.4, -2.45347, -1.24077, 3.73626, 0.00375942, -2.98361));
 
 	states.push_back(createArmState("pregrasp", -1.9705, -2.441, -0.8, 3.2, 3.241, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
+	states.push_back(createArmState("pregrasp-h1", -1.5705, 0, -2.3, 3.141, 3.141, -1.7, 1.5705, -3.141, 2.3, 0, 3.141, 1.7));
 	states.push_back(createArmState("pregrasp-jointflip", -1.9705, -2.441, -0.8, 3.2, -3.041, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
 	
 	states.push_back(createArmState("prepack", -1.12281, -1.86896, -0.884882, 2.75421, -2.69283, -3.34126, 1.12093, -1.27239, 0.884651, 0.388099, 2.6925, 3.34191));
