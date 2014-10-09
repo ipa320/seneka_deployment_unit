@@ -1362,6 +1362,19 @@ public:
 					  ret = monitorArmMovement(true,true);
 				  }
 				  
+				  //pregrasp-rear-h5
+				  if(ret){
+					  ret = false;
+					  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h5", &state))
+						  return false;		
+
+					  group_both->setJointValueTarget(state.both.position);				 
+					  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+						  group_both->asyncExecute(plan);
+						  ret = monitorArmMovement(true,true);
+					  }
+				  }
+				  
 				  //topregrasp-rear
 				  if(ret){
 					  ret = toPreGraspRearDual(group_l, group_r, group_both);
@@ -1572,7 +1585,7 @@ public:
 	  bool ret = false;
 	  
       //------------to pregrasp-rear-h5-----------------	  
-	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h4", &state))
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h5", &state))
 	      	return false;		
 	  
 	  group_both->setJointValueTarget(state.both.position);				 
@@ -1580,23 +1593,24 @@ public:
 		  group_l->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
 	  }	  
-
+	  
 	  if(ret){
 		  ret = false;	
-		  //------------to pregrasp-rear-h3-----------------	  
-		  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h3", &state))
+
+		  //------------to pregrasp-rear-h4-----------------	  
+		  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h4", &state))
 			  return false;		
 
 		  group_both->setJointValueTarget(state.both.position);				 
 		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
 			  group_l->asyncExecute(plan);
 			  ret = monitorArmMovement(true,true);
-		  }
+		  }	  
 
 		  if(ret){
-			  ret = false;
-			  //------------to pregrasp-rear-h2-----------------	  
-			  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h2", &state))
+			  ret = false;	
+			  //------------to pregrasp-rear-h3-----------------	  
+			  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h3", &state))
 				  return false;		
 
 			  group_both->setJointValueTarget(state.both.position);				 
@@ -1607,8 +1621,8 @@ public:
 
 			  if(ret){
 				  ret = false;
-				  //------------to pregrasp-rear-h1-----------------	  
-				  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h1", &state))
+				  //------------to pregrasp-rear-h2-----------------	  
+				  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h2", &state))
 					  return false;		
 
 				  group_both->setJointValueTarget(state.both.position);				 
@@ -1618,8 +1632,21 @@ public:
 				  }
 
 				  if(ret){
-					  //---- to Home ------
-					  ret = toHome(group_l,group_r,group_both);  
+					  ret = false;
+					  //------------to pregrasp-rear-h1-----------------	  
+					  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-rear-h1", &state))
+						  return false;		
+
+					  group_both->setJointValueTarget(state.both.position);				 
+					  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+						  group_l->asyncExecute(plan);
+						  ret = monitorArmMovement(true,true);
+					  }
+
+					  if(ret){
+						  //---- to Home ------
+						  ret = toHome(group_l,group_r,group_both);  
+					  }
 				  }
 			  }
 		  }
@@ -2199,15 +2226,15 @@ public:
 
     group_r_->setGoalOrientationTolerance(orientation_tolerance);
     group_r_->setGoalPositionTolerance(position_tolerance);
-    group_r.setPlannerId("RRTConnectkConfigDefault");
+    group_r_->setPlannerId("RRTConnectkConfigDefault");
     group_r_->setPlanningTime(planning_time);
     group_l_->setGoalOrientationTolerance(orientation_tolerance);
     group_l_->setGoalPositionTolerance(position_tolerance);
-    group_l.setPlannerId("RRTConnectkConfigDefault");
+    group_l_->setPlannerId("RRTConnectkConfigDefault");
     group_l_->setPlanningTime(planning_time);
     group_both_->setGoalOrientationTolerance(orientation_tolerance);
     group_both_->setGoalPositionTolerance(position_tolerance);
-    group_both.setPlannerId("RRTConnectkConfigDefault");
+    group_both_->setPlannerId("RRTConnectkConfigDefault");
     group_both_->setPlanningTime(planning_time);
   }
   //--------------------------------------- Load on Init ------------------------------------
