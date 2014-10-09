@@ -762,7 +762,7 @@ public:
 	//Simulates the planning with cartesian path between a start state and the goal position
 	bool simulateCartesianPath(node_pose start_pose, node_pose goal_pose) {
 
-		double visualizationtime = 0;
+		double visualizationtime = 5;
 
 		move_group_interface::MoveGroup group_r("right_arm_group");
 		move_group_interface::MoveGroup group_l("left_arm_group");
@@ -1941,6 +1941,34 @@ public:
 		pose.pose.orientation.w = 1;
 		stored_poses.push_back(pose);
 		
+		
+		//pregrasp-rear-h5
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "pregrasp-rear-h5";
+
+		pose.joint_states_r.push_back(1.5);
+		pose.joint_states_r.push_back(-1.0);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(-1.7);
+		pose.joint_states_l.push_back(-1.5);
+		pose.joint_states_l.push_back(-2.1);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(1.7);
+
+		pose.pose.position.x = 3;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.559808;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);
+		
 		//pregrasp
 		pose.joint_states_r.clear();
 		pose.joint_states_l.clear();
@@ -1958,6 +1986,34 @@ public:
 		pose.joint_states_l.push_back(0.0);
 		pose.joint_states_l.push_back(3.041);
 		pose.joint_states_l.push_back(3.3);
+
+		pose.pose.position.x = 3;
+		pose.pose.position.y = 0;
+		pose.pose.position.z = 0.663502;
+		pose.pose.orientation.x = 0;
+		pose.pose.orientation.y = 0;
+		pose.pose.orientation.z = 0;
+		pose.pose.orientation.w = 1;
+		stored_poses.push_back(pose);
+		
+		//pregrasp
+		pose.joint_states_r.clear();
+		pose.joint_states_l.clear();
+		pose.name = "pregrasp-h1";
+
+		pose.joint_states_r.push_back(-1.5705);
+		pose.joint_states_r.push_back(0);
+		pose.joint_states_r.push_back(-2.3);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(3.141);
+		pose.joint_states_r.push_back(-1.7);
+		pose.joint_states_l.push_back(1.5705);
+		pose.joint_states_l.push_back(-3.141);
+		pose.joint_states_l.push_back(2.3);
+		pose.joint_states_l.push_back(0);
+		pose.joint_states_l.push_back(3.141);
+		pose.joint_states_l.push_back(1.7);
+		
 
 		pose.pose.position.x = 3;
 		pose.pose.position.y = 0;
