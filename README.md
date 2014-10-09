@@ -54,8 +54,6 @@ E.g. for the Kinect use **/camera/rgb/**.
 
 * gripper length and camera position is hardcoded in **../seneka_deployment_unit/seneka_sensornode_detection/src/sensornode_detection.cpp**
 
-* for plan execution the boolean **planexecution** in **seneka_pnp.cpp** need to be **true**
-
 ##2. Let's Go!
 ---------------------------------------------------------------------
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection nodes)
