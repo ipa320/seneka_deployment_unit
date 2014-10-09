@@ -2703,12 +2703,15 @@ public:
 
     group_r_->setGoalOrientationTolerance(orientation_tolerance);
     group_r_->setGoalPositionTolerance(position_tolerance);
+    group_r.setPlannerId("RRTConnectkConfigDefault");
     group_r_->setPlanningTime(planning_time);
     group_l_->setGoalOrientationTolerance(orientation_tolerance);
     group_l_->setGoalPositionTolerance(position_tolerance);
+    group_l.setPlannerId("RRTConnectkConfigDefault");
     group_l_->setPlanningTime(planning_time);
     group_both_->setGoalOrientationTolerance(orientation_tolerance);
     group_both_->setGoalPositionTolerance(position_tolerance);
+    group_both.setPlannerId("RRTConnectkConfigDefault");
     group_both_->setPlanningTime(planning_time);
   }
   //------------ Services -----------------------------------
