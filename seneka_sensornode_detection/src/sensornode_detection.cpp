@@ -107,7 +107,7 @@ geometry_msgs::Pose camera_pose_;
 ros::ServiceServer service_setCameraPose_, service_getCameraPose_, service_calibrateCamera_,
 				   service_getExtCalibration_, service_compensateInaccuracy_, service_setSensornodePose_ ;
 
-bool simulation_ = true;
+bool simulation_ = false;
 geometry_msgs::Pose sensornodeSimulatedPose_;
 
 //------------------------------<Callbacks>----------------------------------------------------------

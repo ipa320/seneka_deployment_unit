@@ -74,6 +74,7 @@ private:
   
   bool trajexec_;
   double mass_, unloadmass_;
+  double safety_duration_;
 
   ros::Subscriber subscr_;
   std::vector<dualArmJointState> armstates_;
@@ -129,8 +130,10 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 25;
-    unloadmass_ = 0;
+    mass_ = 15;
+    unloadmass_ = 0;    
+    
+    safety_duration_ = 5.0;
     
     extforce_lock_.lock();
     extforceflag_ = false;
@@ -300,7 +303,7 @@ public:
     group_l->setJointValueTarget(state.left.position);    
     
     if(seneka_pnp_tools::multiplan(group_l,&plan)){
-    	sleep(5.0);
+    	sleep(safety_duration_);
     	group_l->asyncExecute(plan);
     	ret = monitorArmMovement(true,false);
     }
@@ -309,7 +312,7 @@ public:
     if(ret){
     	ret = false;
     	if(seneka_pnp_tools::multiplan(group_r, &plan)){
-    		sleep(5.0);
+    		sleep(safety_duration_);
     		group_r->asyncExecute(plan);
     		ret = monitorArmMovement(false,true);
     	}
@@ -1574,7 +1577,7 @@ public:
     group_l->setJointValueTarget(group_variable_values);
 
     if(group_l->plan(myPlan)){
-      sleep(5.0);
+      sleep(safety_duration_);
       group_l->asyncExecute(myPlan); 
       ret = monitorArmMovement(true,false);
     }
@@ -1790,7 +1793,7 @@ public:
 	  group_l->setJointValueTarget(state.left.position);
 	  
 	  if(seneka_pnp_tools::multiplan(group_l,&plan)){
-		  sleep(5.0);
+		  sleep(safety_duration_);
 		  group_l->asyncExecute(plan);
 		  ret = monitorArmMovement(true,false);
 	  }
@@ -1799,7 +1802,7 @@ public:
 	  if(ret){
 		  ret = false;
 		  if(seneka_pnp_tools::multiplan(group_r,&plan)){
-			  sleep(5.0);
+			  sleep(safety_duration_);
 			  group_r->asyncExecute(plan);
 			  ret = monitorArmMovement(false,true);
 		  }
@@ -1822,7 +1825,7 @@ public:
 	  
 	  group_both->setJointValueTarget(state.both.position);	
 	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(5.0);
+		  sleep(safety_duration_);
 		  group_both->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
 	  }
@@ -1936,7 +1939,7 @@ public:
 	  
 	  group_both->setJointValueTarget(state.both.position);	  
 	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(10.0);
+		  sleep(safety_duration_);
 		  group_both->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
 	  }
@@ -1949,7 +1952,7 @@ public:
 
 		  group_both->setJointValueTarget(state.both.position);	  
 		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-			  sleep(5.0);
+			  sleep(safety_duration_);
 			  group_both->asyncExecute(plan);
 			  ret = monitorArmMovement(true,true);
 		  }
@@ -1964,7 +1967,7 @@ public:
 
 		  group_both->setJointValueTarget(state.both.position);	  
 		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-			  sleep(5.0);
+			  sleep(safety_duration_);
 			  group_both->asyncExecute(plan);
 			  ret = monitorArmMovement(true,true);
 		  }
@@ -1977,7 +1980,7 @@ public:
 
 			  group_both->setJointValueTarget(state.both.position);	  
 			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-				  sleep(5.0);
+				  sleep(safety_duration_);
 				  group_both->asyncExecute(plan);
 				  ret = monitorArmMovement(true,true);
 			  }
@@ -2066,7 +2069,7 @@ public:
 	  
 	  group_both->setJointValueTarget(state.both.position);	  
 	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(5.0);
+		  sleep(safety_duration_);
 		  group_both->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
 	  }	  
@@ -2089,7 +2092,7 @@ public:
 
 	  group_both->setJointValueTarget(state.both.position);		   
 	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-		  sleep(5.0);
+		  sleep(safety_duration_);
 		  group_both->asyncExecute(plan);
 		  ret = monitorArmMovement(true,true);
 	  }		  
@@ -2102,7 +2105,7 @@ public:
 
 		  group_both->setJointValueTarget(state.both.position);			  
 		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-			  sleep(5.0);
+			  sleep(safety_duration_);
 			  group_both->asyncExecute(plan);
 			  ret = monitorArmMovement(true,true);
 		  }		
@@ -2703,15 +2706,15 @@ public:
 
     group_r_->setGoalOrientationTolerance(orientation_tolerance);
     group_r_->setGoalPositionTolerance(position_tolerance);
-    group_r.setPlannerId("RRTConnectkConfigDefault");
+    group_r_->setPlannerId("RRTConnectkConfigDefault");
     group_r_->setPlanningTime(planning_time);
     group_l_->setGoalOrientationTolerance(orientation_tolerance);
     group_l_->setGoalPositionTolerance(position_tolerance);
-    group_l.setPlannerId("RRTConnectkConfigDefault");
+    group_l_->setPlannerId("RRTConnectkConfigDefault");
     group_l_->setPlanningTime(planning_time);
     group_both_->setGoalOrientationTolerance(orientation_tolerance);
     group_both_->setGoalPositionTolerance(position_tolerance);
-    group_both.setPlannerId("RRTConnectkConfigDefault");
+    group_both_->setPlannerId("RRTConnectkConfigDefault");
     group_both_->setPlanningTime(planning_time);
   }
   //------------ Services -----------------------------------
