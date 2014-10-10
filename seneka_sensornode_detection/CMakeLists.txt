@@ -10,17 +10,35 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
   tf
   moveit_core 
   moveit_ros_planning_interface
   pluginlib	
   cob_object_detection_msgs
+  message_generation
 )
 find_package(OpenCV REQUIRED)
 find_package(Eigen REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
+
+add_service_files(
+  FILES
+  setCameraPose.srv
+  getCameraPose.srv
+  calibrateCamera.srv
+  getExtCalibration.srv
+  compensateInaccuracy.srv
+  setSensornodePose.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -34,7 +52,15 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
   INCLUDE_DIRS include
   #LIBRARIES seneka_sensornode_detection
-  CATKIN_DEPENDS roscpp rospy std_msgs tf moveit_core moveit_ros_planning_interface cob_object_detection_msgs
+  CATKIN_DEPENDS 
+    roscpp 
+    rospy 
+    std_msgs 
+    geometry_msgs
+    tf 
+    moveit_core 
+    moveit_ros_planning_interface 
+    cob_object_detection_msgs
   #DEPENDS system_lib
 )
 

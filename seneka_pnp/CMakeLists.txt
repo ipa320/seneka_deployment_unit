@@ -10,14 +10,47 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  actionlib_msgs
+  control_msgs
   geometry_msgs
+  sensor_msgs
   tf
   moveit_core 
   moveit_ros_planning_interface
   pluginlib	
+  message_generation
+  genmsg
+  actionlib
 )
 find_package(OpenCV REQUIRED)
 find_package(Eigen REQUIRED)
+
+
+add_action_files(
+  DIRECTORY 
+  action 
+  FILES 
+  QuanjoManipulation.action
+)
+add_service_files(
+  FILES
+  getState.srv
+  setTransition.srv
+  setStop.srv
+)
+add_message_files(
+  FILES
+  quanjo_manipulation.msg
+)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  actionlib_msgs
+  control_msgs
+  actionlib_msgs
+)
+
+
 
 ###################################
 ## catkin specific configuration ##
@@ -35,10 +68,12 @@ catkin_package(
     rospy
     std_msgs
     geometry_msgs
+    sensor_msgs
     tf
     moveit_core
     moveit_ros_planning_interface
     pluginlib
+    message_runtime
   DEPENDS
     OpenCV
     Eigen
@@ -60,18 +95,12 @@ add_executable(seneka_pick_and_place
   src/seneka_pnp.cpp
   src/SerializeIO.cpp
 )
-add_executable(seneka_teach
-  src/seneka_teach.cpp
-  src/SerializeIO.cpp
-)
 
 ## Specify libraries to link a library or executable target against
+add_library(seneka_pnp_tools src/seneka_pnp_tools.cpp)
+
 target_link_libraries(seneka_pick_and_place
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
+  seneka_pnp_tools
 )
-target_link_libraries(seneka_teach 
-  ${OpenCV_LIBS}
-  ${catkin_LIBRARIES}
-)
-

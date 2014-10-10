@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="calibration_ext" default="calibration_ext.yaml" />
+
+  <rosparam command="load" ns="sensornode_detection" file="$(find seneka_sensornode_detection)/launch/$(arg calibration_ext)" />
   <!-- send quanjo urdf to param server -->	
   <param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />
   <param name="sensornode_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/sensornode.urdf.xacro'" />

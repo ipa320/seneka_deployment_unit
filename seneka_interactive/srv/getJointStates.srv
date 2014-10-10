@@ -1,0 +1,5 @@
+string group
+-----------
+bool success
+string name
+float64[] jointstates

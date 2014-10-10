@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 
-<robot xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
-       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
-       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
-       xmlns:xacro="http://ros.org/wiki/xacro">
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
 
  <!--  <property name="camera_origin" value=" 0.0 0.0 0.0" /> -->
   
@@ -27,8 +24,11 @@
   <link name="quanjo_body">
     <visual>
       <geometry>
-        <!-- <box size="0.75 0.75 0.75"/> -->
- 	<mesh filename="package://seneka_ugv_description/meshes/quanjo_grob.dae" scale="0.001 0.001 0.001"/>
+        <!--<box size="1.12 1.10 0.55"/>-->
+ 	<mesh filename="package://seneka_ugv_description/meshes/Mockup_simplified.dae" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <geometry>
+      	<box size="0.5 0.5 2.0"/>
       </geometry>
       <origin rpy="0 0 1.57" xyz="0 0 0"/>
       <material name="black"/>
@@ -37,7 +37,7 @@
     <collision>
       <geometry>
         <!-- <box size="0.75 0.75 0.75"/> -->
-	<mesh filename="package://seneka_ugv_description/meshes/quanjo_grob.dae" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://seneka_ugv_description/meshes/Mockup_simplified.dae" scale="0.001 0.001 0.001"/>
       </geometry>
       <origin rpy="0 0 1.57" xyz="0 0 0"/>
     </collision>

@@ -1,9 +1,18 @@
 <?xml version="1.0"?>
 <launch>
 
+  <!-- Debug -->
+  <!-- The initial state of the state-machine-->
+  <arg name="start_state" default="home"/>
+
+  <param name="/seneka_pnp/start_state" type="str" value="$(arg start_state)"/>
+
+
   <!-- send quanjo urdf to param server -->	
-  <param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />
+  <!--<param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_ugv_description)/urdf/ugv_robot.urdf.xacro'" />-->
   
+ <!-- <include file="$(find seneka_sensornode_detection)/launch/sensornode_detection.launch"/>-->
+
   <node pkg="seneka_pnp" type="seneka_pick_and_place" name="seneka_pick_and_place" output="screen">	
   </node>
 

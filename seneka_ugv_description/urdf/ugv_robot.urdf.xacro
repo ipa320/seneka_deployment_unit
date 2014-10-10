@@ -1,13 +1,7 @@
 <?xml version="1.0"?>
-<robot xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
-       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
-       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
-       xmlns:xacro="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
-       name="sugv">
 
- <!-- common stuff -->
- <include filename="$(find ur_description)/urdf/gazebo.urdf.xacro" />
-
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"
+       name="sugv" >
  
  <!-- quanjo description -->
  <include filename="$(find seneka_ugv_description)/urdf/ugv.urdf.xacro" />
@@ -20,13 +14,15 @@
  <joint name="right_arm_ur10_connector" type="fixed">
   <parent link="quanjo_body" />
   <child link = "right_arm_base_link" />
-  <origin xyz="0.615 -0.46 0.87" rpy="-0.2 0 -1.57" />
+  <!--<origin xyz="0.615 -0.46 0.87" rpy="-0.2 0 -1.57" />-->
+  <origin xyz="0.53 -0.4775 0.89" rpy="-0.2 0 -1.57" />
  </joint>
 
  <joint name="left_arm_ur10_connector" type="fixed">
   <parent link="quanjo_body" />
   <child link = "left_arm_base_link" />
-  <origin xyz="0.615 0.46 0.87" rpy="-0.2 0 -1.57" />
+  <!--<origin xyz="0.615 0.46 0.87" rpy="-0.2 0 -1.57" />-->
+  <origin xyz="0.53 0.4775 0.89" rpy="-0.2 0 -1.57" />
  </joint>
 
   <!-- arm -->
@@ -109,6 +105,8 @@
     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 ${pi/2.0}" />
   </joint>
   <link name="left_arm_rviz_link" />
+
+ <gravity>false</gravity>
 
 </robot>
 

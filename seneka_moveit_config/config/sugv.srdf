@@ -36,35 +36,40 @@
 	<group name="left_arm_group" />
 	<group name="right_arm_group" />
     </group> -->
+	
 
     <group name="left_arm_group">
-        <joint name="left_arm_shoulder_pan_joint" />
+        <!--<joint name="left_arm_shoulder_pan_joint" />
         <joint name="left_arm_shoulder_lift_joint" />
         <joint name="left_arm_elbow_joint" />
         <joint name="left_arm_wrist_1_joint" />
         <joint name="left_arm_wrist_2_joint" />
         <joint name="left_arm_wrist_3_joint" />
-        <joint name="left_arm_ee_fixed_joint" />
+        <joint name="left_arm_ee_fixed_joint" />-->
+
+	<chain base_link="left_arm_base_link" tip_link="left_arm_ee_link"/>
     </group>
 
      <group name="right_arm_group">
-        <joint name="right_arm_shoulder_pan_joint" />
+        <!--<joint name="right_arm_shoulder_pan_joint" />
         <joint name="right_arm_shoulder_lift_joint" />
         <joint name="right_arm_elbow_joint" />
         <joint name="right_arm_wrist_1_joint" />
         <joint name="right_arm_wrist_2_joint" />
         <joint name="right_arm_wrist_3_joint" />
-        <joint name="right_arm_ee_fixed_joint" />
+        <joint name="right_arm_ee_fixed_joint" />-->
+
+	<chain base_link="right_arm_base_link" tip_link="right_arm_ee_link"/>
     </group>
 
     <group name="left_gripper">
 	<joint name="left_arm_gripper_joint" />
-	<joint name="left_arm_rviz_joint" />
+	<!--<joint name="left_arm_rviz_joint" />-->
     </group>
 
     <group name="right_gripper">
 	<joint name="right_arm_gripper_joint" />
-	<joint name="right_arm_rviz_joint" />
+	<!--<joint name="right_arm_rviz_joint" />-->
     </group>
 
 
@@ -89,28 +94,129 @@
     </group> -->
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
    <group_state name="lhome" group="left_arm_group">
-        <joint name="left_arm_elbow_joint" value="0" />
-        <joint name="left_arm_shoulder_lift_joint" value="0" />
-        <joint name="left_arm_shoulder_pan_joint" value="0" />
+        <joint name="left_arm_shoulder_pan_joint" value="1.5705" />
+    	<joint name="left_arm_shoulder_lift_joint" value="-3.141" />
+        <joint name="left_arm_elbow_joint" value="2.5" />
         <joint name="left_arm_wrist_1_joint" value="0" />
-        <joint name="left_arm_wrist_2_joint" value="0" />
-        <joint name="left_arm_wrist_3_joint" value="0" />
+        <joint name="left_arm_wrist_2_joint" value="3.141" />
+        <joint name="left_arm_wrist_3_joint" value="1.7" />
     </group_state>
     <group_state name="rhome" group="right_arm_group">
-        <joint name="right_arm_elbow_joint" value="0" />
-        <joint name="right_arm_shoulder_lift_joint" value="0" />
-        <joint name="right_arm_shoulder_pan_joint" value="0" />
-        <joint name="right_arm_wrist_1_joint" value="0" />
-        <joint name="right_arm_wrist_2_joint" value="0" />
-        <joint name="right_arm_wrist_3_joint" value="0" />
+        <joint name="right_arm_shoulder_pan_joint" value="-1.5705" />
+	    <joint name="right_arm_shoulder_lift_joint" value="0" />
+        <joint name="right_arm_elbow_joint" value="-2.5" />
+        <joint name="right_arm_wrist_1_joint" value="3.141" />
+        <joint name="right_arm_wrist_2_joint" value="3.141" />
+        <joint name="right_arm_wrist_3_joint" value="-1.7" />
     </group_state>
 
-    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
-	<virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
+   <group_state name="lpregrasp" group="left_arm_group">
+        <joint name="left_arm_shoulder_pan_joint" value="1.9705" />
+    	<joint name="left_arm_shoulder_lift_joint" value="-0.7" />
+        <joint name="left_arm_elbow_joint" value="0.8" />
+        <joint name="left_arm_wrist_1_joint" value="0" />
+        <joint name="left_arm_wrist_2_joint" value="3.041" />
+        <joint name="left_arm_wrist_3_joint" value="3.3" />
+    </group_state>
+    <group_state name="rpregrasp" group="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" value="-1.9705" />
+    	<joint name="right_arm_shoulder_lift_joint" value="-2.441" />
+        <joint name="right_arm_elbow_joint" value="-0.8" />
+        <joint name="right_arm_wrist_1_joint" value="3.2" />
+        <joint name="right_arm_wrist_2_joint" value="3.241" />
+        <joint name="right_arm_wrist_3_joint" value="-3.3" />
+    </group_state>
+
+   <group_state name="lprepack" group="left_arm_group">
+        <joint name="left_arm_shoulder_pan_joint" value="1.04728" />
+    	<joint name="left_arm_shoulder_lift_joint" value="-1.53308" />
+        <joint name="left_arm_elbow_joint" value="-4.73616" />
+        <joint name="left_arm_wrist_1_joint" value="-0.0179251" />
+        <joint name="left_arm_wrist_2_joint" value="2.61733" />
+        <joint name="left_arm_wrist_3_joint" value="-2.91619" />
+    </group_state>
+    <group_state name="rprepack" group="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" value="-1.04915" />
+    	<joint name="right_arm_shoulder_lift_joint" value="-1.60908" />
+        <joint name="right_arm_elbow_joint" value="4.73713" />
+        <joint name="right_arm_wrist_1_joint" value="-3.12726" />
+        <joint name="right_arm_wrist_2_joint" value="-2.61798" />
+        <joint name="right_arm_wrist_3_joint" value="2.94228" />
+    </group_state>
+
+   <group_state name="lpregrasp-rear" group="left_arm_group">
+        <joint name="left_arm_shoulder_pan_joint" value="-1.3" />
+	    <joint name="left_arm_shoulder_lift_joint" value="-2.5" />
+        <joint name="left_arm_elbow_joint" value="-0.5" />
+        <joint name="left_arm_wrist_1_joint" value="3.141" />
+        <joint name="left_arm_wrist_2_joint" value="0.0122" />
+        <joint name="left_arm_wrist_3_joint" value="-3.141" />
+    </group_state>
+    <group_state name="rpregrasp-rear" group="right_arm_group">
+        <joint name="right_arm_shoulder_pan_joint" value="1.3" />
+    	<joint name="right_arm_shoulder_lift_joint" value="-0.6" />
+        <joint name="right_arm_elbow_joint" value="0.5" />
+        <joint name="right_arm_wrist_1_joint" value="0" />
+        <joint name="right_arm_wrist_2_joint" value="-0.0128" />
+        <joint name="right_arm_wrist_3_joint" value="3.05" />
+    </group_state>
+
+   <group_state name="prepack-rear" group="both_arms">
+        <joint name="left_arm_shoulder_pan_joint" value="-1.558" />
+	    <joint name="left_arm_shoulder_lift_joint" value="-2.79" />
+        <joint name="left_arm_elbow_joint" value="1.127" />
+        <joint name="left_arm_wrist_1_joint" value="1.529" />
+        <joint name="left_arm_wrist_2_joint" value="0.0122" />
+        <joint name="left_arm_wrist_3_joint" value="-2.749" />
+        <joint name="right_arm_shoulder_pan_joint" value="1.556" />
+    	<joint name="right_arm_shoulder_lift_joint" value="-0.34855" />
+        <joint name="right_arm_elbow_joint" value="-1.127" />
+        <joint name="right_arm_wrist_1_joint" value="1.50556" />
+        <joint name="right_arm_wrist_2_joint" value="-0.0128" />
+        <joint name="right_arm_wrist_3_joint" value="2.91" />
+    </group_state>
+   
+
+
+
+
+<!--right_arm_shoulder_pan_joint: -1.04915
+right_arm_shoulder_lift_joint: -1.60908
+right_arm_elbow_joint: 4.73713
+right_arm_wrist_1_joint: -3.12726
+right_arm_wrist_2_joint: -2.61798
+right_arm_wrist_3_joint: 2.94228
+
+left_arm_shoulder_pan_joint: 1.04728
+left_arm_shoulder_lift_joint: -1.53308
+left_arm_elbow_joint: -4.73616
+left_arm_wrist_1_joint: -0.0179251
+left_arm_wrist_2_joint: 2.61733
+left_arm_wrist_3_joint: -2.91619-->
+	
+    <virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="quanjo_body" />
 
 
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
-    <disable_collisions link1="left_arm_base_link" link2="left_arm_forearm_link" reason="Never" />
+    <disable_collisions link1="left_arm_forearm_link" link2="left_arm_wrist_1_link" reason="Adjacent" />
+    <disable_collisions link1="left_arm_forearm_link" link2="quanjo_body" reason="Adjacent" />
+    <disable_collisions link1="left_arm_gripper_link" link2="left_arm_wrist_2_link" reason="Default" />
+    <disable_collisions link1="left_arm_gripper_link" link2="left_arm_wrist_3_link" reason="Adjacent" />
+    <disable_collisions link1="left_arm_wrist_1_link" link2="left_arm_wrist_2_link" reason="Adjacent" />
+    <disable_collisions link1="left_arm_wrist_1_link" link2="left_arm_wrist_3_link" reason="Never" />
+    <disable_collisions link1="left_arm_wrist_2_link" link2="left_arm_wrist_3_link" reason="Adjacent" />
+    <disable_collisions link1="quanjo_body" link2="right_arm_forearm_link" reason="Adjacent" />
+    <disable_collisions link1="right_arm_forearm_link" link2="right_arm_wrist_1_link" reason="Adjacent" />
+    <disable_collisions link1="right_arm_gripper_link" link2="right_arm_wrist_2_link" reason="Default" />
+    <disable_collisions link1="right_arm_gripper_link" link2="right_arm_wrist_3_link" reason="Adjacent" />
+    <disable_collisions link1="right_arm_wrist_1_link" link2="right_arm_wrist_2_link" reason="Adjacent" />
+    <disable_collisions link1="right_arm_wrist_1_link" link2="right_arm_wrist_3_link" reason="Never" />
+    <disable_collisions link1="right_arm_wrist_2_link" link2="right_arm_wrist_3_link" reason="Adjacent" />
+
+
+
+
+    <!--<disable_collisions link1="left_arm_base_link" link2="left_arm_forearm_link" reason="Never" />
     <disable_collisions link1="left_arm_base_link" link2="left_arm_shoulder_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_base_link" link2="left_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="left_arm_base_link" link2="left_arm_upper_shoulder_link" reason="Never" />
@@ -123,7 +229,7 @@
     <disable_collisions link1="left_arm_base_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
     <disable_collisions link1="left_arm_base_link" link2="right_arm_upper_shoulder_link" reason="Never" />
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_forearm_middle_link" reason="Adjacent" />
-    <!-- <disable_collisions link1="left_arm_forearm_link" link2="left_arm_gripper_link" reason="Never" /> -->
+    <!-- <disable_collisions link1="left_arm_forearm_link" link2="left_arm_gripper_link" reason="Never" /> --!!!!!!!!!!!!!!!!!
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_shoulder_link" reason="Never" />
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_upper_arm_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_forearm_link" link2="left_arm_upper_arm_middle_link" reason="Never" />
@@ -139,7 +245,7 @@
     <disable_collisions link1="left_arm_forearm_middle_link" link2="left_arm_wrist_1_link" reason="Never" />
     <disable_collisions link1="left_arm_forearm_middle_link" link2="left_arm_wrist_2_link" reason="Never" />
     <!--<disable_collisions link1="left_arm_gripper_link" link2="left_arm_wrist_1_link" reason="Never" />
-    <disable_collisions link1="left_arm_gripper_link" link2="left_arm_wrist_2_link" reason="Never" />-->
+    <disable_collisions link1="left_arm_gripper_link" link2="left_arm_wrist_2_link" reason="Never" />--!!!!!!!!!!!!!
     <disable_collisions link1="left_arm_gripper_link" link2="left_arm_wrist_3_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_shoulder_link" link2="left_arm_upper_arm_link" reason="Adjacent" />
     <disable_collisions link1="left_arm_shoulder_link" link2="left_arm_upper_arm_middle_link" reason="Never" />
@@ -180,7 +286,7 @@
     <disable_collisions link1="right_arm_base_link" link2="right_arm_upper_shoulder_link" reason="Never" />
     <disable_collisions link1="right_arm_base_link" link2="right_arm_wrist_2_link" reason="Never" />
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_forearm_middle_link" reason="Adjacent" />
-   <!-- <disable_collisions link1="right_arm_forearm_link" link2="right_arm_gripper_link" reason="Never" /> -->
+   <!-- <disable_collisions link1="right_arm_forearm_link" link2="right_arm_gripper_link" reason="Never" /> --!!!!!!!!!!!!!!!!!!
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_shoulder_link" reason="Never" />
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_upper_arm_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_forearm_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
@@ -194,7 +300,7 @@
     <disable_collisions link1="right_arm_forearm_middle_link" link2="right_arm_wrist_1_link" reason="Never" />
     <disable_collisions link1="right_arm_forearm_middle_link" link2="right_arm_wrist_2_link" reason="Never" />
     <!--<disable_collisions link1="right_arm_gripper_link" link2="right_arm_wrist_1_link" reason="Never" />
-    <disable_collisions link1="right_arm_gripper_link" link2="right_arm_wrist_2_link" reason="Never" /> -->
+    <disable_collisions link1="right_arm_gripper_link" link2="right_arm_wrist_2_link" reason="Never" /> --!!!!!!!!!!!!!!!!!!!!
     <disable_collisions link1="right_arm_gripper_link" link2="right_arm_wrist_3_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_shoulder_link" link2="right_arm_upper_arm_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_shoulder_link" link2="right_arm_upper_arm_middle_link" reason="Never" />
@@ -206,6 +312,6 @@
     <disable_collisions link1="right_arm_upper_arm_middle_link" link2="right_arm_wrist_1_link" reason="Never" />
     <disable_collisions link1="right_arm_wrist_1_link" link2="right_arm_wrist_2_link" reason="Adjacent" />
     <disable_collisions link1="right_arm_wrist_1_link" link2="right_arm_wrist_3_link" reason="Never" />
-    <disable_collisions link1="right_arm_wrist_2_link" link2="right_arm_wrist_3_link" reason="Adjacent" /> 
+    <disable_collisions link1="right_arm_wrist_2_link" link2="right_arm_wrist_3_link" reason="Adjacent" /> -->
 
 </robot>

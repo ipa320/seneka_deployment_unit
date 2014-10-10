@@ -1,0 +1,7 @@
+string name
+-------
+string name
+string[] joint_names_r
+string[] joint_names_l
+float64[] joint_states_l
+float64[] joint_states_r
