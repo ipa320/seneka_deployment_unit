@@ -190,19 +190,19 @@ public:
 			  ROS_INFO("Received goal pick up front");
 			  if(success || !checksuccess)
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
-			  	  sleep(5.0);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = toPickedUp(group_l_,group_r_,group_both_);		
-			  	  sleep(5.0);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = toPrePack(group_l_,group_r_,group_both_);
-			  	  sleep(5.0);	
+			  	  sleep(1.0);	
 			  if(success || !checksuccess)
 				  success = toPackedFront(group_l_,group_r_,group_both_);
-			  	  sleep(5.0);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
-			  	  sleep(5.0);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
 		  }
@@ -211,12 +211,16 @@ public:
 			  ROS_INFO("Received goal deploy front");
 			  if(success || !checksuccess)
 				  success = toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
-				  success = deployFront(group_l_,group_r_,group_both_);
+				 success = deployFront(group_l_,group_r_,group_both_);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployFrontDrop(group_l_,group_r_,group_both_);
+			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
@@ -231,14 +235,19 @@ public:
 			  ROS_INFO("Received goal pickup rear");
 			  if(success || !checksuccess)
 				  success = homeToPreGraspRear(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = toPickedUpRear(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = toPrePackRear(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);	
 			  if(success || !checksuccess)
 				  success = toPackedRear(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = packedRearDrop(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = packedRearDropToHome(group_l_,group_r_,group_both_);
 			  
@@ -254,14 +263,19 @@ public:
 			  ROS_INFO("Received goal deploy rear");
 			  if(success || !checksuccess)
 				  success = homeToPackedRearDrop(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployRearPickUp(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployRear(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployRearDrop(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployRearToPreGraspRear(group_l_,group_r_,group_both_);
+		  	  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = preGraspRearToHome(group_l_,group_r_,group_both_);
 			  
