@@ -165,6 +165,7 @@ public:
   void quanjoArmSupervisorCB(const seneka_pnp::QuanjoManipulationGoalConstPtr &goal)
   {
 	  bool success = true;
+	  bool checksuccess = false;
 
 //	  for(int i=1; i<=100; i++)
 //	  {
@@ -187,31 +188,31 @@ public:
 		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT){//GOAL_PICKUP_FRONT
 			  
 			  ROS_INFO("Received goal pick up front");
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPickedUp(group_l_,group_r_,group_both_);			
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPrePack(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPackedFront(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
 			  
 			  ROS_INFO("Received goal deploy front");
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployFront(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployFrontDrop(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR) { // PICKUP REAR
@@ -223,17 +224,17 @@ public:
 			  //packedRearDrop - critical -
 			  //packedRearDropToHome
 			  ROS_INFO("Received goal pickup rear");
-			  if(success)
+			  if(success || !checksuccess)
 				  success = homeToPreGraspRear(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPickedUpRear(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPrePackRear(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = toPackedRear(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = packedRearDrop(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = packedRearDropToHome(group_l_,group_r_,group_both_);
 			  
 		  }
@@ -246,22 +247,22 @@ public:
 			  //deployRearToPreGraspRear
 			  //preGraspRearToHome  
 			  ROS_INFO("Received goal deploy rear");
-			  if(success)
+			  if(success || !checksuccess)
 				  success = homeToPackedRearDrop(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployRearPickUp(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployRear(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployRearDrop(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = deployRearToPreGraspRear(group_l_,group_r_,group_both_);
-			  if(success)
+			  if(success || !checksuccess)
 				  success = preGraspRearToHome(group_l_,group_r_,group_both_);
 			  
 		  }		  
 		  
-		  if(!success){
+		  if(!success && checksuccess){
 			  result_.result.val = manipulation.result.RESULT_HARD_MANIPULATION_FAILURE;
 			  currentState_ = "unknown_state";
 			  success = false;
@@ -273,7 +274,7 @@ public:
 		  success = false;
 	  }
 	  
-	  if(success){
+	  if(success && checksuccess){
 		  result_.result.val = manipulation.result.RESULT_SUCCESS;
 	  }
 	  
