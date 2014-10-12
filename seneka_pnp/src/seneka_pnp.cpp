@@ -1681,7 +1681,7 @@ public:
 	  bool ret = false;
 
 	  //topregrasp
-	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp", &state))
+	  if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-jointflip", &state))
 		  return false;	  
 
 	  group_both->setJointValueTarget(state.both.position);	  
@@ -1691,15 +1691,30 @@ public:
 	  }
 	  
 	  if(ret){
-		  //topregrasp
-		  if(!seneka_pnp_tools::getArmState(armstates_, "home", &state))
-			  return false;	  
+		  ret = false;
 
-		  group_both->setJointValueTarget(state.both.position);	  
-		  if(seneka_pnp_tools::multiplan(group_both,&plan)){
-			  group_both->asyncExecute(plan);
-			  ret = monitorArmMovement(true,true);
-		  }  
+		            //topregrasp
+	          if(!seneka_pnp_tools::getArmState(armstates_, "pregrasp-h1", &state))
+        	          return false;
+
+          	  group_both->setJointValueTarget(state.both.position);
+          	  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+                        group_both->asyncExecute(plan);
+                  	ret = monitorArmMovement(true,true);
+          	  }
+
+		  if(ret){
+			  ret = false;
+			  //topregrasp
+			  if(!seneka_pnp_tools::getArmState(armstates_, "home", &state))
+				  return false;	  
+
+			  group_both->setJointValueTarget(state.both.position);	  
+			  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+				  group_both->asyncExecute(plan);
+				  ret = monitorArmMovement(true,true);
+			  }  
+		  }
 	  }
 	  
 	  return ret;
@@ -2709,7 +2724,7 @@ public:
   //--------------------------------------- Load on Init -----------------------------------------------------------------------------------------
   void loadTeachedPoints(std::vector<std::vector<double> >* vec_r,std::vector<std::vector<double> >* vec_l){
 
-	  SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
+	  SerializeIO *ser = new SerializeIO("/home/quanjo/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_pnp/common/teached_dual_arm_movement.def",'i');
 	  std::vector<std::vector<double> > tmp;
 
 	  ser->openArray("dual_arm_movement");
