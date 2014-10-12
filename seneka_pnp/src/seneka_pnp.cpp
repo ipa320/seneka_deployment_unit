@@ -190,14 +190,19 @@ public:
 			  ROS_INFO("Received goal pick up front");
 			  if(success || !checksuccess)
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
+			  	  sleep(5.0);
 			  if(success || !checksuccess)
-				  success = toPickedUp(group_l_,group_r_,group_both_);			
+				  success = toPickedUp(group_l_,group_r_,group_both_);		
+			  	  sleep(5.0);
 			  if(success || !checksuccess)
 				  success = toPrePack(group_l_,group_r_,group_both_);
+			  	  sleep(5.0);	
 			  if(success || !checksuccess)
 				  success = toPackedFront(group_l_,group_r_,group_both_);
+			  	  sleep(5.0);
 			  if(success || !checksuccess)
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
+			  	  sleep(5.0);
 			  if(success || !checksuccess)
 				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
 		  }
