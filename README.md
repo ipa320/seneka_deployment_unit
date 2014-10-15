@@ -38,6 +38,7 @@ Getting started:
 * on ubuntu 12.04 ( sudo modprobe -r gspca_kinect )
 * on ubuntu 12.04 ( echo 'blacklist gspca_kinect' | sudo tee -a /etc/modprobe.d/blacklist.conf )
 * git clone https://github.com/Equanox/moveit_ros **groovy-devel** branch, for lma_kinematics 
+* sudo apt-get install ros-groovy-rosbridge-suite
 
 ##1. Configuration
 ---------------------------------------------------------------------
