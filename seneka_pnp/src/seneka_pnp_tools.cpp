@@ -818,7 +818,7 @@ void seneka_pnp_tools::yaw_response_cb(const sensor_msgs::JointState &joints){
 	
 	for(unsigned int i=0; i < joints.name.size(); i++){
 		
-		if(joints.name[i].compare("joint_tower_axis")){
+		if(!joints.name[i].compare("joint_tower_axis")){
 			yaw_sensor_ = joints.position[i];
 		}		
 	}
