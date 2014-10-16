@@ -930,11 +930,11 @@ bool seneka_pnp_tools::move_legs(ros::NodeHandle nh, unsigned int move_legs){
 	}
 
 	//wait till movement is finished
-	ros::Rate rate(30);
-	while(g_response_.size()<1){
-		ros::spinOnce();
-		rate.sleep();
-	}
+//	ros::Rate rate(30);
+//	while(g_response_.size()<1){
+//		ros::spinOnce();
+//		rate.sleep();
+//	}
 	
 	return true;
 }
