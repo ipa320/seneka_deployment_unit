@@ -12,6 +12,11 @@
 #include <moveit_msgs/GetPositionFK.h>
 #include <moveit_msgs/GetPositionIK.h>
 
+#include <std_msgs/String.h>
+#include <std_msgs/Float64.h>
+#include <sensor_msgs/JointState.h>
+#include <std_srvs/Empty.h>
+
 #include <moveit/move_group_interface/move_group.h>
 
 #include <sensor_msgs/JointState.h>
@@ -69,6 +74,14 @@ struct dualArmJointState{
 
 namespace seneka_pnp_tools{
 
+const unsigned int MOVE_LEGS_UP = 1;
+const unsigned int MOVE_LEGS_DOWN = 2;
+
+const double TURRET_POSE_PICKUP_FRONT = 0;
+const double TURRET_POSE_DEPLOY_FRONT = 0;
+const double TURRET_POSE_PICKUP_REAR = 0;
+const double TURRET_POSE_DEPLOY_REAR = 0;
+
 //reads the sensornode pose from tf poses
 sensornode getSensornodePose();
 
@@ -111,8 +124,8 @@ dualArmJointState createArmState(const char*,
 //crawls a vector for a state with specific name
 bool getArmState(std::vector<dualArmJointState>&, const char*, dualArmJointState*);
 
-//computes the correct yaw angle for grabbing the sonde
-bool sensornodeYawRotation(geometry_msgs::Pose);
+//returns the actual yaw angle in deg
+double sensornodeYawRotation(geometry_msgs::Pose);
 
 //invokes a service call to compensate the inaccuracy whe grabbing for pickup rear pose
 bool compensateInaccuracyDO(ros::NodeHandle);
@@ -121,6 +134,17 @@ bool compensateInaccuracyUNDO(ros::NodeHandle);
 //checks distance to goal state
 //used for critical states
 bool checkGoalDistance(const char*, std::vector<dualArmJointState>&, move_group_interface::MoveGroup*, move_group_interface::MoveGroup*, move_group_interface::MoveGroup*);
+
+void yaw_response_cb(const sensor_msgs::JointState &joints);
+bool move_turret_to(ros::NodeHandle nh, double deg);
+
+//moves the turrent
+bool move_turret(ros::NodeHandle, double abs_deg);
+
+//moves the legs
+bool move_legs(ros::NodeHandle, unsigned int move_legs);
+
+void global_response_cb(const std_msgs::String &str);
 
 }
 

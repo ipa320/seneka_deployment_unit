@@ -158,6 +158,7 @@ public:
 
     loadTeachedPoints(&teached_wayp_r,&teached_wayp_l);
     loadMoveGroups();
+        
     mainLoop();
   }  
 
@@ -192,7 +193,9 @@ public:
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
+				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
 				  success = toPickedUp(group_l_,group_r_,group_both_);		
+			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = toPrePack(group_l_,group_r_,group_both_);
@@ -201,6 +204,8 @@ public:
 				  success = toPackedFront(group_l_,group_r_,group_both_);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
+				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_DEPLOY_FRONT);
+			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
@@ -2244,9 +2249,11 @@ public:
         	subscr_force_r = node_handle_.subscribe("/right_arm_controller/ur_driver/wrench", 1, &SenekaPickAndPlace::wrenchCBR, this);
     }
     	
+    ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH...");
+    
     //both needed finished for single mode .. dual_flag for dual mode
     while(!tje_validation_.finished || (dual_mode && (tje_validation_.dual_flag < 2))){
-   		ROS_INFO("WAITING FOR TRAJECTORY EXECUTION TO FINISH");
+   	
    		if(tje_validation_.success == false){//break while loop and stop execution when one arm controller fails
     		this->setStop();
     		break;
@@ -2260,6 +2267,7 @@ public:
         		break;
     		}
      	}
+    	ros::spinOnce();
     }
         
     subscr_result_l = ros::Subscriber();//ugly way to unsubscribe
@@ -2833,7 +2841,15 @@ int main(int argc, char** argv)
     /// initialize ROS, specify name of node
     ros::init(argc, argv, "SenekaPickAndPlace");
     ros::NodeHandle nh;
-
+    
+    
+    //seneka_pnp_tools::move_turret(nh, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
+    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_DOWN);
+    ROS_INFO("FINISH");
+    sleep(10);
+    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_UP);
+    ROS_INFO("FINISH");
+    
     /// Create SenekaPickAndPlace instance with mainLoop inside
     //SenekaPickAndPlace seneka_pnp(ros::this_node::getName());
     SenekaPickAndPlace* seneka_pnp = new SenekaPickAndPlace(nh,ros::this_node::getName());

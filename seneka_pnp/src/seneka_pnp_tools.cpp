@@ -741,17 +741,20 @@ bool seneka_pnp_tools::getArmState(std::vector<dualArmJointState>& states,
 	return false;
 }
 
-bool seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
+double seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
 
 	tf::Quaternion qt;
 	tf::quaternionMsgToTF(pose.orientation, qt);
 	tf::Matrix3x3 m(qt);
 	double roll, pitch, yaw;
 	m.getRPY(roll, pitch, yaw);
+	
+	if(yaw < 0)
+		yaw = 2*M_PI + yaw;
 
 	std::cout << "Yaw: " << yaw * 180 / M_PI << "\n";
 
-	return false;
+	return yaw;
 }
 
 bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
@@ -821,6 +824,114 @@ bool seneka_pnp_tools::checkGoalDistance(const char* goalstate, std::vector<dual
 	if((int)distance*1000 > (int)maxdistance*1000)
 		return false;
 		
+	return true;
+}
+
+double yaw_sensor_;
+void seneka_pnp_tools::yaw_response_cb(const sensor_msgs::JointState &joints){
+	
+	for(unsigned int i=0; i < joints.name.size(); i++){
+		
+		if(joints.name[i].compare("joint_tower_axis")){
+			yaw_sensor_ = joints.position[i];
+		}		
+	}
+}
+
+bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
+	
+	double prefix = -1;
+	double yaw_detection = 0;	
+	
+	sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
+	if(tmp_node.success)
+		yaw_detection = seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
+	else 
+		return false;
+
+	double detection_offset = yaw_detection - rad;
+	detection_offset = std::abs(detection_offset*detection_offset);
+	if(detection_offset > M_PI){
+		detection_offset = 2*M_PI - detection_offset;
+	}
+	//now i have the detection offset between 0 - PI
+	
+	yaw_sensor_ = -1;
+	double yaw_sensor;
+	ros::Subscriber sub = nh.subscribe("/sensornode/joint_states", 1, yaw_response_cb);
+	
+	ros::Rate rate(30);
+	while(yaw_sensor_ < 0){
+		ros::spinOnce();
+		rate.sleep();
+	}
+	yaw_sensor = yaw_sensor_;
+	
+	//compute offset	
+	double offset = yaw_sensor - yaw_detection;
+	offset = std::abs(offset*offset);
+	
+	double yaw_goal = yaw_sensor + offset;
+	
+	return true;
+}
+      
+      
+std::string g_response_;
+void seneka_pnp_tools::global_response_cb(const std_msgs::String &str) {
+	g_response_ = str.data;
+}
+
+bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
+	
+	g_response_.clear();
+	ros::Subscriber sub = nh.subscribe("/bridge_response", 1, global_response_cb);
+	ros::Publisher pub = nh.advertise<std_msgs::Float64> ("/move_turret", 1);
+	std_msgs::Float64 msg;
+	msg.data = rad;
+
+	ros::Rate rate(30);
+	while(pub.getNumSubscribers()<1){
+		ros::spinOnce();
+		rate.sleep();
+	}
+	
+	pub.publish(msg);
+		
+	//check if movement is finished
+	while(g_response_.size()<1){
+		ros::spinOnce();
+		rate.sleep();
+	}
+	
+	return true;	
+}
+
+bool seneka_pnp_tools::move_legs(ros::NodeHandle nh, unsigned int move_legs){
+
+	g_response_.clear();
+	ros::Subscriber sub = nh.subscribe("/bridge_response", 1, global_response_cb);		
+
+	std_srvs::Empty req;
+	if(move_legs == MOVE_LEGS_UP){
+		if(!ros::service::call("/retract", req))
+			return false;
+	} 
+	else if(move_legs == MOVE_LEGS_DOWN) {
+		if(!ros::service::call("/extend", req))
+			return false;
+	} 
+	else {
+		return false;
+	}
+
+	//wait till movement is finished
+	ros::Rate rate(30);
+	while(g_response_.size()<1){
+		ros::spinOnce();
+		rate.sleep();
+	}
+	
 	return true;
 }
 
