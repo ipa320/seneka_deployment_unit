@@ -743,22 +743,6 @@ bool seneka_pnp_tools::getArmState(std::vector<dualArmJointState>& states,
 	return false;
 }
 
-double seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
-
-	tf::Quaternion qt;
-	tf::quaternionMsgToTF(pose.orientation, qt);
-	tf::Matrix3x3 m(qt);
-	double roll, pitch, yaw;
-	m.getRPY(roll, pitch, yaw);
-	
-	if(yaw < 0)
-		yaw = 2*M_PI + yaw;
-
-	std::cout << "Yaw: " << yaw << "\n";
-
-	return yaw;
-}
-
 bool seneka_pnp_tools::compensateInaccuracyDO(ros::NodeHandle nh){
 	
 	double valuedo = -0.009;
@@ -840,6 +824,22 @@ void seneka_pnp_tools::yaw_response_cb(const sensor_msgs::JointState &joints){
 	}
 }
 
+double seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
+
+	tf::Quaternion qt;
+	tf::quaternionMsgToTF(pose.orientation, qt);
+	tf::Matrix3x3 m(qt);
+	double roll, pitch, yaw;
+	m.getRPY(roll, pitch, yaw);
+	
+	if(yaw < 0)
+		yaw = 2*M_PI + yaw;
+
+	std::cout << "Yaw: " << yaw << "\n";
+
+	return yaw;
+}
+
 bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 	
 	double prefix = -1;
@@ -852,10 +852,17 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 		return false;
 
 	double detection_offset = yaw_detection - rad;
-	detection_offset = std::abs(detection_offset*detection_offset);
-	if(detection_offset > M_PI){
-		detection_offset = 2*M_PI - detection_offset;
-	}
+//	if(detection_offset < 0){
+//		
+//	}
+//	if(detection_offset > 0){
+//		
+//	}	
+//	detection_offset = std::abs(detection_offset*detection_offset);
+	
+//	if(detection_offset > M_PI){
+//		detection_offset = 2*M_PI - detection_offset;
+//	}
 	//now i have the detection offset between 0 - PI
 	
 	yaw_sensor_ = -1;
@@ -870,10 +877,16 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 	yaw_sensor = yaw_sensor_;
 	
 	//compute offset	
-	double offset = yaw_sensor - yaw_detection;
-	offset = std::abs(offset*offset);
+	double yaw_goal = yaw_sensor - detection_offset;
+	//double tmp = std::abs(offset*offset);
+	if(yaw_goal > 2*M_PI){
+		yaw_goal = yaw_goal - 2*M_PI;
+	}	
+	if(yaw_goal < 2*M_PI){
+		yaw_goal = 2*M_PI + yaw_goal;  
+	}
 	
-	double yaw_goal = yaw_sensor + offset;
+	std::cout << "YAW_GOAL" << yaw_goal << std::endl;
 	
 	return true;
 }
