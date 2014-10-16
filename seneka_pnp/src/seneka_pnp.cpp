@@ -146,6 +146,8 @@ public:
     
     //read params from parameter server
     node_handle_.param<std::string>("/seneka_pnp/start_state", currentState_, "gazebo_home");
+    ROS_INFO("CURRENT STATE: %s", currentState_);
+    
 
     //services to call
     service_client = node_handle_.serviceClient<moveit_msgs::GetPositionIK> ("compute_ik");
@@ -212,8 +214,6 @@ public:
 			  	  sleep(sleepme);
 			  	  ROS_INFO("toPrePack");
 			  if(success || !checksuccess)
-			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
-			  	  sleep(sleepme);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
 			  	  sleep(sleepme);
 			  	  ROS_INFO("packedFrontDrop");
@@ -229,8 +229,6 @@ public:
 			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);
-			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
 			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				 success = deployFront(group_l_,group_r_,group_both_);
