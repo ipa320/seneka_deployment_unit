@@ -852,18 +852,6 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 		return false;
 
 	double detection_offset = yaw_detection - rad;
-//	if(detection_offset < 0){
-//		
-//	}
-//	if(detection_offset > 0){
-//		
-//	}	
-//	detection_offset = std::abs(detection_offset*detection_offset);
-	
-//	if(detection_offset > M_PI){
-//		detection_offset = 2*M_PI - detection_offset;
-//	}
-	//now i have the detection offset between 0 - PI
 	
 	yaw_sensor_ = -1;
 	double yaw_sensor;
@@ -879,15 +867,15 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 	
 	//compute offset	
 	double yaw_goal = yaw_sensor - detection_offset;
-	//double tmp = std::abs(offset*offset);
 	if(yaw_goal > 2*M_PI){
 		yaw_goal = yaw_goal - 2*M_PI;
 	}	
 	if(yaw_goal < 0){
 		yaw_goal = 2*M_PI + yaw_goal;  
-	}
-	
+	}	
 	std::cout << "YAW_GOAL " << yaw_goal << std::endl;
+	
+	move_turret(nh, yaw_goal);
 	
 	return true;
 }
