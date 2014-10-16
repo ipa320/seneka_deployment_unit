@@ -193,7 +193,7 @@ public:
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
-				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
+				  seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
 				  success = toPickedUp(group_l_,group_r_,group_both_);		
 			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
 			  	  sleep(1.0);
@@ -204,7 +204,6 @@ public:
 				  success = toPackedFront(group_l_,group_r_,group_both_);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
-				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_DEPLOY_FRONT);
 			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
 			  	  sleep(1.0);
@@ -219,9 +218,11 @@ public:
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
+			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				 success = deployFront(group_l_,group_r_,group_both_);
+			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
 			  	  sleep(1.0);
 			  if(success || !checksuccess)
 				  success = deployFrontDrop(group_l_,group_r_,group_both_);
