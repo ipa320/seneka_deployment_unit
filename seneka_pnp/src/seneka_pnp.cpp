@@ -146,7 +146,7 @@ public:
     
     //read params from parameter server
     node_handle_.param<std::string>("/seneka_pnp/start_state", currentState_, "gazebo_home");
-    ROS_INFO("CURRENT STATE: %s", currentState_);
+    ROS_INFO("CURRENT STATE: %s", currentState_.c_str());
     
 
     //services to call
