@@ -875,6 +875,7 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 		rate.sleep();
 	}
 	yaw_sensor = yaw_sensor_;
+	std::cout << "YAW_SENSOR " << yaw_sensor << std::endl;
 	
 	//compute offset	
 	double yaw_goal = yaw_sensor - detection_offset;
@@ -886,7 +887,7 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 		yaw_goal = 2*M_PI + yaw_goal;  
 	}
 	
-	std::cout << "YAW_GOAL" << yaw_goal << std::endl;
+	std::cout << "YAW_GOAL " << yaw_goal << std::endl;
 	
 	return true;
 }
