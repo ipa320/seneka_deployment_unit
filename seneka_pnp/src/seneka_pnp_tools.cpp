@@ -882,7 +882,7 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 	if(yaw_goal > 2*M_PI){
 		yaw_goal = yaw_goal - 2*M_PI;
 	}	
-	if(yaw_goal < 2*M_PI){
+	if(yaw_goal < 0){
 		yaw_goal = 2*M_PI + yaw_goal;  
 	}
 	
