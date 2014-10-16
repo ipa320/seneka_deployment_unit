@@ -167,6 +167,7 @@ public:
   {
 	  bool success = true;
 	  bool checksuccess = false;
+	  double sleepme = 3.0;
 
 //	  for(int i=1; i<=100; i++)
 //	  {
@@ -188,45 +189,57 @@ public:
 		  		  
 		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT){//GOAL_PICKUP_FRONT
 			  
-			  ROS_INFO("Received goal pick up front");
+			  
+
 			  if(success || !checksuccess)
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
-			  	  sleep(1.0);
+			  	  ROS_INFO("toPreGrasp");
+			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
+			  	  sleep(sleepme);
 				  success = toPickedUp(group_l_,group_r_,group_both_);		
+				  sleep(sleepme);
 			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
-			  	  sleep(1.0);
+			  	  sleep(sleepme);
+			  	  ROS_INFO("toPickedUp");
 			  if(success || !checksuccess)
 				  success = toPrePack(group_l_,group_r_,group_both_);
-			  	  sleep(1.0);	
+			  	  sleep(sleepme);	
+			  	  ROS_INFO("toPackedFront");
 			  if(success || !checksuccess)
 				  success = toPackedFront(group_l_,group_r_,group_both_);
-			  	  sleep(1.0);
+			  	  sleep(sleepme);
+			  	  ROS_INFO("toPrePack");
 			  if(success || !checksuccess)
 			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
+			  	  sleep(sleepme);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
-			  	  sleep(1.0);
+			  	  sleep(sleepme);
+			  	  ROS_INFO("packedFrontDrop");
 			  if(success || !checksuccess)
-				  success = packedFrontToHome(group_l_,group_r_,group_both_);			  
+				  success = packedFrontToHome(group_l_,group_r_,group_both_);
+			  	  ROS_INFO("packedFrontToHome");
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
 			  
 			  ROS_INFO("Received goal deploy front");
 			  if(success || !checksuccess)
 				  success = toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
-			  	  sleep(1.0);
+			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
+			  	  sleep(sleepme);
 			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
-			  	  sleep(1.0);
+			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				 success = deployFront(group_l_,group_r_,group_both_);
-			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
-			  	  sleep(1.0);
+			  	 sleep(sleepme);
+			  	 seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
+			  	 sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployFrontDrop(group_l_,group_r_,group_both_);
-			  	  sleep(1.0);
+			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
@@ -241,19 +254,19 @@ public:
 			  ROS_INFO("Received goal pickup rear");
 			  if(success || !checksuccess)
 				  success = homeToPreGraspRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = toPickedUpRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = toPrePackRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);	
+		  	  	  sleep(sleepme);	
 			  if(success || !checksuccess)
 				  success = toPackedRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = packedRearDrop(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = packedRearDropToHome(group_l_,group_r_,group_both_);
 			  
@@ -269,19 +282,19 @@ public:
 			  ROS_INFO("Received goal deploy rear");
 			  if(success || !checksuccess)
 				  success = homeToPackedRearDrop(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployRearPickUp(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployRearDrop(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = deployRearToPreGraspRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(1.0);
+		  	  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  success = preGraspRearToHome(group_l_,group_r_,group_both_);
 			  
@@ -2837,7 +2850,7 @@ public:
       //test sensornode yaw axis
         
       currentState_ = stateMachine(currentState_);
-      ROS_INFO("Current state: %s",currentState_.c_str());
+      //ROS_INFO("Current state: %s",currentState_.c_str());
       loop_rate.sleep();
     }
   }
