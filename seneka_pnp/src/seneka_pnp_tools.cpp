@@ -903,10 +903,10 @@ bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
 	pub.publish(msg);
 		
 	//check if movement is finished
-	while(g_response_.size()<1){
-		ros::spinOnce();
-		rate.sleep();
-	}
+//	while(g_response_.size()<1){
+//		ros::spinOnce();
+//		rate.sleep();
+//	}
 	
 	return true;	
 }

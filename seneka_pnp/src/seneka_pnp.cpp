@@ -2266,7 +2266,9 @@ public:
      	}
     	ros::spinOnce();
     }
-        
+    
+    ROS_INFO("TRAJECTORY EXECUTION IS FINISHED...");
+    
     subscr_result_l = ros::Subscriber();//ugly way to unsubscribe
     subscr_result_r = ros::Subscriber();//ugly way to unsubscribe
     subscr_force_l = ros::Subscriber();//ugly way to unsubscribe
@@ -2820,7 +2822,7 @@ public:
     
     //QuanjoArmSupervisorAction supervisor(ros::this_node::getName(), this);
     
-    ros::AsyncSpinner spinner(4); // Use 4 threads
+    ros::AsyncSpinner spinner(1); // Use 4 threads
     spinner.start();
 
     ros::Rate loop_rate(1);
