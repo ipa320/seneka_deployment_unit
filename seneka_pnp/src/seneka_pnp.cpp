@@ -2808,9 +2808,9 @@ public:
     while(ros::ok()){
       
       //test sensornode yaw axis 
-//      sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
-//      if(tmp_node.success)
-//    	  seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
+      sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
+      if(tmp_node.success)
+    	  seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
       //test sensornode yaw axis
       
       currentState_ = stateMachine(currentState_);
@@ -2829,12 +2829,12 @@ int main(int argc, char** argv)
     
     
     //seneka_pnp_tools::move_turret(nh, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
-    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_DOWN);
-    ROS_INFO("FINISH");
-    sleep(10);
-    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_UP);
-    ROS_INFO("FINISH");
-    
+//    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_DOWN);
+//    ROS_INFO("FINISH");
+//    sleep(10);
+//    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_UP);
+//    ROS_INFO("FINISH");
+
     /// Create SenekaPickAndPlace instance with mainLoop inside
     //SenekaPickAndPlace seneka_pnp(ros::this_node::getName());
     SenekaPickAndPlace* seneka_pnp = new SenekaPickAndPlace(nh,ros::this_node::getName());

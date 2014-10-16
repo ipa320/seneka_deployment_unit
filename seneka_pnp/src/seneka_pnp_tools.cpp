@@ -752,7 +752,7 @@ double seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
 	if(yaw < 0)
 		yaw = 2*M_PI + yaw;
 
-	std::cout << "Yaw: " << yaw * 180 / M_PI << "\n";
+	std::cout << "Yaw: " << yaw << "\n";
 
 	return yaw;
 }
