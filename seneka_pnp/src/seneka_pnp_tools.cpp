@@ -13,11 +13,13 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 
 	sensornode node;
 	node.success = true;
+	
+	double wait_for_transform = 5.0;
 
 	//sensornode pose
 	try {
 		listener.waitForTransform("/quanjo_body", "/sensornode",
-				ros::Time::now(), ros::Duration(0.2));
+				ros::Time::now(), ros::Duration(wait_for_transform));
 		listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0),
 				transform);
 	} catch (tf::TransformException ex) {
@@ -44,7 +46,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "handle%u", i);
 		try {
 			listener.waitForTransform("/quanjo_body", name, ros::Time::now(),
-					ros::Duration(0.2));
+					ros::Duration(wait_for_transform));
 			listener.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform);
 		} catch (tf::TransformException ex) {
@@ -55,7 +57,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "grab_entry%u", i);
 		try {
 			listener_entry.waitForTransform("/quanjo_body", name,
-					ros::Time::now(), ros::Duration(0.2));
+					ros::Time::now(), ros::Duration(wait_for_transform));
 			listener_entry.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform_entry);
 		} catch (tf::TransformException ex) {
@@ -66,7 +68,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "trigger_%u_up", i);
 		try {
 			listener_up.waitForTransform("/quanjo_body", name, ros::Time::now(),
-					ros::Duration(0.2));
+					ros::Duration(wait_for_transform));
 			listener_up.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform_up);
 		} catch (tf::TransformException ex) {
@@ -77,7 +79,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "trigger_%u_down", i);
 		try {
 			listener_down.waitForTransform("/quanjo_body", name,
-					ros::Time::now(), ros::Duration(0.2));
+					ros::Time::now(), ros::Duration(wait_for_transform));
 			listener_down.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform_down);
 		} catch (tf::TransformException ex) {
