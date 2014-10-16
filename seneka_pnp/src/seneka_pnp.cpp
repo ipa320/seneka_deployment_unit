@@ -2719,7 +2719,14 @@ public:
 
     	return "packed-rear-drop";    	
     }
-	  
+	 
+	//------packed-rear-drop-------------------------------------------
+    else if(currentState.compare("test_auto_rotate") == 0){
+
+    	seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
+
+    	return "home";    	
+    }
 
 
 
@@ -2827,8 +2834,7 @@ public:
 //      if(tmp_node.success)
 //    	  seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
       //test sensornode yaw axis
-      seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
-      
+        
       currentState_ = stateMachine(currentState_);
       ROS_INFO("Current state: %s",currentState_.c_str());
       loop_rate.sleep();
