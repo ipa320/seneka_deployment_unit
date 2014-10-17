@@ -202,11 +202,11 @@ public:
 			  	  ROS_INFO("toPreGrasp");
 			  	  sleep(sleepme);
 			  if(success || !checksuccess)
-				  //seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
+				  seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
 			  	  sleep(sleepme);
 				  success = toPickedUp(group_l_,group_r_,group_both_);		
 				  sleep(sleepme);
-			  	  //seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
+			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
 			  	  sleep(sleepme);
 			  	  ROS_INFO("toPickedUp");
 			  if(success || !checksuccess)
