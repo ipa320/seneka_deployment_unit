@@ -719,8 +719,8 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 	states.push_back(createArmState("pregrasp-jointflip", -1.9705, -2.441, -0.8, 3.2, -3.041, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
 	
 	states.push_back(createArmState("prepack", -1.12281, -1.86896, -0.884882, 2.75421, -2.69283, -3.34126, 1.12093, -1.27239, 0.884651, 0.388099, 2.6925, 3.34191));
-	states.push_back(createArmState("packed-front", -0.168124, -0.965007, -1.83176, 2.79693, -1.73814, -3.34157, 0.166341, -2.17628, 1.83174, 0.344692, 1.73792, 3.34162));
-	states.push_back(createArmState("packed-front-drop", -0.327705, -0.987667, -2.15275, 3.14058, -1.89772, -3.34154, 0.325923, -2.15361, 2.15271, 0.00107013, 1.8975, 3.34165));
+	states.push_back(createArmState("packed-front", -0.353211, -1.05176, -1.78078, 2.83271, -1.92315, -3.34154, 0.351326, -2.08954, 1.78075, 0.308961, 1.92283, 3.34165));
+	states.push_back(createArmState("packed-front-drop", -0.485031, -1.0706, -2.09996, 3.17073, -2.055, -3.34151, 0.483189, -2.07072, 2.09992, -0.0290206, 2.05472, 3.34168));
 	
 	states.push_back(createArmState("packed-front-tidy-1", -1.5, -0.754735, -2.22018, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 2.22061, 0.164381, 1.41261, 2.911));
 	states.push_back(createArmState("packed-front-tidy-2", -1.5, -0.754735, -1.8, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 1.8, 0.164381, 1.41261, 2.911));
