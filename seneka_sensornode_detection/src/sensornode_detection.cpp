@@ -234,6 +234,7 @@ void getSensornodeStateCamera(const cob_object_detection_msgs::DetectionArray::C
 		  }
 	  }
 
+	  
 	  //only the first detected marker is used
 	  origin.x = msg->detections[position].pose.pose.position.x;
 	  origin.y = msg->detections[position].pose.pose.position.y;
