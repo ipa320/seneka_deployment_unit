@@ -846,10 +846,13 @@ bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
 	double yaw_detection = 0;	
 	
 	sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
-	if(tmp_node.success)
+	if(tmp_node.success){
 		yaw_detection = seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
-	else 
+	}
+	else{
+		ROS_INFO("COULD NOT DETECT SENSORNODE");
 		return false;
+	}
 
 	double detection_offset = yaw_detection - rad;
 	
@@ -903,10 +906,10 @@ bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
 	pub.publish(msg);
 		
 	//check if movement is finished
-//	while(g_response_.size()<1){
-//		ros::spinOnce();
-//		rate.sleep();
-//	}
+	while(g_response_.size()<1){
+		ros::spinOnce();
+		rate.sleep();
+	}
 	
 	return true;	
 }

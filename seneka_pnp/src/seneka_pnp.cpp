@@ -2941,13 +2941,17 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "SenekaPickAndPlace");
     ros::NodeHandle nh;
     
+    boost::mutex lock;
     
-    //seneka_pnp_tools::move_turret(nh, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
-//    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_DOWN);
-//    ROS_INFO("FINISH");
-//    sleep(10);
-//    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_UP);
-//    ROS_INFO("FINISH");
+    lock.lock();
+    seneka_pnp_tools::move_turret_to(nh, seneka_pnp_tools::TURRET_POSE_PICKUP_REAR);
+    lock.unlock();
+    sleep(5);
+    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_DOWN);
+    ROS_INFO("FINISH");
+    sleep(5);
+    seneka_pnp_tools::move_legs(nh, seneka_pnp_tools::MOVE_LEGS_UP);
+    ROS_INFO("FINISH");
 
     /// Create SenekaPickAndPlace instance with mainLoop inside
     //SenekaPickAndPlace seneka_pnp(ros::this_node::getName());

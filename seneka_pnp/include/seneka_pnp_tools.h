@@ -78,8 +78,8 @@ const unsigned int MOVE_LEGS_UP = 1;
 const unsigned int MOVE_LEGS_DOWN = 2;
 
 const double TURRET_POSE_PICKUP_FRONT = 5.285;
-const double TURRET_POSE_DEPLOY_FRONT = 5.045;
-const double TURRET_POSE_PICKUP_REAR = 0;
+const double TURRET_POSE_DEPLOY_FRONT = 0;
+const double TURRET_POSE_PICKUP_REAR = 5.045;
 const double TURRET_POSE_DEPLOY_REAR = 0;
 
 //reads the sensornode pose from tf poses
