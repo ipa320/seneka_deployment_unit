@@ -2420,14 +2420,14 @@ public:
 
   //HERE_ME
   move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both, 
-		  std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 1000.0)
+		  std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 10.0)
   {
 //	  gazebo_msgs::ModelState state;
 //	  geometry_msgs::Pose pose;
 //	  gazebo_msgs::SetModelState::Request req;
 //	  gazebo_msgs::SetModelState::Response resp;
 
-	  double visualizationtime = 2;
+	  double visualizationtime = 0;
 
 	  moveit_msgs::RobotTrajectory trajectory_r, trajectory_l;
 	  moveit::planning_interface::MoveGroup::Plan linear_plan_r, linear_plan_l, mergedPlan;
