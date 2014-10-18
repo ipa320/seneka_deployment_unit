@@ -190,16 +190,14 @@ public:
 //		  as_.publishFeedback(feedback_);		  
 //	  }
 	  
-	  if( !sensornodePosValid() ) 
+	  if( sensornodePosValid() ) 
 		  success = false;
 	  
 	  seneka_pnp::QuanjoManipulationResult  manipulation;
 	  if(!currentState_.compare("home") && success){
 		  		  
-		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT){//GOAL_PICKUP_FRONT
+		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT && sensornodePosValid() ){//GOAL_PICKUP_FRONT
 			  
-			  
-
 			  if(success || !checksuccess)
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
 			  	  ROS_INFO("toPreGrasp");
@@ -223,12 +221,14 @@ public:
 			  if(success || !checksuccess)
 				  //move turret
 				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PACKED_FRONT);
+			  	  sleep(sleepme);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
 			  	  sleep(sleepme);
 			  	  ROS_INFO("packedFrontDrop");
 			  if(success || !checksuccess)
 				  success = packedFrontToHome(group_l_,group_r_,group_both_);
 			  	  ROS_INFO("packedFrontToHome");
+			  
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
 			  
@@ -250,7 +250,7 @@ public:
 			  if(success || !checksuccess)
 				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
-		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR) { // PICKUP REAR
+		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR && sensornodePosValid()) { // PICKUP REAR
 			  
 			  //homeToPreGraspRear
 			  //toPickedUpRear - critical -
