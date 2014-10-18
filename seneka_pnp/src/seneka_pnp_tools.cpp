@@ -894,7 +894,7 @@ void seneka_pnp_tools::global_response_cb(const std_msgs::String &str) {
 bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
 	
 	g_response_.clear();
-	ros::Subscriber sub = nh.subscribe("/bridge_response", 1, global_response_cb);
+	//ros::Subscriber sub = nh.subscribe("/bridge_response", 1, global_response_cb);
 	ros::Publisher pub = nh.advertise<std_msgs::Float64> ("/move_turret", 1);
 	std_msgs::Float64 msg;
 	msg.data = rad;
@@ -912,6 +912,8 @@ bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
 //		ros::spinOnce();
 //		rate.sleep();
 //	}
+	
+	sleep(5.0);
 	
 	return true;	
 }
@@ -933,6 +935,8 @@ bool seneka_pnp_tools::move_legs(ros::NodeHandle nh, unsigned int move_legs){
 	else {
 		return false;
 	}
+	
+	sleep(5.0);
 
 	//wait till movement is finished
 //	ros::Rate rate(30);
