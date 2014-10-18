@@ -190,8 +190,11 @@ public:
 //		  as_.publishFeedback(feedback_);		  
 //	  }
 	  
+	  if( !sensornodePosValid() ) 
+		  success = false;
+	  
 	  seneka_pnp::QuanjoManipulationResult  manipulation;
-	  if(!currentState_.compare("home")){
+	  if(!currentState_.compare("home") && success){
 		  		  
 		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT){//GOAL_PICKUP_FRONT
 			  
@@ -2477,8 +2480,8 @@ public:
 	  if(!node.success)
 		  return false; 
 
-	  double x_lower_bound =  1.3;
-	  double x_upper_bound =  1.7;
+	  double x_lower_bound =  1.45;
+	  double x_upper_bound =  1.6;
 	  double y_lower_bound = -0.2;
 	  double y_upper_bound =  0.2;
 
