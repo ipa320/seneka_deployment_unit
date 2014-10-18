@@ -1541,6 +1541,26 @@ public:
 	    	group_both->asyncExecute(mergedPlan);
 	    	ret = monitorArmMovement(true,true);
 	    	//------------pre-deploy-front-----------------
+	    	
+		    if(ret){   
+		    	ret = false;
+		    	
+		    	//------------deploy-front-legs-down-----------------
+		    	if(!seneka_pnp_tools::getArmState(armstates_, "deploy-front-legs-down", &state))
+		    		return false;
+
+		    	seneka_pnp_tools::fk_solver(&node_handle_, state.right.position, state.left.position, &pose_l, &pose_r);
+			    waypoints_l.clear();
+			    waypoints_r.clear();
+		    	waypoints_r.push_back(pose_r);
+		    	waypoints_l.push_back(pose_l);	        
+
+		    	mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		    	initTrajectoryMonitoring();
+		    	group_both->asyncExecute(mergedPlan);
+		    	ret = monitorArmMovement(true,true);
+		    	//------------deploy-front-legs-down-----------------
+		    }
 	    }
 	    return ret;	  
   }
