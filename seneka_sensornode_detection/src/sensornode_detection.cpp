@@ -90,7 +90,7 @@ std::vector<handle> handles;
 trigger_points trigger_offset;
 pose grab_entry;
 double gripper_length = 0.26; 
-double gripper_depth = 0;
+double gripper_depth = 0.005;
 pose3d sensornode_pose;
 
 boost::mutex tf_lock_;
