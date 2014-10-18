@@ -847,7 +847,7 @@ public:
 		  target_pose_l.position.z = node.handholds[used_handle_l].up.position.z;
 		  waypoints_l.push_back(target_pose_l);
 
-		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.005);
 		  initTrajectoryMonitoring();
 		  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true,true);//stop on external force
@@ -879,7 +879,7 @@ public:
 
 		      smoothSetPayload(mass_/2);
 		  
-			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.01);
+			  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both, waypoints_r,waypoints_l,0.005);
 			  initTrajectoryMonitoring();
 			  group_both->asyncExecute(mergedPlan);
 			  ret = monitorArmMovement(true,true);
@@ -936,7 +936,7 @@ public:
 		  waypoints_r.push_back(pose_r);
 		  waypoints_l.push_back(pose_l);
 
-		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+		  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.005);
 		  initTrajectoryMonitoring();
 		  group_both->asyncExecute(mergedPlan);
 		  ret = monitorArmMovement(true,true);
