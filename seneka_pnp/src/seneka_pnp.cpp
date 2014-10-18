@@ -2313,7 +2313,7 @@ public:
 	  double force_z = std::sqrt(msg->force.z * msg->force.z);
 	  
 	  //force in N, torque in Nm
-	  if(force_z > 30){
+	  if(force_z > 15){
 		  extforce_lock_.lock();
 		  extforceflag_ = true;
 		  extforce_lock_.unlock();
