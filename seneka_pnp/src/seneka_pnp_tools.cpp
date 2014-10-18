@@ -906,15 +906,14 @@ bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
 	}
 	
 	pub.publish(msg);
+	ros::spinOnce();
 		
 //	//check if movement is finished
 //	while(g_response_.size()<1){
 //		ros::spinOnce();
 //		rate.sleep();
 //	}
-	
-	sleep(5.0);
-	
+		
 	return true;	
 }
 
@@ -936,8 +935,8 @@ bool seneka_pnp_tools::move_legs(ros::NodeHandle nh, unsigned int move_legs){
 		return false;
 	}
 	
-	sleep(5.0);
-
+	ros::spinOnce();
+	
 	//wait till movement is finished
 //	ros::Rate rate(30);
 //	while(g_response_.size()<1){
