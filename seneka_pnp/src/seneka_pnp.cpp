@@ -2436,7 +2436,7 @@ public:
 
   //HERE_ME
   move_group_interface::MoveGroup::Plan mergedPlanFromWaypoints(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both, 
-		  std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 10.0)
+		  	  	  	  	  	  	  	  	  	  	  	  	  	  	std::vector<geometry_msgs::Pose> &waypoints_r, std::vector<geometry_msgs::Pose> &waypoints_l, double eef_step, double jump_threshold = 10.0)
   {
 //	  gazebo_msgs::ModelState state;
 //	  geometry_msgs::Pose pose;
