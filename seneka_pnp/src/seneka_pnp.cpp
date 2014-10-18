@@ -219,6 +219,7 @@ public:
 			  	  ROS_INFO("toPrePack");
 			  if(success || !checksuccess)
 				  //move turret
+				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PACKED_FRONT);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
 			  	  sleep(sleepme);
 			  	  ROS_INFO("packedFrontDrop");
