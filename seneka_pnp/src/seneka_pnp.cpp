@@ -96,7 +96,7 @@ private:
   trajectory_execution_validation tje_validation_;  
   boost::mutex tje_lock_;
   boost::mutex transition_lock_;
-  boost::mutex extforce_lock_;s
+  boost::mutex extforce_lock_;
 
   // NodeHandle instance must be created before this line. Otherwise strange error may occur.
   actionlib::SimpleActionServer<seneka_pnp::QuanjoManipulationAction> as_; 
