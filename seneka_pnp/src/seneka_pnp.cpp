@@ -206,7 +206,9 @@ public:
 			  	  sleep(sleepme);
 			  if(success || !checksuccess)
 				  seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
-				  success = toPickedUp(group_l_,group_r_,group_both_);		
+			  	  sleep(sleepme);
+				  success = toPickedUp(group_l_,group_r_,group_both_);
+				  sleep(sleepme);
 			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
 			  	  sleep(sleepme);
 			  	  ROS_INFO("toPickedUp");
@@ -221,6 +223,7 @@ public:
 			  if(success || !checksuccess)
 				  //move turret
 				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PACKED_FRONT);
+			  	  sleep(sleepme);
 				  success = packedFrontDrop(group_l_,group_r_,group_both_);
 			  	  sleep(sleepme);
 			  	  ROS_INFO("packedFrontDrop");
@@ -2937,7 +2940,7 @@ public:
     
     //QuanjoArmSupervisorAction supervisor(ros::this_node::getName(), this);
     
-    ros::AsyncSpinner spinner(4); // Use 4 threads
+    ros::AsyncSpinner spinner(2); // Use 4 threads
     spinner.start();
 
     ros::Rate loop_rate(1);
