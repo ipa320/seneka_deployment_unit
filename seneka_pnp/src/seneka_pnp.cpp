@@ -2313,7 +2313,7 @@ public:
 	  double force_z = std::sqrt(msg->force.z * msg->force.z);
 	  
 	  //force in N, torque in Nm
-	  if(force_z > 40){
+	  if(force_z > 30){
 		  extforce_lock_.lock();
 		  extforceflag_ = true;
 		  extforce_lock_.unlock();
@@ -2322,12 +2322,12 @@ public:
   }
   
   void wrenchCBL(const geometry_msgs::Wrench::ConstPtr& msg){
-	  //ROS_INFO("LEFT ARM FORCE z:%f",msg->force.z);
+	  ROS_INFO("LEFT ARM FORCE z:%f",msg->force.z);
 	  extForceDetection(msg);
   }
   
   void wrenchCBR(const geometry_msgs::Wrench::ConstPtr& msg){
-	  //ROS_INFO("RIGHT ARM FORCE z:%f",msg->force.z);
+	  ROS_INFO("RIGHT ARM FORCE z:%f",msg->force.z);
 	  extForceDetection(msg);
   }
   
