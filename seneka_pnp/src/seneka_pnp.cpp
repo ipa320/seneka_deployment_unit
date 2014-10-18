@@ -96,7 +96,7 @@ private:
   trajectory_execution_validation tje_validation_;  
   boost::mutex tje_lock_;
   boost::mutex transition_lock_;
-  boost::mutex extforce_lock_;
+  boost::mutex extforce_lock_;s
 
   // NodeHandle instance must be created before this line. Otherwise strange error may occur.
   actionlib::SimpleActionServer<seneka_pnp::QuanjoManipulationAction> as_; 
@@ -190,13 +190,15 @@ public:
 //		  as_.publishFeedback(feedback_);		  
 //	  }
 	  
-	  if( sensornodePosValid() ) 
-		  success = false;
+	  boost::mutex lock;
+	  lock.lock();
+	  bool sensornodeposevalid = sensornodePosValid();
+	  lock.unlock();
 	  
 	  seneka_pnp::QuanjoManipulationResult  manipulation;
 	  if(!currentState_.compare("home") && success){
 		  		  
-		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT && sensornodePosValid() ){//GOAL_PICKUP_FRONT
+		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT && sensornodeposevalid ){//GOAL_PICKUP_FRONT
 			  
 			  if(success || !checksuccess)
 				  success = toPreGrasp(group_l_,group_r_,group_both_);
@@ -250,7 +252,7 @@ public:
 			  if(success || !checksuccess)
 				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
-		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR && sensornodePosValid()) { // PICKUP REAR
+		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR && sensornodeposevalid ) { // PICKUP REAR
 			  
 			  //homeToPreGraspRear
 			  //toPickedUpRear - critical -
