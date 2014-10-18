@@ -131,7 +131,7 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 4;
+    mass_ = 20;
     unloadmass_ = 0;    
     
     safety_duration_ = 0.0;
