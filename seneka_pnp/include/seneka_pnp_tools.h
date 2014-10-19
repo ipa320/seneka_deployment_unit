@@ -34,6 +34,10 @@
 
 #include <tf/transform_listener.h>
 
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 struct handhold{
 	geometry_msgs::Pose handle;
 	geometry_msgs::Pose entry;
@@ -81,6 +85,10 @@ const double TURRET_POSE_PICKUP_FRONT = 5.285;
 const double TURRET_POSE_PACKED_FRONT = 1.6;
 const double TURRET_POSE_PICKUP_REAR = 5.045;
 const double TURRET_POSE_PACKED_REAR = 0;
+
+int kbhit(void);
+int getch();
+bool keyPress();
 
 //reads the sensornode pose from tf poses
 sensornode getSensornodePose();
