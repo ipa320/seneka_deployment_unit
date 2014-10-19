@@ -75,6 +75,7 @@ private:
   bool trajexec_;
   double mass_, unloadmass_;
   double safety_duration_;
+  double extforce_limit_;
 
   ros::Subscriber subscr_;
   ros::Subscriber subscr_result_l,subscr_result_r;
@@ -133,6 +134,7 @@ public:
     
     mass_ = 20;
     unloadmass_ = 0;    
+    extforce_limit_ = 20;//Nm
     
     safety_duration_ = 0.0;
     
@@ -2350,7 +2352,7 @@ public:
 	  double force_z = std::sqrt(msg->force.z * msg->force.z);
 	  
 	  //force in N, torque in Nm
-	  if(force_z > 25){
+	  if(force_z > extforce_limit_){
 		  extforce_lock_.lock();
 		  extforceflag_ = true;
 		  extforce_lock_.unlock();
