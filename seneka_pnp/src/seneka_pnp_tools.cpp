@@ -354,10 +354,8 @@ void seneka_pnp_tools::fk_solver(ros::NodeHandle *node_handle,
 	if (service_response.error_code.val
 			== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 		for (uint i = 0; i < service_response.pose_stamped.size(); i++) {
-			std::cout << service_response.pose_stamped[i].pose.position
-					<< std::endl;
-			std::cout << service_response.pose_stamped[i].pose.orientation
-					<< std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.position << std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
 			*pose_l = service_response.pose_stamped[i].pose;
 		}
 	}
@@ -374,10 +372,8 @@ void seneka_pnp_tools::fk_solver(ros::NodeHandle *node_handle,
 	if (service_response.error_code.val
 			== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 		for (uint i = 0; i < service_response.pose_stamped.size(); i++) {
-			std::cout << service_response.pose_stamped[i].pose.position
-					<< std::endl;
-			std::cout << service_response.pose_stamped[i].pose.orientation
-					<< std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.position	<< std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
 			*pose_r = service_response.pose_stamped[i].pose;
 		}
 	}
