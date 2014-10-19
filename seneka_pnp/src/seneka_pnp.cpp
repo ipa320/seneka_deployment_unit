@@ -761,7 +761,7 @@ public:
 	    		//ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 
 	    		//check for external force and replan..
-	    		if(!ret && extforceflag){
+	    		if(extforceflag){
 	    			
 	    			smoothSetPayload(mass_/2);
 	    			//REPLAN
@@ -898,7 +898,7 @@ public:
 		  //ROS_INFO("ret:%d extforceflag:%d",ret,extforceflag);
 
 		  //check for external force and replan..
-		  if(!ret && extforceflag){
+		  if(extforceflag){
 
 			  waypoints_r.clear();
 			  waypoints_l.clear();
