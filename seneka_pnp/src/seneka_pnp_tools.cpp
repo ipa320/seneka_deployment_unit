@@ -74,7 +74,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 	sensornode node;
 	node.success = true;
 	
-	double wait_for_transform = 5.0;
+	double wait_for_transform = 0.5;
 
 	//sensornode pose
 	try {
