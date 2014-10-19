@@ -253,21 +253,37 @@ public:
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
 			  
 			  ROS_INFO("Received goal deploy front");
-			  if(success || !checksuccess)
-				  success = toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				 success = deployFront(group_l_,group_r_,group_both_);
-			  	 seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
-			  	 sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployFrontDrop(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
+			  
+			  toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  deployFrontPickedUp(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  deployFront(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  deployFrontDrop(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  deployedFrontToHome(group_l_,group_r_,group_both_);
+			  		  
+//			  ROS_INFO("Received goal deploy front");
+//			  if(success || !checksuccess)
+//				  success = toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
+//			  	  sleep(sleepme);
+//			  if(success || !checksuccess)
+//				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
+//			  	  sleep(sleepme);
+//			  if(success || !checksuccess)
+//				 success = deployFront(group_l_,group_r_,group_both_);
+//			  	 seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
+//			  	 sleep(sleepme);
+//			  if(success || !checksuccess)
+//				  success = deployFrontDrop(group_l_,group_r_,group_both_);
+//			  	  sleep(sleepme);
+//			  if(success || !checksuccess)
+//				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR && sensornodeposevalid ) { // PICKUP REAR
 			  
@@ -2334,7 +2350,7 @@ public:
 	  double force_z = std::sqrt(msg->force.z * msg->force.z);
 	  
 	  //force in N, torque in Nm
-	  if(force_z > 15){
+	  if(force_z > 25){
 		  extforce_lock_.lock();
 		  extforceflag_ = true;
 		  extforce_lock_.unlock();

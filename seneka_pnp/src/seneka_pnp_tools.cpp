@@ -34,6 +34,9 @@ bool seneka_pnp_tools::keyPress() {
 	//Main Loop - Start
 	ros::Rate rate(1);
 	bool keypressed = false;
+	
+	ROS_INFO("Please press [m] to proceed pickup process");
+	
 	while(!keypressed){
 
 		if(kbhit()) // Nur wenn auch eine Taste gedrückt ist
@@ -51,6 +54,10 @@ bool seneka_pnp_tools::keyPress() {
 		ros::spinOnce();
 		rate.sleep();
 	}
+	
+	ROS_INFO("Key was pressed.. proceeding");
+	
+	return true;
 }
 
 sensornode seneka_pnp_tools::getSensornodePose() {
