@@ -217,40 +217,7 @@ public:
 			  packedFrontDrop(group_l_,group_r_,group_both_);
 			  seneka_pnp_tools::keyPress();
 			  
-			  packedFrontToHome(group_l_,group_r_,group_both_);
-
-			  
-//			  if(success || !checksuccess)
-//				  success = toPreGrasp(group_l_,group_r_,group_both_);
-//			  	  ROS_INFO("toPreGrasp");
-//			  	  seneka_pnp_tools::keyPress()
-//			  if(success || !checksuccess)
-//				  //seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
-//			  	  //sleep(sleepme);
-//				  success = toPickedUp(group_l_,group_r_,group_both_);
-//				  sleep(sleepme);
-//			  	  //seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
-//			  	  //sleep(sleepme);
-//			  	  ROS_INFO("toPickedUp");
-//			  if(success || !checksuccess)
-//				  success = toPrePack(group_l_,group_r_,group_both_);
-//			  	  sleep(sleepme);	
-//			  	  ROS_INFO("toPackedFront");
-//			  if(success || !checksuccess)
-//				  success = toPackedFront(group_l_,group_r_,group_both_);
-//			  	  sleep(sleepme);
-//			  	  ROS_INFO("toPrePack");
-//			  if(success || !checksuccess)
-//				  //move turret
-//				  //seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PACKED_FRONT);
-//			  	  //sleep(sleepme);
-//				  success = packedFrontDrop(group_l_,group_r_,group_both_);
-//			  	  sleep(sleepme);
-//			  	  ROS_INFO("packedFrontDrop");
-//			  if(success || !checksuccess)
-//				  success = packedFrontToHome(group_l_,group_r_,group_both_);
-//			  	  ROS_INFO("packedFrontToHome");
-			  
+			  packedFrontToHome(group_l_,group_r_,group_both_);			  
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
 			  
@@ -269,78 +236,97 @@ public:
 			  seneka_pnp_tools::keyPress();
 			  
 			  deployedFrontToHome(group_l_,group_r_,group_both_);
-			  		  
-//			  ROS_INFO("Received goal deploy front");
-//			  if(success || !checksuccess)
-//				  success = toDeployFrontPreGrasp(group_l_,group_r_,group_both_);
-//			  	  sleep(sleepme);
-//			  if(success || !checksuccess)
-//				  success = deployFrontPickedUp(group_l_,group_r_,group_both_);
-//			  	  sleep(sleepme);
-//			  if(success || !checksuccess)
-//				 success = deployFront(group_l_,group_r_,group_both_);
-//			  	 seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_DOWN);
-//			  	 sleep(sleepme);
-//			  if(success || !checksuccess)
-//				  success = deployFrontDrop(group_l_,group_r_,group_both_);
-//			  	  sleep(sleepme);
-//			  if(success || !checksuccess)
-//				  success = deployedFrontToHome(group_l_,group_r_,group_both_);
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_PICKUP_REAR && sensornodeposevalid ) { // PICKUP REAR
 			  
-			  //homeToPreGraspRear
-			  //toPickedUpRear - critical -
-			  //toPrePackRear
-			  //toPackedRear
-			  //packedRearDrop - critical -
-			  //packedRearDropToHome
-			  ROS_INFO("Received goal pickup rear");
-			  if(success || !checksuccess)
-				  success = homeToPreGraspRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = toPickedUpRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = toPrePackRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);	
-			  if(success || !checksuccess)
-				  success = toPackedRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = packedRearDrop(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = packedRearDropToHome(group_l_,group_r_,group_both_);
+			  homeToPreGraspRear(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+			  
+			  toPickedUpRear(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+			  
+			  toPrePackRear(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+			  
+			  toPackedRear(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+			  
+			  packedRearDrop(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+		  	  
+		  	  packedRearDropToHome(group_l_,group_r_,group_both_);
+		  	  
+		  	  
+		  	  
+//			  //homeToPreGraspRear
+//			  //toPickedUpRear - critical -
+//			  //toPrePackRear
+//			  //toPackedRear
+//			  //packedRearDrop - critical -
+//			  //packedRearDropToHome
+//			  ROS_INFO("Received goal pickup rear");
+//			  if(success || !checksuccess)
+//				  success = homeToPreGraspRear(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = toPickedUpRear(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = toPrePackRear(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = toPackedRear(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = packedRearDrop(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = packedRearDropToHome(group_l_,group_r_,group_both_);
 			  
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_REAR) { // DEPLOY REAR
 			  
-			  //homeToPackedRearDrop
-			  //deployRearPickUp - critical -
-			  //deployRear
-			  //deployRearDrop - critical -
-			  //deployRearToPreGraspRear
-			  //preGraspRearToHome  
-			  ROS_INFO("Received goal deploy rear");
-			  if(success || !checksuccess)
-				  success = homeToPackedRearDrop(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployRearPickUp(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployRearDrop(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = deployRearToPreGraspRear(group_l_,group_r_,group_both_);
-		  	  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  success = preGraspRearToHome(group_l_,group_r_,group_both_);
+			  homeToPackedRearDrop(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+			  
+			  deployRearPickUp(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+
+		  	  deployRear(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+		  	  
+		  	  success = deployRearDrop(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+		  	  
+			  deployRearToPreGraspRear(group_l_,group_r_,group_both_);
+		  	  seneka_pnp_tools::keyPress();
+		  	  
+		  	  preGraspRearToHome(group_l_,group_r_,group_both_);
+			  
+//			  //homeToPackedRearDrop
+//			  //deployRearPickUp - critical -
+//			  //deployRear
+//			  //deployRearDrop - critical -
+//			  //deployRearToPreGraspRear
+//			  //preGraspRearToHome  
+//			  ROS_INFO("Received goal deploy rear");
+//			  if(success || !checksuccess)
+//				  success = homeToPackedRearDrop(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = deployRearPickUp(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = deployRear(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = deployRearDrop(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();
+//			  if(success || !checksuccess)
+//				  success = deployRearToPreGraspRear(group_l_,group_r_,group_both_);
+//			  	  seneka_pnp_tools::keyPress();	
+//			  if(success || !checksuccess)
+//				  success = preGraspRearToHome(group_l_,group_r_,group_both_);
 			  
 		  }		  
 		  
