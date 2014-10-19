@@ -1,5 +1,58 @@
 #include <seneka_pnp_tools.h>
 
+int seneka_pnp_tools::kbhit(void) {
+	  struct termios term, oterm;
+	  int fd = 0;
+	  int c = 0;
+	  tcgetattr(fd, &oterm);
+	  memcpy(&term, &oterm, sizeof(term));
+	  term.c_lflag = term.c_lflag & (!ICANON);
+	  term.c_cc[VMIN] = 0;
+	  term.c_cc[VTIME] = 1;
+	  tcsetattr(fd, TCSANOW, &term);
+	  c = getchar();
+	  tcsetattr(fd, TCSANOW, &oterm);
+	  if (c != -1)
+		  ungetc(c, stdin);
+	  return ((c != -1) ? 1 : 0);
+}
+
+int seneka_pnp_tools::getch() {
+	  static int ch = -1, fd = 0;
+	  struct termios neu, alt;
+	  fd = fileno(stdin);
+	  tcgetattr(fd, &alt);
+	  neu = alt;
+	  neu.c_lflag &= ~(ICANON|ECHO);
+	  tcsetattr(fd, TCSANOW, &neu);
+	  ch = getchar();
+	  tcsetattr(fd, TCSANOW, &alt);
+	  return ch;
+}
+
+bool seneka_pnp_tools::keyPress() {
+	//Main Loop - Start
+	ros::Rate rate(1);
+	bool keypressed = false;
+	while(!keypressed){
+
+		if(kbhit()) // Nur wenn auch eine Taste gedrückt ist
+		{
+			char c = getch(); // Muss auf keine Eingabe warten, Taste ist bereits gedrückt
+
+			switch(c)
+			{
+				case 'm':
+					keypressed = true;
+				break;	
+			}
+		}
+
+		ros::spinOnce();
+		rate.sleep();
+	}
+}
+
 sensornode seneka_pnp_tools::getSensornodePose() {
 
 	tf::TransformListener listener;

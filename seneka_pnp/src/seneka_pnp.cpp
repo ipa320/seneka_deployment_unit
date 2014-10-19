@@ -118,8 +118,8 @@ public:
   //Destructor
   ~SenekaPickAndPlace(){
   }
-
-  void init(){
+  
+   void init(){
     
 	as_.start();
 	  
@@ -200,36 +200,54 @@ public:
 		  		  
 		  if(goal->goal.val == manipulation.result.GOAL_PICKUP_FRONT && sensornodeposevalid ){//GOAL_PICKUP_FRONT
 			  
-			  if(success || !checksuccess)
-				  success = toPreGrasp(group_l_,group_r_,group_both_);
-			  	  ROS_INFO("toPreGrasp");
-			  	  sleep(sleepme);
-			  if(success || !checksuccess)
-				  seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
-			  	  sleep(sleepme);
-				  success = toPickedUp(group_l_,group_r_,group_both_);
-				  sleep(sleepme);
-			  	  seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
-			  	  sleep(sleepme);
-			  	  ROS_INFO("toPickedUp");
-			  if(success || !checksuccess)
-				  success = toPrePack(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);	
-			  	  ROS_INFO("toPackedFront");
-			  if(success || !checksuccess)
-				  success = toPackedFront(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);
-			  	  ROS_INFO("toPrePack");
-			  if(success || !checksuccess)
-				  //move turret
-				  seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PACKED_FRONT);
-			  	  sleep(sleepme);
-				  success = packedFrontDrop(group_l_,group_r_,group_both_);
-			  	  sleep(sleepme);
-			  	  ROS_INFO("packedFrontDrop");
-			  if(success || !checksuccess)
-				  success = packedFrontToHome(group_l_,group_r_,group_both_);
-			  	  ROS_INFO("packedFrontToHome");
+			  toPreGrasp(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  toPickedUp(group_l_,group_r_,group_both_);;
+			  seneka_pnp_tools::keyPress();
+			  
+			  toPrePack(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  toPackedFront(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  packedFrontDrop(group_l_,group_r_,group_both_);
+			  seneka_pnp_tools::keyPress();
+			  
+			  packedFrontToHome(group_l_,group_r_,group_both_);
+
+			  
+//			  if(success || !checksuccess)
+//				  success = toPreGrasp(group_l_,group_r_,group_both_);
+//			  	  ROS_INFO("toPreGrasp");
+//			  	  seneka_pnp_tools::keyPress()
+//			  if(success || !checksuccess)
+//				  //seneka_pnp_tools::move_turret_to(node_handle_, seneka_pnp_tools::TURRET_POSE_PICKUP_FRONT);
+//			  	  //sleep(sleepme);
+//				  success = toPickedUp(group_l_,group_r_,group_both_);
+//				  sleep(sleepme);
+//			  	  //seneka_pnp_tools::move_legs(node_handle_, seneka_pnp_tools::MOVE_LEGS_UP);
+//			  	  //sleep(sleepme);
+//			  	  ROS_INFO("toPickedUp");
+//			  if(success || !checksuccess)
+//				  success = toPrePack(group_l_,group_r_,group_both_);
+//			  	  sleep(sleepme);	
+//			  	  ROS_INFO("toPackedFront");
+//			  if(success || !checksuccess)
+//				  success = toPackedFront(group_l_,group_r_,group_both_);
+//			  	  sleep(sleepme);
+//			  	  ROS_INFO("toPrePack");
+//			  if(success || !checksuccess)
+//				  //move turret
+//				  //seneka_pnp_tools::move_turret(node_handle_, seneka_pnp_tools::TURRET_POSE_PACKED_FRONT);
+//			  	  //sleep(sleepme);
+//				  success = packedFrontDrop(group_l_,group_r_,group_both_);
+//			  	  sleep(sleepme);
+//			  	  ROS_INFO("packedFrontDrop");
+//			  if(success || !checksuccess)
+//				  success = packedFrontToHome(group_l_,group_r_,group_both_);
+//			  	  ROS_INFO("packedFrontToHome");
 			  
 		  }
 		  else if(goal->goal.val == manipulation.result.GOAL_DEPLOY_FRONT){ //GOAL_DEPLOY_FRONT
