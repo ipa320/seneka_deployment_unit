@@ -430,10 +430,10 @@ void sensornodeLocalCoordinates(){
 //Load Parameters positions of markers,handles and triggers in reference to the sensorsonde using my own SerializeIO class + scaling the values.
 bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<handle>* ahandles, trigger_points* atriggers, pose* aentry){
   
-  SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates.def",'i');
+  SerializeIO *ser = new SerializeIO("/home/quanjo/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates.def",'i');
   if(simulation_){
     ser->close();
-    ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates_sim.def",'i');
+    ser = new SerializeIO("/home/quanjo/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates_sim.def",'i');
   }
 
   fiducialmarker fiducial1, fiducial2, fiducial3, fiducial4, fiducial5, fiducial6;
