@@ -724,9 +724,9 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 	states.push_back(createArmState("packed-front-tidy-2", -1.5, -0.754735, -1.8, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 1.8, 0.164381, 1.41261, 2.911));
 	states.push_back(createArmState("packed-front-tidy-3", -1.5, -0.754735, -1.8, 2.97532, 3.141, -2.9114, 1.5, -2.387, 1.8, 0.164381, 3.141, 2.911));
 	states.push_back(createArmState("pre-deploy-front", -1.19165, -2.03979, -0.95167, 2.99189, -2.76167, -3.34119, 1.18987, -1.10155, 0.951376, 0.150599, 2.76145, 3.34199));
-	states.push_back(createArmState("deploy-front-legs-down", -1.20739, -2.20594, -1.24661, 3.45341, -2.7774, -3.34077, 1.20572, -0.935421, 1.24632, -0.310875, 2.7773, 3.3416));
+	states.push_back(createArmState("deploy-front-legs-down", -1.20425, -2.17328, -1.22912, 3.40542, -2.77425, -3.33863, 1.20257, -0.968084, 1.22884, -0.262892, 2.77413, 3.33946));
 
-	states.push_back(createArmState("deploy-front", -1.21741, -2.3318, -1.27237, 3.60509, -2.78742, -3.34071, 1.21578, -0.809573, 1.27207, -0.462503, 2.78736, 3.34157));
+	states.push_back(createArmState("deploy-front", -1.21294, -2.27136, -1.26721, 3.53942, -2.78295, -3.34078, 1.21129, -0.870007, 1.26692, -0.39686, 2.78287, 3.34162));
 	return states;
 }
 
