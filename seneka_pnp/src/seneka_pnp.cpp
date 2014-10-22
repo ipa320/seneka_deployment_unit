@@ -132,7 +132,7 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 20;
+    mass_ = 23;
     unloadmass_ = 0;    
     extforce_limit_ = 35;//Nm
     
