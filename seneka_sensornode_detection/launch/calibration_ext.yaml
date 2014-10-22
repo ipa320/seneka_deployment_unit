@@ -6,14 +6,12 @@ external_calibration_orientation_w: 0.345117599289
 external_calibration_orientation_x: -0.625359466711
 external_calibration_orientation_y: 0.624510780713
 external_calibration_orientation_z: -0.315920345703
+
 #fixed marker pose
-reference_position_x: 1.03
-reference_position_y: 0.163
-reference_position_z: 0.57
+reference_position_x: 1.035
+reference_position_y: 0.155
+reference_position_z: 0.60
 reference_orientation_w: 1
 reference_orientation_x: 0
 reference_orientation_y: 0
 reference_orientation_z: 0
-
-
-

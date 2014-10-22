@@ -134,7 +134,7 @@ public:
     
     mass_ = 20;
     unloadmass_ = 0;    
-    extforce_limit_ = 20;//Nm
+    extforce_limit_ = 35;//Nm
     
     safety_duration_ = 0.0;
     
@@ -1815,10 +1815,24 @@ public:
 				  group_l->asyncExecute(plan);
 				  ret = monitorArmMovement(true,true);
 			  }
+
+	                  if(ret){
+        	                  ret = false;
+                	          //packed-front-tidy3
+                        	  if(!seneka_pnp_tools::getArmState(armstates_, "home", &state))
+                                	  return false;
+
+	                          group_both->setJointValueTarget(state.both.position);
+        	                  if(seneka_pnp_tools::multiplan(group_both,&plan)){
+                	                  initTrajectoryMonitoring();
+                        	          group_both->asyncExecute(plan);
+                                	  ret = monitorArmMovement(true,true);
+	                          }
+			}
 			  
-			  if(ret){
-				  ret = toHome(group_l,group_r,group_both);				  
-			  }
+			  //if(ret){
+			  //	  ret = toHome(group_l,group_r,group_both);				  
+			  //}
 		  }
 	  }	    
 	  return ret;
