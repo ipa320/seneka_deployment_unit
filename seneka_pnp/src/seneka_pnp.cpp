@@ -132,7 +132,7 @@ public:
     tje_validation_.success = true;//must be true
     tje_lock_.unlock();
     
-    mass_ = 23;
+    mass_ = 24;
     unloadmass_ = 0;    
     extforce_limit_ = 35;//Nm
     
@@ -918,6 +918,8 @@ public:
 
   bool packedFrontDrop(move_group_interface::MoveGroup* group_l, move_group_interface::MoveGroup* group_r, move_group_interface::MoveGroup* group_both){
 	  
+	  extforce_limit_ = 45;
+
 	  moveit::planning_interface::MoveGroup::Plan plan, lplan,rplan, mergedPlan;
 	  dualArmJointState state;
 	  bool ret = false;
@@ -937,7 +939,7 @@ public:
 	  waypoints_l.push_back(pose_l);
 
 
-	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.01);
+	  mergedPlan = mergedPlanFromWaypoints(group_l, group_r, group_both,waypoints_r,waypoints_l,0.005);
 	  initTrajectoryMonitoring();
 	  group_both->asyncExecute(mergedPlan);
 	  ret = monitorArmMovement(true,true,true);	  
@@ -989,7 +991,9 @@ public:
 		  
 		  ret = seneka_pnp_tools::checkGoalDistance("packed-front-drop", armstates_, group_r_, group_l_, group_both_);
 	  }
-	  
+	
+	  extforce_limit_ = 35;	  
+
 	  return ret;
   }
   
@@ -2042,14 +2046,26 @@ public:
       ros::ServiceClient client_r = node_handle_.serviceClient<ur_driver::URSetPayload>("/right_arm_controller/ur_driver/setPayload");
       ros::ServiceClient client_l = node_handle_.serviceClient<ur_driver::URSetPayload>("/left_arm_controller/ur_driver/setPayload");
       ur_driver::URSetPayload srv_r, srv_l;
-      
-      srv_r.request.payload = payload;
-      srv_l.request.payload = payload;
+           
+      srv_r.request.payload = payload/2;
+      srv_l.request.payload = payload/2;
             
       if (!client_r.call(srv_r))
     	 return false;
       if (!client_l.call(srv_l))
     	 return false;
+      
+      sleep(2.0);
+
+      srv_r.request.payload = payload;
+      srv_l.request.payload = payload;
+
+      if (!client_r.call(srv_r))
+         return false;
+      if (!client_l.call(srv_l))
+         return false;
+
+
       
       return true;
   }

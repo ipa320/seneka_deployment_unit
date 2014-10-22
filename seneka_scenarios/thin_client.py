@@ -86,7 +86,7 @@ if __name__=="__main__":
      try:
          rospy.init_node('bridge')
         
-         ws = GetLoggersClient('ws://192.168.66.2:9090/')	#adjust here
+         ws = GetLoggersClient('ws://192.168.66.4:9090/')	#adjust here
          
          ws.on_result = sample_handler
          ws.pub_resp = rospy.Publisher('bridge_response', std_msgs.msg.String)
