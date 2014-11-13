@@ -25,10 +25,10 @@ Getting started:
 
 When using this package consider it is subdivided into two logical units. Which practically means two branches.
 
-**groovy\_dev branch:**
+**groovy\_dev branch:**  
 This branch works with the **universal\_robot/seneka\_quanjo\_real** branch, it is for running the real robot
 
-**simulation branch:**
+**simulation branch:**  
 This branch works with the **universal\_robot/seneka\_quanjo\_simulation** branch, it is used for simulation and teaching new joint states
 
 
@@ -84,16 +84,17 @@ E.g. for the Kinect use **/camera/rgb/**.
 ##3. Live Config
 ----------------------------------------------
 It is necessary to calibrate the camera before you can pickup a sensorsonde.
-If you use the bash aliases place marker number 3 on the appropriate positon
-and type **start-calib**.
-To avoid these step after each reinitialization you can store the parameters in **seneka\_sensonode\_detection/launch/calibration\_ext.yaml**. There you can also adjust the fixed point for calibration. To check if the calibration is valid use rviz for visual feedback. For finer adjustment u need to try to grab the sensosonde.  
+Place marker number 3 on the appropriate positon and type **start-calib** (assuming you are using the bashrc aliases).  
+To avoid these step after each reinitialization you can store the parameters in **seneka\_sensonode\_detection/launch/calibration\_ext.yaml**.   
+There you can also adjust the fixed point for calibration.  
+To check if the calibration is valid use rviz for visual feedback. For finer adjustment u need to grab the sensosonde.  
 
 ##4. Pick up
 ---------------------------------------------------------------------
 * roslaunch seneka_pnp seneka_pnp.launch start_state:="home" (states are defined in seneka_pnp)
 
-To start pickup/deploy you can use a action 
-[pickup-front => val=1, deploy-front => val=2]
+To start pickup/deploy you can use a action   
+[pickup-front => val=1, deploy-front => val=2]  
 [pickup-rear => val=11, deploy-rear => val=12]
 
 * rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal  
@@ -109,7 +110,7 @@ The mass of the sensornode can be adjusted programmatically in **seneka_pnp/src/
 
 ###Arms Back To Home State
 It may occure that the robot gets stuck.  
-The Actions assume the robot to be in home pose. DONT try to start from home state when the arm position  are NOT in home state.
+The Actions assume the robot to be in home pose. DONT try to start from home state when the arms NOT in home state.
 
 **First option:** Direct it manually near home pose and restart.  
 **Better option:** Use the predefined states to go back to home pose automatically!
@@ -117,7 +118,7 @@ The Actions assume the robot to be in home pose. DONT try to start from home sta
 Use **roslaunch seneka\_pnp seneka\_pnp.launch start\_state:="STATENAME"** to launch pnp process in a specific state.  
 Use **rosservice call /seneka\_pnp/setTransition 'TRANSITIONNAME'**  to initiate a transition between two states.
 
-####Helpful States and Transitions
+#####Helpful States and Transitions
 Stuck near home state **STATENAME = collision\_free -> TRANSITIONNAME = toHome**  
 Stuck near front pack pose  **STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome**  
 Stuck while picking up for front position **STATENAME = pregrasp , TRANSITION = preGraspToHome**
