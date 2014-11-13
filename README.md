@@ -14,7 +14,8 @@ PACKAGES:
 * seneka_sensornode_detection -> Brings up the cob_fiducial node and manages the detection process. It also publish all the necessary tf positions of the sensorsonde.
 * seneka_moveit_config
 * seneka_interactive -> Simulation and Teaching
-* seneka_ugv_description
+* seneka\_ugv\_description
+* seneka\_scenarios -> controlling the sensorsonde (talk to Joshua Hampp)
 
 Getting started:
 =========
@@ -23,13 +24,11 @@ Getting started:
 
 When using this package consider it is subdivided into two logical units. Which practically means two branches.
 
-**groovy\_dev branch**
+**groovy\_dev branch:**
+This branch works with the **universal\_robot/seneka\_quanjo\_real** branch, it is for running the real robot
 
-This branch works with the universal\_robot/seneka\_quanjo\_real branch, it is for running the real robot
-
-**simulation branch**
-
-This branch works with the universal\_robot/seneka\_quanjo\_simulation branch, it is used for simulation and teaching new joint states
+**simulation branch:**
+This branch works with the **universal\_robot/seneka\_quanjo\_simulation** branch, it is used for simulation and teaching new joint states
 
 
 
@@ -38,21 +37,21 @@ This branch works with the universal\_robot/seneka\_quanjo\_simulation branch, i
 ---------
 **.. for running the real robot**
 
-* git clone https://github.com/equanox/universal_robot  (use the **ros-industrial-hydro-devel-backported-groovy** branch) 
+* git clone https://github.com/equanox/universal_robot  (use the **seneka_quanjo_real* branch) 
 * git clone https://github.com/ipa320/cob_perception_common (make sure you are using the **groovy_dev_catkin** branch) 
 * git clone https://github.com/equanox/cob_object_perception (**seneka_fiducials** branch) [rosbuild]
-* git clone https://github.com/ipa320/seneka_deployment_unit (use the **groovy-dev* branch)
+* git clone https://github.com/ipa320/seneka_deployment_unit (use the **groovy-dev** branch)
+* git clone https://github.com/Equanox/moveit_ros (use the **groovy-devel** branch)
 
 
 ##Additional Installation
 * sudo apt-get install ros-groovy-pr2
 * sudo apt-get install ros-groovy-pr2-simulator
 * sudo apt-get install ros-groovy-pr2-controllers
-* gazebo_msgs
+* gazebo_msgs (e.g. clone to your catkin\_ws and compile  https://github.com/ros-simulation/gazebo_ros_pkgs) Hint: Only gazebo_msgs is important. ignore the other packages
 * sudo apt-get install ros-groovy-freenect-stack
 * on ubuntu 12.04 ( sudo modprobe -r gspca_kinect )
 * on ubuntu 12.04 ( echo 'blacklist gspca_kinect' | sudo tee -a /etc/modprobe.d/blacklist.conf )
-* git clone https://github.com/Equanox/moveit_ros **groovy-devel** branch, for lma_kinematics 
 * sudo apt-get install ros-groovy-rosbridge-suite
 
 ##1. Configuration
@@ -66,8 +65,7 @@ E.g. for the Kinect use **/camera/rgb/**.
 * Additionaly assure that the Fast PiTag markers are used (the different marker types are loaded using a .yaml file). See http://wiki.ros.org/cob_fiducials for details.
 
 ---------------------------------------------------------------------
-* All the coordinate systems of the sensorsonde (marker,handle, grabpoints) can be adjusted in **../seneka_deployment_unit/seneka_sensornode_detection/common/sensorsonde_coordinates.def**. Right now only fiducial1 has valid coordinates.
-
+* All the coordinate systems of the sensorsonde (marker,handle, grabpoints) can be adjusted in **../seneka_deployment_unit/seneka_sensornode_detection/common/sensorsonde_coordinates.def**.
 * gripper length and camera position is hardcoded in **../seneka_deployment_unit/seneka_sensornode_detection/src/sensornode_detection.cpp**
 
 ##2. Let's Go!
