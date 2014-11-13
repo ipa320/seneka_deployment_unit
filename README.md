@@ -106,20 +106,20 @@ The mass of the sensornode can be adjusted programmatically in **seneka_pnp/src/
 
 
 
-It may occure that the robot gets stuck but the actions assume the robot to be in home pose. DONT try to start from home state when the arm position  are NOT in home state.
+It may occure that the robot gets stuck.  
+The Actions assume the robot to be in home pose. DONT try to start from home state when the arm position  are NOT in home state.
 
 **First option:** Direct it manually near home pose and restart.  
 **Better option:** Use the predefined states to go back to home pose automatically!
 
-Use **roslaunch seneka\_pnp seneka\_pnp.launch start\_state:="STATENAME"** to launch pnp process in a specific state.
+Use **roslaunch seneka\_pnp seneka\_pnp.launch start\_state:="STATENAME"** to launch pnp process in a specific state.  
 Use **rosservice call /seneka\_pnp/setTransition 'TRANSITIONNAME'**  to initiate a transition between two states.
 
-When the arms are near home state STATENAME = collision_free, TRANSITIONNAME = toHome
-
-stuck near the front pack pose on quanjo STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome
-
-stuck while picking up for front position STATENAME = pregrasp , TRANSITION = preGraspToHome
-
+Possibilliitys
+------
+Stuck near home state **STATENAME = collision\_free -> TRANSITIONNAME = toHome**  
+Stuck near the front pack pose  **STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome**  
+Stuck while picking up for front position **STATENAME = pregrasp , TRANSITION = preGraspToHome**
 
 ---------------------------------------------------------------------
 
