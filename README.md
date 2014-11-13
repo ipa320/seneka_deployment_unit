@@ -38,10 +38,12 @@ After simulation and testing merge simulation to groovy_dev.
 ---------
 **.. for running the real robot**
 
+* git clone https://github.com/ipa320/seneka_deployment_unit (use the **groovy-dev** branch)
+* git clone https://github.com/equanox/cob_object_perception (**seneka_fiducials** branch) [rosbuild]
+
+With **rosws update** you'll get these repos 
 * git clone https://github.com/equanox/universal_robot  (use the **seneka_quanjo_real** branch) 
 * git clone https://github.com/ipa320/cob_perception_common (make sure you are using the **groovy_dev_catkin** branch) 
-* git clone https://github.com/equanox/cob_object_perception (**seneka_fiducials** branch) [rosbuild]
-* git clone https://github.com/ipa320/seneka_deployment_unit (use the **groovy-dev** branch)
 * git clone https://github.com/Equanox/moveit_ros (use the **groovy-devel** branch) (lma kinematics ported to groovy)
 
 ##Additional Installation
