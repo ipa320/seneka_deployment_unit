@@ -106,9 +106,9 @@ The mass of the sensornode can be adjusted programmatically in **seneka_pnp/src/
 
 
 
-It may occure that the robot gets stuck but the actions assume the robot to be in home pose. THIS IS IMPORTANT!
+It may occure that the robot gets stuck but the actions assume the robot to be in home pose. DONT try to start from home state when the arm position  are NOT in home state.
 
-**First option:** Direct it manually near home pose and restart.\s\s
+**First option:** Direct it manually near home pose and restart.  
 **Better option:** Use the predefined states to go back to home pose automatically!
 
 Use **roslaunch seneka\_pnp seneka\_pnp.launch start\_state:="STATENAME"** to launch pnp process in a specific state.
