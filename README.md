@@ -91,13 +91,14 @@ To check if the calibration is valid use rviz for visual feedback. For finer adj
 
 ##4. Pick up
 ---------------------------------------------------------------------
-* roslaunch seneka_pnp seneka_pnp.launch start_state:="home" (states are defined in seneka_pnp)
+Start the seneka_pnp node  
+**roslaunch seneka_pnp seneka_pnp.launch start_state:="home"** (states are defined in seneka_pnp)
 
 To start pickup/deploy you can use a action   
 [pickup-front => val=1, deploy-front => val=2]  
 [pickup-rear => val=11, deploy-rear => val=12]
 
-* rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal  
+**rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal**  
 
 This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
 
@@ -110,7 +111,7 @@ The mass of the sensornode can be adjusted programmatically in **seneka_pnp/src/
 
 ###Arms Back To Home State
 It may occure that the robot gets stuck.  
-The Actions assume the robot to be in home pose. DONT try to start from home state when the arms NOT in home state.
+The Actions assume the robot to be in home state. DONT try to start from home state when the arms are NOT in home state.
 
 **First option:** Direct it manually near home pose and restart.  
 **Better option:** Use the predefined states to go back to home pose automatically!
