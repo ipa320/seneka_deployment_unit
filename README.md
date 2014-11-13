@@ -1,11 +1,11 @@
 SENEKA_DEPLOYMENT_UNIT
 ======================
-This repository contains source code for the UGV Quanjo Dual Arm Pickup/Deploy process at Fraunhofer IPA in the SENEKA PROJECT. Two UR10 arms from Universal Robot where synchronized to lift a 25Kg Sensornode. The detection process of the sensornode is done through visual markers named Fast Pi-Tag, placed on the surface of the Sensornode.
+This repository contains source code for the UGV Quanjo Dual Arm Pickup/Deploy process at Fraunhofer IPA used in the SENEKA PROJECT. Two UR10 arms from Universal Robot where synchronized to lift a 25Kg Sensornode. The detection process of the sensornode is done through visual markers (Fast Pi-Tag) placed on the surface of the Sensornode.
 
-The repository was created by Matthias Nösner (matthiasnoesner@viphibian.com).
+It was created by Matthias Nösner (matthiasnoesner@viphibian.com).
 
 The repository is made to work with ros groovy and gazebo version 1.5
-The seneka project uses the cob_fiducial package for marker detection. A documentation of cob_fiducials can be found here http://wiki.ros.org/cob_fiducials
+The seneka project uses the cob_fiducial package for marker detection. A documentation of cob_fiducials can be found at http://wiki.ros.org/cob_fiducials
 
 ----------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ PACKAGES:
 * seneka_moveit_config
 * seneka_interactive -> Simulation and Teaching
 * seneka\_ugv\_description
-* seneka\_scenarios -> controlling the sensorsonde (talk to Joshua Hampp)
+* seneka\_scenarios -> controlling the sensornode (talk to Joshua Hampp)
 
 Getting started:
 =========
@@ -100,8 +100,20 @@ To start pickup/deploy you can use a action
 
 This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
 
+##5. Useful Hints and Troubleshooting
+------------------------------------------------------
+The mass of the sensornode can be adjusted programmatically in **seneka_pnp/src/seneka_pnp.cpp**
+
+It may occure that the robot gets stuck. 
+First option: Direct it manually near home pose and restart. 
+Better option: Use the predefined states to go back to home pose automatically! 
+Use **roslaunch seneka_pnp seneka_pnp.launch start_state:="STATENAME"** to launch pnp process in a specific state.
+Use **rosservice call /seneka_pnp/setTransition 'TRANSITIONNAME'**  to initiate a transition between two states.
+* when the arms are near home state STATENAME = collision_free, TRANSITIONNAME = toHome
+* it got stuck near the deploy pose on quanjo STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome
+* it got stuck while picking up for front position STATENAME = pregrasp , TRANSITION = preGraspToHome
 ---------------------------------------------------------------------
 
-* Author: Matthias Nösner 
+* Author: Matthias Nösner(matthiasnoesner@viphibian.com)
 * Readme updated: 13.11.2014
 
