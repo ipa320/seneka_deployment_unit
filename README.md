@@ -1,7 +1,8 @@
 SENEKA_DEPLOYMENT_UNIT
 ======================
-This repository contains source code for the UGV Quanjo developed at Fraunhofer IPA in the SENEKA project.
-It was developed by Matthias Nösner (matthiasnoesner@viphibian.com).
+This repository contains source code for the UGV Quanjo Dual Arm Pickup/Deploy process at Fraunhofer IPA in the SENEKA PROJECT. Two UR10 arms from Universal Robot where synchronized to lift a 25Kg Sensornode. The detection process of the sensornode is done through visual markers named Fast Pi-Tag, placed on the surface of the Sensornode.
+
+The repository was created by Matthias Nösner (matthiasnoesner@viphibian.com).
 
 The repository is made to work with ros groovy and gazebo version 1.5
 The seneka project uses the cob_fiducial package for marker detection. A documentation of cob_fiducials can be found here http://wiki.ros.org/cob_fiducials
@@ -52,6 +53,10 @@ After simulation and testing merge simulation to groovy_dev.
 * on ubuntu 12.04 ( sudo modprobe -r gspca_kinect )
 * on ubuntu 12.04 ( echo 'blacklist gspca_kinect' | sudo tee -a /etc/modprobe.d/blacklist.conf )
 * sudo apt-get install ros-groovy-rosbridge-suite
+
+##0.Prerequisites
+---------------------------------------------------------------------
+To make your live easier u can find a bashrc file with predefined aliases. USE IT! Especially when working with the real robot.
 
 ##1. Configuration
 ---------------------------------------------------------------------
