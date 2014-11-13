@@ -14,7 +14,7 @@ PACKAGES:
 * seneka_pnp -> pick and place state machine for picking up the sensorsonde
 * seneka_sensornode_detection -> Brings up the cob_fiducial node and manages the detection process. It also publish all the necessary tf positions of the sensorsonde.
 * seneka_moveit_config
-* seneka_interactive -> Simulation and Teaching
+* seneka_interactive -> Simulation and Teaching (only used in simulation branch)
 * seneka\_ugv\_description
 * seneka\_scenarios -> controlling the sensornode (talk to Joshua Hampp)
 
@@ -95,12 +95,11 @@ Start the seneka_pnp node (states are defined in seneka_pnp)
 **roslaunch seneka_pnp seneka_pnp.launch start_state:="home"**
 
 To start a pickup/deploy process you can use a action   
+**rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal**  
 val=1  pickup-front  
 val=2  deploy-front  
 val=11 pickup-rear   
 val=12 deploy-rear  
-
-**rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal**  
 
 REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**.
 
