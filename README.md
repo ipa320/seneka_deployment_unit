@@ -102,10 +102,12 @@ This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz
 
 ##5. Useful Hints and Troubleshooting
 ------------------------------------------------------
+
+###Mass
 The mass of the sensornode can be adjusted programmatically in **seneka_pnp/src/seneka_pnp.cpp**
 
 
-
+###Arms Back To Home State
 It may occure that the robot gets stuck.  
 The Actions assume the robot to be in home pose. DONT try to start from home state when the arm position  are NOT in home state.
 
@@ -115,9 +117,9 @@ The Actions assume the robot to be in home pose. DONT try to start from home sta
 Use **roslaunch seneka\_pnp seneka\_pnp.launch start\_state:="STATENAME"** to launch pnp process in a specific state.  
 Use **rosservice call /seneka\_pnp/setTransition 'TRANSITIONNAME'**  to initiate a transition between two states.
 
-###Helpful States and Transitions
+####Helpful States and Transitions
 Stuck near home state **STATENAME = collision\_free -> TRANSITIONNAME = toHome**  
-Stuck near the front pack pose  **STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome**  
+Stuck near front pack pose  **STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome**  
 Stuck while picking up for front position **STATENAME = pregrasp , TRANSITION = preGraspToHome**
 
 ---------------------------------------------------------------------
