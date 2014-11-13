@@ -1,9 +1,9 @@
 SENEKA_DEPLOYMENT_UNIT
 ======================
+This repository contains source code for the UGV Quanjo developed at Fraunhofer IPA in the SENEKA project.
+It was developed by Matthias Nösner (matthiasnoesner@viphibian.com).
 
-This repository contains source code for the deployment units developed at Fraunhofer IPA in the SENEKA project.
-The package is made to work with ros groovy and gazebo version 1.5
-
+The repository is made to work with ros groovy and gazebo version 1.5
 The seneka project uses the cob_fiducial package for marker detection. A documentation of cob_fiducials can be found here http://wiki.ros.org/cob_fiducials
 
 ----------------------------------------------------------------------
@@ -31,7 +31,7 @@ This branch works with the **universal\_robot/seneka\_quanjo\_real** branch, it 
 This branch works with the **universal\_robot/seneka\_quanjo\_simulation** branch, it is used for simulation and teaching new joint states
 
 
-
+After simulation and testing merge simulation to groovy_dev.
 
 ##Required:
 ---------
@@ -42,7 +42,6 @@ This branch works with the **universal\_robot/seneka\_quanjo\_simulation** branc
 * git clone https://github.com/equanox/cob_object_perception (**seneka_fiducials** branch) [rosbuild]
 * git clone https://github.com/ipa320/seneka_deployment_unit (use the **groovy-dev** branch)
 * git clone https://github.com/Equanox/moveit_ros (use the **groovy-devel** branch)
-
 
 ##Additional Installation
 * sudo apt-get install ros-groovy-pr2
@@ -66,7 +65,7 @@ E.g. for the Kinect use **/camera/rgb/**.
 
 ---------------------------------------------------------------------
 * All the coordinate systems of the sensorsonde (marker,handle, grabpoints) can be adjusted in **../seneka_deployment_unit/seneka_sensornode_detection/common/sensorsonde_coordinates.def**.
-* gripper length and camera position is hardcoded in **../seneka_deployment_unit/seneka_sensornode_detection/src/sensornode_detection.cpp**
+* gripper length, depth and camera position is hardcoded in **../seneka_deployment_unit/seneka_sensornode_detection/src/sensornode_detection.cpp**
 
 ##2. Let's Go!
 ---------------------------------------------------------------------
@@ -77,24 +76,27 @@ E.g. for the Kinect use **/camera/rgb/**.
 * roslaunch seneka_moveit_config moveit_rviz.launch (visualization of planed trajectories)
 * rosrun image_view image_view image:=/fiducials/image
 
-##3. Pick up
+##3. Live Config
+----------------------------------------------
+It is necessary to calibrate the camera before you can pickup a sensorsonde.
+If you use the bash aliases place marker number 3 on the appropriate positon
+and type **start-calib**.
+To avoid these step after each reinitialization you can store the parameters in **seneka\_sensonode\_detection/launch/calibration\_ext.yaml**. There you can also adjust the fixed point for calibration. To check if the calibration is valid use rviz for visual feedback. For finer adjustment u need to try to grab the sensosonde.  
+
+##4. Pick up
 ---------------------------------------------------------------------
 * roslaunch seneka_pnp seneka_pnp.launch start_state:="home" (states are defined in seneka_pnp)
 
-To start pickup/deploy front you can use a action (pickup => val=1, deploy => val=2)
+To start pickup/deploy you can use a action 
+[pickup-front => val=1, deploy-front => val=2]
+[pickup-rear => val=11, deploy-rear => val=12]
 
 * rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal  
 
 This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
 
-##5. TODO
----------------------------------------------------------------------
-* Right now only the marker with id 1 is used for the detection!
-* Switch to camera with shutter
-* Documentation
-
 ---------------------------------------------------------------------
 
 * Author: Matthias Nösner 
-* Readme updated: 09.10.2014
+* Readme updated: 13.11.2014
 
