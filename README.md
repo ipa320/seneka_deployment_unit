@@ -22,10 +22,13 @@ Getting started:
 ##General:
 
 When using this package consider it is subdivided into two logical units. Which practically means two branches.
+
 **groovy\_dev branch**
+
 This branch works with the universal\_robot/seneka\_quanjo\_real branch, it is for running the real robot
 
 **simulation branch**
+
 This branch works with the universal\_robot/seneka\_quanjo\_simulation branch, it is used for simulation and teaching new joint states
 
 
