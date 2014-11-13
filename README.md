@@ -89,18 +89,20 @@ To avoid these step after each reinitialization you can store the parameters in 
 There you can also adjust the fixed point for calibration.  
 To check if the calibration is valid use rviz for visual feedback. For finer adjustment u need to grab the sensosonde.  
 
-##4. Pick up
+##4. Pick Up / Deploy
 ---------------------------------------------------------------------
-Start the seneka_pnp node  
-**roslaunch seneka_pnp seneka_pnp.launch start_state:="home"** (states are defined in seneka_pnp)
+Start the seneka_pnp node (states are defined in seneka_pnp)  
+**roslaunch seneka_pnp seneka_pnp.launch start_state:="home"**
 
-To start pickup/deploy you can use a action   
-[pickup-front => val=1, deploy-front => val=2]  
-[pickup-rear => val=11, deploy-rear => val=12]
+To start a pickup/deploy process you can use a action   
+val=1  pickup-front  
+val=2  deploy-front  
+val=11 pickup-rear   
+val=12 deploy-rear  
 
 **rostopic pub /seneka_pick_and_place/goal seneka_pnp/QuanjoManipulationActionGoal**  
 
-This node manages the pick up process for a sensorsonde (REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**).
+REMEMBER: Watch at rviz and **HANDS ON THE RED BUTTONS**.
 
 ##5. Useful Hints and Troubleshooting
 ------------------------------------------------------
