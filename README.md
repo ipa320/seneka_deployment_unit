@@ -142,14 +142,14 @@ Seneka Interactive provides multiple services for interaction
 ####Command List
 #####getStates
 Show all states defined in seneka_interactive.cpp  
-**Parameter:** -  
-**Example:** rosservice call /seneka_interactive/getStates
+Parameter: -  
+Example: rosservice call /seneka_interactive/getStates
   
 
 #####setStartState
 set the Start state  
-**Parameter:** statename(string)  
-**Example:** rosservice call /seneka_interactive/setStartState home
+Parameter: statename(string)  
+Example: rosservice call /seneka_interactive/setStartState home
   
 
 #####setGoalState
@@ -158,31 +158,31 @@ set the Goal State (see setStartState)
 
 #####simulate
 simulates a path between a start and goal state  
-**Parameter:**  
+Parameter:  
 option(string)  
 jointtarget - creates a jointtarget  
 cartesian  - plans as a cartesian path  
 posetarget - creates a pose target  
 , iterations(int)  
-**Example:** rosservice call /seneka_interactive/simulate jointtarget 2
+Example: rosservice call /seneka_interactive/simulate jointtarget 2
   
 
 #####generateIK
 generates ik states for both arms and handles close to the start state  
-**Parameter:** equaljoint_states(bool)  
-**Example:** rosservice call /seneka_interactive/generateIK true
+Parameter: equaljoint_states(bool)  
+Example: rosservice call /seneka_interactive/generateIK true
   
 
 #####createNewState
 create a new state (normally used after generateIK)  
-**Parameter:** statename(string)  
-**Example:** rosservice call /seneka_interactive/createNewState statename
+Parameter: statename(string)  
+Example: rosservice call /seneka_interactive/createNewState statename
   
 
 #####printStatesToFile
 prints all states to file (newest state at the end)  
-**Parameter:** filename(string)  
-**Example:** rosservice call /seneka_interactive/printStatesToFile filename
+Parameter: filename(string)  
+Example: rosservice call /seneka_interactive/printStatesToFile filename
   
 
 
