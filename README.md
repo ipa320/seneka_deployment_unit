@@ -139,24 +139,25 @@ in the seneka_deployment_unit and universal_robot stacks.
 ###Commands
 Seneka Interactive provides multiple services for interaction
 
-####getStates
+####Command List
+#####getStates
 Show all states defined in seneka_interactive.cpp  
 
 **Parameter:** -  
 **Example:**  
 rosservice call /seneka_interactive/getStates
 
-####setStartState
+#####setStartState
 set the Start state  
 
 **Parameter:** statename(string)  
 **Example:**  
 rosservice call /seneka_interactive/setStartState home
 
-####setGoalState
+#####setGoalState
 set the Goal State (see setStartState)
 
-####simulate
+#####simulate
 simulates a path between a start and goal state  
 
 **Parameter:**  
@@ -168,21 +169,21 @@ posetarget - creates a pose target
 **Example:**  
 rosservice call /seneka_interactive/simulate jointtarget 2
 
-####generateIK
+#####generateIK
 generates ik states for both arms and handles close to the start state  
 
 **Parameter:** equaljoint_states(bool)  
 **Example:**  
 rosservice call /seneka_interactive/generateIK true
 
-####createNewState
+#####createNewState
 create a new state (normally used after generateIK)  
 
-**Parameter:** statename(string)
+**Parameter:** statename(string)  
 **Example:**  
 rosservice call /seneka_interactive/createNewState statename
 
-####printStatesToFile
+#####printStatesToFile
 prints all states to file (newest state at the end)  
 
 **Parameter:** filename(string)  
