@@ -76,9 +76,9 @@ E.g. for the Kinect use **/camera/rgb/**.
 
 ##2. Let's Go!
 ---------------------------------------------------------------------
+* roslaunch seneka_ugv_description ugv_bringup.launch robot_ip_r:=192.168.1.11 robot_ip_l:=192.168.1.12 (connection for two ur10's with static ip's. The pc needs a static ip in the same subnet)
 * roslaunch seneka_sensornode_detection sensornode_detection.launch (starts freenect,cob_fiducial and sensornode_detection nodes)
 * rostopic hz /fiducials/detect_fiducials (start marker detection)
-* roslaunch seneka_ugv_description ugv_bringup.launch robot_ip_r:=192.168.1.11 robot_ip_l:=192.168.1.12 (connection for two ur10's with static ip's. The pc needs a static ip in the same subnet)
 * roslaunch seneka_moveit_config move_group.launch (load the move group and moveit config)
 * roslaunch seneka_moveit_config moveit_rviz.launch (visualization of planed trajectories)
 * rosrun image_view image_view image:=/fiducials/image
@@ -126,6 +126,67 @@ Use **rosservice call /seneka\_pnp/setTransition 'TRANSITIONNAME'**  to initiate
 Stuck near home state **STATENAME = collision\_free -> TRANSITIONNAME = toHome**  
 Stuck near front pack pose  **STATENAME = packed-front, TRANSITIONNAME = packedFrontToHome**  
 Stuck while picking up for front position **STATENAME = pregrasp , TRANSITION = preGraspToHome**
+
+#Simulation
+---------------------------------------------------------------------
+When starting the Simulation make sure to use the simulation/seneka_quanjo_simulation branches 
+in the seneka_deployment_unit and universal_robot stacks.  
+
+###Start
+* roslaunch seneka_ugv_description ugv.launch
+* roslaunch seneka_moveit_config move_group.launch
+* roslaunch seneka_moveit_config moveit_rviz.launch
+* rosrun seneka_interactive seneka_interactive
+
+###Commands
+Seneka Interactive provides multiple services for interaction
+
+####Command List
+#####getStates
+Show all states defined in seneka_interactive.cpp  
+Parameter: -  
+Example: rosservice call /seneka_interactive/getStates
+  
+
+#####setStartState
+set the Start state  
+Parameter: statename(string)  
+Example: rosservice call /seneka_interactive/setStartState home
+  
+
+#####setGoalState
+set the Goal State (see setStartState)
+  
+
+#####simulate
+simulates a path between a start and goal state  
+Parameter:  
+option(string)  
+jointtarget - creates a jointtarget  
+cartesian  - plans as a cartesian path  
+posetarget - creates a pose target  
+, iterations(int)  
+Example: rosservice call /seneka_interactive/simulate jointtarget 2
+  
+
+#####generateIK
+generates ik states for both arms and handles close to the start state  
+Parameter: equaljoint_states(bool)  
+Example: rosservice call /seneka_interactive/generateIK true
+  
+
+#####createNewState
+create a new state (normally used after generateIK)  
+Parameter: statename(string)  
+Example: rosservice call /seneka_interactive/createNewState statename
+  
+
+#####printStatesToFile
+prints all states to file (newest state at the end)  
+Parameter: filename(string)  
+Example: rosservice call /seneka_interactive/printStatesToFile filename
+  
+
 
 ---------------------------------------------------------------------
 
