@@ -140,8 +140,8 @@ in the seneka_deployment_unit and universal_robot stacks.
 Seneka Interactive provides multiple services for interaction
 
 ####Command List
-* **getStates**
-Show all states defined in seneka_interactive.cpp  
+#####getStates
+***Show all states defined in seneka_interactive.cpp  
 
 **Parameter:** -  
 **Example:** rosservice call /seneka_interactive/getStates
