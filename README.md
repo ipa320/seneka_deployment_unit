@@ -141,11 +141,11 @@ Seneka Interactive provides multiple services for interaction
 
 ####Command List
 #####getStates
-Show all states defined in seneka_interactive.cpp  
+   Show all states defined in seneka_interactive.cpp  
 
-**Parameter:** -  
-**Example:**  
-rosservice call /seneka_interactive/getStates
+   **Parameter:** -  
+   **Example:**  
+   rosservice call /seneka_interactive/getStates
 
 #####setStartState
 set the Start state  
