@@ -99,6 +99,8 @@ add_executable(seneka_pick_and_place
 ## Specify libraries to link a library or executable target against
 add_library(seneka_pnp_tools src/seneka_pnp_tools.cpp)
 
+add_dependencies(seneka_pnp_tools seneka_sensornode_detection_gencpp)
+
 target_link_libraries(seneka_pick_and_place
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
