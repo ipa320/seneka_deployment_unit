@@ -1,5 +1,5 @@
 
-import roslib; roslib.load_manifest('seneka_scenarios')
+import roslib; roslib.load_manifest('seneka_scenarios_quanjo')
 import rospy
 
 import std_msgs.msg
