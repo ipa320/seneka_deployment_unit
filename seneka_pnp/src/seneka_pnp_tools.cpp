@@ -1,5 +1,65 @@
 #include <seneka_pnp_tools.h>
 
+int seneka_pnp_tools::kbhit(void) {
+	  struct termios term, oterm;
+	  int fd = 0;
+	  int c = 0;
+	  tcgetattr(fd, &oterm);
+	  memcpy(&term, &oterm, sizeof(term));
+	  term.c_lflag = term.c_lflag & (!ICANON);
+	  term.c_cc[VMIN] = 0;
+	  term.c_cc[VTIME] = 1;
+	  tcsetattr(fd, TCSANOW, &term);
+	  c = getchar();
+	  tcsetattr(fd, TCSANOW, &oterm);
+	  if (c != -1)
+		  ungetc(c, stdin);
+	  return ((c != -1) ? 1 : 0);
+}
+
+int seneka_pnp_tools::getch() {
+	  static int ch = -1, fd = 0;
+	  struct termios neu, alt;
+	  fd = fileno(stdin);
+	  tcgetattr(fd, &alt);
+	  neu = alt;
+	  neu.c_lflag &= ~(ICANON|ECHO);
+	  tcsetattr(fd, TCSANOW, &neu);
+	  ch = getchar();
+	  tcsetattr(fd, TCSANOW, &alt);
+	  return ch;
+}
+
+bool seneka_pnp_tools::keyPress() {
+	//Main Loop - Start
+	ros::Rate rate(1);
+	bool keypressed = false;
+	
+	ROS_INFO("Please press [m] to proceed pickup process");
+	
+	while(!keypressed){
+
+		if(kbhit()) // Nur wenn auch eine Taste gedrückt ist
+		{
+			char c = getch(); // Muss auf keine Eingabe warten, Taste ist bereits gedrückt
+
+			switch(c)
+			{
+				case 'm':
+					keypressed = true;
+				break;	
+			}
+		}
+
+		ros::spinOnce();
+		rate.sleep();
+	}
+	
+	ROS_INFO("Key was pressed.. proceeding");
+	
+	return true;
+}
+
 sensornode seneka_pnp_tools::getSensornodePose() {
 
 	tf::TransformListener listener;
@@ -13,11 +73,13 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 
 	sensornode node;
 	node.success = true;
+	
+	double wait_for_transform = 0.5;
 
 	//sensornode pose
 	try {
 		listener.waitForTransform("/quanjo_body", "/sensornode",
-				ros::Time::now(), ros::Duration(0.2));
+				ros::Time::now(), ros::Duration(wait_for_transform));
 		listener.lookupTransform("/quanjo_body", "/sensornode", ros::Time(0),
 				transform);
 	} catch (tf::TransformException ex) {
@@ -44,7 +106,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "handle%u", i);
 		try {
 			listener.waitForTransform("/quanjo_body", name, ros::Time::now(),
-					ros::Duration(0.2));
+					ros::Duration(wait_for_transform));
 			listener.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform);
 		} catch (tf::TransformException ex) {
@@ -55,7 +117,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "grab_entry%u", i);
 		try {
 			listener_entry.waitForTransform("/quanjo_body", name,
-					ros::Time::now(), ros::Duration(0.2));
+					ros::Time::now(), ros::Duration(wait_for_transform));
 			listener_entry.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform_entry);
 		} catch (tf::TransformException ex) {
@@ -66,7 +128,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "trigger_%u_up", i);
 		try {
 			listener_up.waitForTransform("/quanjo_body", name, ros::Time::now(),
-					ros::Duration(0.2));
+					ros::Duration(wait_for_transform));
 			listener_up.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform_up);
 		} catch (tf::TransformException ex) {
@@ -77,7 +139,7 @@ sensornode seneka_pnp_tools::getSensornodePose() {
 		sprintf(name, "trigger_%u_down", i);
 		try {
 			listener_down.waitForTransform("/quanjo_body", name,
-					ros::Time::now(), ros::Duration(0.2));
+					ros::Time::now(), ros::Duration(wait_for_transform));
 			listener_down.lookupTransform("/quanjo_body", name, ros::Time(0),
 					transform_down);
 		} catch (tf::TransformException ex) {
@@ -292,10 +354,8 @@ void seneka_pnp_tools::fk_solver(ros::NodeHandle *node_handle,
 	if (service_response.error_code.val
 			== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 		for (uint i = 0; i < service_response.pose_stamped.size(); i++) {
-			std::cout << service_response.pose_stamped[i].pose.position
-					<< std::endl;
-			std::cout << service_response.pose_stamped[i].pose.orientation
-					<< std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.position << std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
 			*pose_l = service_response.pose_stamped[i].pose;
 		}
 	}
@@ -312,10 +372,8 @@ void seneka_pnp_tools::fk_solver(ros::NodeHandle *node_handle,
 	if (service_response.error_code.val
 			== moveit_msgs::MoveItErrorCodes::SUCCESS) {
 		for (uint i = 0; i < service_response.pose_stamped.size(); i++) {
-			std::cout << service_response.pose_stamped[i].pose.position
-					<< std::endl;
-			std::cout << service_response.pose_stamped[i].pose.orientation
-					<< std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.position	<< std::endl;
+			//std::cout << service_response.pose_stamped[i].pose.orientation << std::endl;
 			*pose_r = service_response.pose_stamped[i].pose;
 		}
 	}
@@ -696,9 +754,10 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 
 	states.push_back(createArmState("prepack-rear", 1.56475, -0.37355, -0.934844, 1.33843, -0.00526746, 2.91156, -1.56666, -2.77179, 0.952993, 1.85097, 0.00491897, -2.97376));
 	states.push_back(createArmState("packed-rear-h1", 1.59366, -0.861927, -2.03566, 2.89088, 0.0236453, 2.94829, -1.59398, -2.28216, 2.03645, 0.238648, -0.0224017, -2.93453));
-	states.push_back(createArmState("packed-rear", 1.58117, -1.17341, -1.97047, 3.1297, 0.0111507, 2.95578, -1.58218, -1.97401, 1.97396, -0.0148622, -0.0106062, -2.92669));
-	states.push_back(createArmState("packed-rear-drop", 1.58224, -1.15317, -2.25563, 3.39586, 0.0122261, 2.95453, -1.58336, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817));
+	states.push_back(createArmState("packed-rear", 1.56589, -1.12391, -1.98782, 3.10651, -0.00336441, 2.94691, -1.56685, -2.02354, 1.99117, 0.0084066, 0.0039572, -2.91772));
+	states.push_back(createArmState("packed-rear-drop", 1.56533, -1.09297, -2.2763, 3.36589, -0.00371973, 2.94508, -1.5664, -2.05499, 2.27966, -0.247784, 0.00511577, -2.91848));
 
+	
 	states.push_back(createArmState("packed-rear-tidy-1", 1.75, -1.15317, -2.25563, 3.39267, 0.0122261, 2.95453, -1.75, -1.99447, 2.25903, -0.27799, -0.0117867, -2.92817));
 	states.push_back(createArmState("packed-rear-tidy-2", 1.75, -1.15317, -2.25563, 3.39267, -1.25, 2.95453, -1.75, -1.99447, 2.25903, -0.27799, 1.2, -2.92817));
 	states.push_back(createArmState("packed-rear-tidy-3", 1.75, -0.47, -2.25563, 3.39267, -1.25, 4, -1.75, -2.7, 2.25903, -0.27799, 1.2, -4));
@@ -717,15 +776,16 @@ std::vector<dualArmJointState> seneka_pnp_tools::createArmStates() {
 	states.push_back(createArmState("pregrasp-jointflip", -1.9705, -2.441, -0.8, 3.2, -3.041, -3.3, 1.9705, -0.7, 0.8, 0, 3.041, 3.3));
 	
 	states.push_back(createArmState("prepack", -1.12281, -1.86896, -0.884882, 2.75421, -2.69283, -3.34126, 1.12093, -1.27239, 0.884651, 0.388099, 2.6925, 3.34191));
-	states.push_back(createArmState("packed-front", -0.168124, -0.965007, -1.83176, 2.79693, -1.73814, -3.34157, 0.166341, -2.17628, 1.83174, 0.344692, 1.73792, 3.34162));
-	states.push_back(createArmState("packed-front-drop", -0.327705, -0.987667, -2.15275, 3.14058, -1.89772, -3.34154, 0.325923, -2.15361, 2.15271, 0.00107013, 1.8975, 3.34165));
+	states.push_back(createArmState("packed-front", -0.312103, -1.06522, -1.6799, 2.74525, -1.8825, -3.34157, 0.31022, -2.07608, 1.67987, 0.396405, 1.88218, 3.34167));
+	states.push_back(createArmState("packed-front-drop", -0.485031, -1.0706, -2.09996, 3.17073, -2.055, -3.34151, 0.483189, -2.07072, 2.09992, -0.0290206, 2.05472, 3.34168));
 	
 	states.push_back(createArmState("packed-front-tidy-1", -1.5, -0.754735, -2.22018, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 2.22061, 0.164381, 1.41261, 2.911));
 	states.push_back(createArmState("packed-front-tidy-2", -1.5, -0.754735, -1.8, 2.97532, -1.41303, -2.9114, 1.5, -2.387, 1.8, 0.164381, 1.41261, 2.911));
 	states.push_back(createArmState("packed-front-tidy-3", -1.5, -0.754735, -1.8, 2.97532, 3.141, -2.9114, 1.5, -2.387, 1.8, 0.164381, 3.141, 2.911));
 	states.push_back(createArmState("pre-deploy-front", -1.19165, -2.03979, -0.95167, 2.99189, -2.76167, -3.34119, 1.18987, -1.10155, 0.951376, 0.150599, 2.76145, 3.34199));
-	states.push_back(createArmState("deploy-front", -1.23269, -2.41069, -1.2687, 3.67987, -2.80271, -3.34114, 1.23109, -0.730686, 1.26839, -0.537223, 2.80267, 3.34204));
+	states.push_back(createArmState("deploy-front-legs-down", -1.20425, -2.17328, -1.22912, 3.40542, -2.77425, -3.33863, 1.20257, -0.968084, 1.22884, -0.262892, 2.77413, 3.33946));
 
+	states.push_back(createArmState("deploy-front", -1.21294, -2.27136, -1.26721, 3.53942, -2.78295, -3.34078, 1.21129, -0.870007, 1.26692, -0.39686, 2.78287, 3.34162));
 	return states;
 }
 
@@ -738,19 +798,6 @@ bool seneka_pnp_tools::getArmState(std::vector<dualArmJointState>& states,
 			return true;
 		}
 	}
-	return false;
-}
-
-bool seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
-
-	tf::Quaternion qt;
-	tf::quaternionMsgToTF(pose.orientation, qt);
-	tf::Matrix3x3 m(qt);
-	double roll, pitch, yaw;
-	m.getRPY(roll, pitch, yaw);
-
-	std::cout << "Yaw: " << yaw * 180 / M_PI << "\n";
-
 	return false;
 }
 
@@ -821,6 +868,138 @@ bool seneka_pnp_tools::checkGoalDistance(const char* goalstate, std::vector<dual
 	if((int)distance*1000 > (int)maxdistance*1000)
 		return false;
 		
+	return true;
+}
+
+double yaw_sensor_;
+void seneka_pnp_tools::yaw_response_cb(const sensor_msgs::JointState &joints){
+	
+	for(unsigned int i=0; i < joints.name.size(); i++){
+		
+		if(!joints.name[i].compare("joint_tower_axis")){
+			yaw_sensor_ = joints.position[i];
+		}		
+	}
+}
+
+double seneka_pnp_tools::sensornodeYawRotation(geometry_msgs::Pose pose) {
+
+	tf::Quaternion qt;
+	tf::quaternionMsgToTF(pose.orientation, qt);
+	tf::Matrix3x3 m(qt);
+	double roll, pitch, yaw;
+	m.getRPY(roll, pitch, yaw);
+	
+	if(yaw < 0)
+		yaw = 2*M_PI + yaw;
+
+	std::cout << "Yaw: " << yaw << "\n";
+
+	return yaw;
+}
+
+bool seneka_pnp_tools::move_turret_to(ros::NodeHandle nh, double rad) {
+	
+	double prefix = -1;
+	double yaw_detection = 0;	
+	
+	sensornode tmp_node = seneka_pnp_tools::getSensornodePose();
+	if(tmp_node.success){
+		yaw_detection = seneka_pnp_tools::sensornodeYawRotation(tmp_node.pose);
+	}
+	else{
+		ROS_INFO("COULD NOT DETECT SENSORNODE");
+		return false;
+	}
+
+	double detection_offset = yaw_detection - rad;
+	
+	yaw_sensor_ = -1;
+	double yaw_sensor;
+	ros::Subscriber sub = nh.subscribe("/sensornode/joint_states", 1, yaw_response_cb);
+	
+	ros::Rate rate(30);
+	while(yaw_sensor_ < 0){
+		ros::spinOnce();
+		rate.sleep();
+	}
+	yaw_sensor = yaw_sensor_;
+	std::cout << "YAW_SENSOR " << yaw_sensor << std::endl;
+	
+	//compute offset	
+	double yaw_goal = yaw_sensor - detection_offset;
+	if(yaw_goal > 2*M_PI){
+		yaw_goal = yaw_goal - 2*M_PI;
+	}	
+	if(yaw_goal < 0){
+		yaw_goal = 2*M_PI + yaw_goal;  
+	}	
+	std::cout << "YAW_GOAL " << yaw_goal << std::endl;
+	
+	move_turret(nh, yaw_goal);
+	
+	return true;
+}
+      
+      
+std::string g_response_;
+void seneka_pnp_tools::global_response_cb(const std_msgs::String &str) {
+	g_response_ = str.data;
+}
+
+bool seneka_pnp_tools::move_turret(ros::NodeHandle nh, double rad){
+	
+	g_response_.clear();
+	//ros::Subscriber sub = nh.subscribe("/bridge_response", 1, global_response_cb);
+	ros::Publisher pub = nh.advertise<std_msgs::Float64> ("/move_turret", 1);
+	std_msgs::Float64 msg;
+	msg.data = rad;
+
+	ros::Rate rate(30);
+	while(pub.getNumSubscribers()<1){
+		ros::spinOnce();
+		rate.sleep();
+	}
+	
+	pub.publish(msg);
+	ros::spinOnce();
+		
+//	//check if movement is finished
+//	while(g_response_.size()<1){
+//		ros::spinOnce();
+//		rate.sleep();
+//	}
+		
+	return true;	
+}
+
+bool seneka_pnp_tools::move_legs(ros::NodeHandle nh, unsigned int move_legs){
+
+	g_response_.clear();
+	ros::Subscriber sub = nh.subscribe("/bridge_response", 1, global_response_cb);		
+
+	std_srvs::Empty req;
+	if(move_legs == MOVE_LEGS_UP){
+		if(!ros::service::call("/retract", req))
+			return false;
+	} 
+	else if(move_legs == MOVE_LEGS_DOWN) {
+		if(!ros::service::call("/extend", req))
+			return false;
+	} 
+	else {
+		return false;
+	}
+	
+	ros::spinOnce();
+	
+	//wait till movement is finished
+//	ros::Rate rate(30);
+//	while(g_response_.size()<1){
+//		ros::spinOnce();
+//		rate.sleep();
+//	}
+	
 	return true;
 }
 

@@ -2,14 +2,15 @@
 * Author: Matthias Nösner
 ********************** */
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cob_object_detection_msgs/DetectObjects.h>
 
 #include <gazebo_msgs/GetModelState.h>
-//#include <geometry_msgs/Quaternion.h>
-//#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/Pose.h>
 
 #include <seneka_sensornode_detection/setCameraPose.h>
 #include <seneka_sensornode_detection/getCameraPose.h>
@@ -90,7 +91,7 @@ std::vector<handle> handles;
 trigger_points trigger_offset;
 pose grab_entry;
 double gripper_length = 0.26; 
-double gripper_depth = 0;
+double gripper_depth = 0.005;
 pose3d sensornode_pose;
 
 boost::mutex tf_lock_;
@@ -217,55 +218,84 @@ void getSensornodeStateCamera(const cob_object_detection_msgs::DetectionArray::C
 		  extrinsic_camera_calib_ = false;
 	  }
 
+	  //use marker 1 or a the marker with the lowest id
+	  unsigned int position = 0;
+	  for(unsigned int i = 0; i < msg->detections.size(); i++){
+		  
+		  if(msg->detections[i].id == 1){
+			  position = i;
+			  break;
+		  }		  
+	  }
+	  if(msg->detections[position].id != 1){
+		  for(unsigned int i = 0; i < msg->detections.size(); i++){
+			  if(msg->detections[i].id < msg->detections[position].id){
+				  position = i;
+			  }
+		  }
+	  }
+
+	  ROS_INFO("I'M USING MARKER [%u]", msg->detections[position].id);
+	  
 	  //only the first detected marker is used
-	  origin.x = msg->detections[0].pose.pose.position.x;
-	  origin.y = msg->detections[0].pose.pose.position.y;
-	  origin.z = msg->detections[0].pose.pose.position.z;    
-	  rotation.w = msg->detections[0].pose.pose.orientation.w;
-	  rotation.x = msg->detections[0].pose.pose.orientation.x;
-	  rotation.y = msg->detections[0].pose.pose.orientation.y;
-	  rotation.z = msg->detections[0].pose.pose.orientation.z;
+	  origin.x = msg->detections[position].pose.pose.position.x;
+	  origin.y = msg->detections[position].pose.pose.position.y;
+	  origin.z = msg->detections[position].pose.pose.position.z;    
+	  rotation.w = msg->detections[position].pose.pose.orientation.w;
+	  rotation.x = msg->detections[position].pose.pose.orientation.x;
+	  rotation.y = msg->detections[position].pose.pose.orientation.y;
+	  rotation.z = msg->detections[position].pose.pose.orientation.z;
 
 	  transform.setOrigin( tf::Vector3(origin.x,origin.y,origin.z) );
 	  transform.setRotation( tf::Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
 	  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/quanjo_camera", "/seneka_marker"));
-
-	  //-> Transform each marker pose to object pose
-	  for(unsigned int i = 0; i < fiducialmarkers.size(); i++){
-		  //for loop j to iterate through container
-		  if(msg->detections[0].id == fiducialmarkers[i].id){
-
-			  //transformation matrices are named after the format tm_object_basesystem or q_object_basesystem
-			  //tm = transformation matrix, q = quaternion7
-			  //m = marker, sn = sensornode, hl = handle, ca = camera
-			  cv::Mat tm_m_sn = eulerToMatrix(fiducialmarkers[i].rot.x,fiducialmarkers[i].rot.y,fiducialmarkers[i].rot.z);
-			  cv::Mat tmp = cv::Mat(tm_m_sn.t());//transposed
-			  tm_m_sn = cv::Mat(3,4, CV_64FC1);
-			  //create homogenous coordinates
-			  for (int k=0; k<3; k++)
-				  for (int l=0; l<3; l++)
-					  tm_m_sn.at<double>(k,l) = tmp.at<double>(k,l);
-			  tm_m_sn.at<double>(0,3) = -fiducialmarkers[i].trans.x;
-			  tm_m_sn.at<double>(1,3) = -fiducialmarkers[i].trans.y;
-			  tm_m_sn.at<double>(2,3) = -fiducialmarkers[i].trans.z;
-
-			  std::vector<double> q_sn_m = FrameToVec7(tm_m_sn);	
-
-			  transform.setOrigin( tf::Vector3(q_sn_m[0], q_sn_m[1], q_sn_m[2]));
-			  transform.setRotation( tf::Quaternion(q_sn_m[4],q_sn_m[5],q_sn_m[6],q_sn_m[3]));
-			  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/seneka_marker", "/sensornode"));
-
-			  //!!not good to do it this way!!
-			  sensornode_pose.translation.x = q_sn_m[0];
-			  sensornode_pose.translation.y = q_sn_m[1];
-			  sensornode_pose.translation.z = q_sn_m[2];
-
-			  sensornode_pose.rotation.w = q_sn_m[3];
-			  sensornode_pose.rotation.x = q_sn_m[4];
-			  sensornode_pose.rotation.y = q_sn_m[5];
-			  sensornode_pose.rotation.z = q_sn_m[6];
-		  }      
-	  }
+	  	
+	  unsigned int i = position;
+	  unsigned int id = msg->detections[i].id;
+ 
+	  //another transform
+	  geometry_msgs::Pose markerpose;
+	  markerpose.position.x = fiducialmarkers[id-1].trans.x;
+	  markerpose.position.y = fiducialmarkers[id-1].trans.y;
+	  markerpose.position.z = fiducialmarkers[id-1].trans.z;
+	  markerpose.orientation = tf::createQuaternionMsgFromRollPitchYaw( fiducialmarkers[id-1].rot.x, fiducialmarkers[id-1].rot.y, fiducialmarkers[id-1].rot.z );
+	 
+	  geometry_msgs::Pose sensornodepose;
+	  sensornodepose.position.x = -markerpose.position.x;
+	  sensornodepose.position.y = -markerpose.position.y;
+	  sensornodepose.position.z = -markerpose.position.z;
+	  
+	  tf::Quaternion qt;
+	  tf::quaternionMsgToTF(markerpose.orientation, qt);
+	  qt.inverse();
+	  tf::quaternionTFToMsg(qt, sensornodepose.orientation);
+	  
+	  transform.setOrigin( tf::Vector3(sensornodepose.position.x, sensornodepose.position.y, sensornodepose.position.z) );
+	  transform.setRotation( qt );
+	  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/seneka_marker", "/sensornode"));
+	  
+	  sensornode_pose.translation.x = sensornodepose.position.x;
+	  sensornode_pose.translation.y = sensornodepose.position.y;
+	  sensornode_pose.translation.z = sensornodepose.position.z;
+	  sensornode_pose.rotation.w = sensornodepose.orientation.w;
+	  sensornode_pose.rotation.x = sensornodepose.orientation.x;
+	  sensornode_pose.rotation.y = sensornodepose.orientation.y;
+	  sensornode_pose.rotation.z = sensornodepose.orientation.z;
+	  	  
+			  
+	  //publish marker poses
+//	  for(unsigned int j = 0; j <  fiducialmarkers.size(); j++ ){
+//		  			  
+//		  transform.setOrigin( tf::Vector3(fiducialmarkers[j].trans.x, fiducialmarkers[j].trans.y, fiducialmarkers[j].trans.z));
+//		  transform.setRotation( tf::createQuaternionFromRPY( fiducialmarkers[j].rot.x, fiducialmarkers[j].rot.y, fiducialmarkers[j].rot.z ) );
+//
+//		  //ROS_INFO("x,y,z,r,p,y [%f] [%f] [%f] [%f] [%f] [%f]",fiducialmarkers[j].trans.x, fiducialmarkers[j].trans.y, fiducialmarkers[j].trans.z, fiducialmarkers[j].rot.x, fiducialmarkers[j].rot.y, fiducialmarkers[j].rot.z);
+//
+//		  char markerid[50];
+//		  sprintf(markerid,"/marker_%u",fiducialmarkers[j].id);
+//		  br.sendTransform(tf::StampedTransform(transform,  ros::Time::now(), "/sensornode", markerid));			  
+//	  }
+	  
 	  sensornodeLocalCoordinates();
   }   
 }
@@ -400,11 +430,15 @@ void sensornodeLocalCoordinates(){
 
 //Load Parameters positions of markers,handles and triggers in reference to the sensorsonde using my own SerializeIO class + scaling the values.
 bool loadParameters(std::vector<fiducialmarker>* afiducialmarkers, std::vector<handle>* ahandles, trigger_points* atriggers, pose* aentry){
+	
+  std::string path = ros::package::getPath("seneka_sensornode_detection");
+  std::string concatpath = path + "/launch/sensorsonde_coordinates.def";
   
-  SerializeIO *ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates.def",'i');
+  SerializeIO *ser = new SerializeIO(concatpath.c_str(),'i');
   if(simulation_){
     ser->close();
-    ser = new SerializeIO("/home/matthias/groovy_workspace/catkin_ws/src/seneka_deployment_unit/seneka_sensornode_detection/launch/sensorsonde_coordinates_sim.def",'i');
+    concatpath = path + "/launch/sensorsonde_coordinates_sim.def";
+    ser = new SerializeIO(concatpath.c_str(),'i');
   }
 
   fiducialmarker fiducial1, fiducial2, fiducial3, fiducial4, fiducial5, fiducial6;
